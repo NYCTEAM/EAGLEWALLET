@@ -18,14 +18,16 @@ import WalletService from '../services/WalletService';
 
 export default function CreateWalletScreen({ navigation }: any) {
   const [mode, setMode] = useState<'select' | 'create' | 'import'>('select');
+  const [step, setStep] = useState<'password' | 'mnemonic' | 'confirm'>('password');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mnemonic, setMnemonic] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [importType, setImportType] = useState<'mnemonic' | 'privateKey'>('mnemonic');
   const [generatedMnemonic, setGeneratedMnemonic] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreateWallet = async () => {
+  const handlePasswordSubmit = async () => {
     if (password.length < 8) {
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
@@ -35,23 +37,31 @@ export default function CreateWalletScreen({ navigation }: any) {
       return;
     }
 
+    setIsCreating(true);
     try {
       const mnemonic = await WalletService.createWallet(password);
       setGeneratedMnemonic(mnemonic);
-      Alert.alert(
-        'Backup Your Wallet',
-        'Please write down your recovery phrase and keep it safe!',
-        [
-          {
-            text: 'I have saved it',
-            onPress: () => navigation.replace('Home'),
-          },
-        ]
-      );
+      setStep('mnemonic');
     } catch (error: any) {
       console.error('Create wallet error:', error);
       Alert.alert('Error', `Failed to create wallet: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsCreating(false);
     }
+  };
+
+  const handleMnemonicConfirmed = () => {
+    Alert.alert(
+      'Important!',
+      'Have you written down all 12 words? You will need them to recover your wallet.',
+      [
+        { text: 'Not yet', style: 'cancel' },
+        {
+          text: 'Yes, I saved it',
+          onPress: () => navigation.replace('Home'),
+        },
+      ]
+    );
   };
 
   const handleImportWallet = async () => {
@@ -120,44 +130,91 @@ export default function CreateWalletScreen({ navigation }: any) {
   }
 
   if (mode === 'create') {
-    return (
-      <ScrollView style={styles.formContainer}>
-        <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
+    // Step 1: Enter Password
+    if (step === 'password') {
+      return (
+        <ScrollView style={styles.formContainer}>
+          <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.formTitle}>Create New Wallet</Text>
+          <Text style={styles.formTitle}>Create New Wallet</Text>
+          <Text style={styles.stepIndicator}>Step 1 of 2: Set Password</Text>
 
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="Enter password (min 8 characters)"
-          value={password}
-          onChangeText={setPassword}
-        />
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="Enter password (min 8 characters)"
+            value={password}
+            onChangeText={setPassword}
+            editable={!isCreating}
+          />
 
-        <Text style={styles.label}>Confirm Password</Text>
-        <TextInput
-          style={styles.input}
-          secureTextEntry
-          placeholder="Confirm password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
+          <Text style={styles.label}>Confirm Password</Text>
+          <TextInput
+            style={styles.input}
+            secureTextEntry
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            editable={!isCreating}
+          />
 
-        {generatedMnemonic ? (
-          <View style={styles.mnemonicContainer}>
-            <Text style={styles.warningText}>⚠️ Save this recovery phrase!</Text>
-            <Text style={styles.mnemonic}>{generatedMnemonic}</Text>
+          <TouchableOpacity 
+            style={[styles.primaryButton, isCreating && styles.disabledButton]} 
+            onPress={handlePasswordSubmit}
+            disabled={isCreating}
+          >
+            <Text style={styles.primaryButtonText}>
+              {isCreating ? 'Creating...' : 'Continue'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      );
+    }
+
+    // Step 2: Show Mnemonic
+    if (step === 'mnemonic') {
+      const words = generatedMnemonic.split(' ');
+      return (
+        <ScrollView style={styles.formContainer}>
+          <Text style={styles.formTitle}>Backup Recovery Phrase</Text>
+          <Text style={styles.stepIndicator}>Step 2 of 2: Save Your Recovery Phrase</Text>
+
+          <View style={styles.warningBox}>
+            <Text style={styles.warningIcon}>⚠️</Text>
+            <Text style={styles.warningTitle}>Write down these 12 words</Text>
+            <Text style={styles.warningDescription}>
+              Keep them in a safe place. This is the ONLY way to recover your wallet if you lose access.
+            </Text>
           </View>
-        ) : null}
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleCreateWallet}>
-          <Text style={styles.primaryButtonText}>Create Wallet</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
+          <View style={styles.mnemonicGrid}>
+            {words.map((word, index) => (
+              <View key={index} style={styles.mnemonicItem}>
+                <Text style={styles.mnemonicNumber}>{index + 1}.</Text>
+                <Text style={styles.mnemonicWord}>{word}</Text>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            onPress={handleMnemonicConfirmed}
+          >
+            <Text style={styles.primaryButtonText}>I Have Saved It</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.secondaryButton} 
+            onPress={() => setStep('password')}
+          >
+            <Text style={styles.secondaryButtonText}>Back</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      );
+    }
   }
 
   // Import mode
@@ -357,21 +414,67 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
-  mnemonicContainer: {
+  stepIndicator: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  warningBox: {
     backgroundColor: '#FFF3CD',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#F3BA2F',
+  },
+  warningIcon: {
+    fontSize: 32,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#856404',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  warningDescription: {
+    fontSize: 14,
+    color: '#856404',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  mnemonicGrid: {
+    backgroundColor: '#FFFFFF',
     padding: 16,
     borderRadius: 12,
-    marginTop: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
-  warningText: {
+  mnemonicItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+  },
+  mnemonicNumber: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#856404',
-    marginBottom: 12,
+    color: '#666',
+    width: 30,
   },
-  mnemonic: {
-    fontSize: 14,
+  mnemonicWord: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#000',
-    lineHeight: 24,
+    flex: 1,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
