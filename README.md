@@ -1,15 +1,19 @@
 # 🦅 Eagle Wallet
 
-A modern, secure, and simple cryptocurrency wallet for **BSC (Binance Smart Chain)** and **XLAYER** networks.
+**完整功能的 Web3 钱包 - 专为 BSC 和 XLAYER 设计**
 
-## ✨ Features
+一个现代化、安全、功能完整的加密货币钱包，支持 BSC 和 XLAYER 网络。
 
-- 🔐 **Secure** - Private keys encrypted and stored locally
-- 🌐 **Dual Network** - Support for BSC and XLAYER mainnet only
-- 📱 **Cross-Platform** - Works on both Android and iOS
-- 💰 **Simple UI** - Clean and intuitive interface
-- 🚀 **Fast** - Built with React Native for optimal performance
-- 🔄 **Easy Switch** - Quick network switching between BSC and XLAYER
+## ✨ 核心特性
+
+- 🔐 **安全可靠** - 私钥加密本地存储，永不上传
+- 🌐 **双网络支持** - BSC 和 XLAYER 主网
+- 📱 **跨平台** - Android 和 iOS 双平台支持
+- 💰 **完整交易** - 发送、接收、交易历史、详情查看
+- 🖼️ **NFT 管理** - 自动读取、展示、转账 NFT
+- 🌐 **DApp 浏览器** - 内置生态，一键访问 DeFi/NFT 应用
+- 🚀 **高性能** - React Native 构建，流畅体验
+- 🔄 **快速切换** - 一键切换 BSC 和 XLAYER
 
 ## 🛠️ Tech Stack
 
