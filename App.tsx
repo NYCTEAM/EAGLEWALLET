@@ -3,6 +3,10 @@
  * Simple, secure wallet for BSC and XLAYER
  */
 
+// Import polyfills for crypto
+import 'react-native-get-random-values';
+import '@ethersproject/shims';
+
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';

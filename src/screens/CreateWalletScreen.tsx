@@ -12,6 +12,7 @@ import {
   TextInput,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import WalletService from '../services/WalletService';
 
@@ -47,8 +48,9 @@ export default function CreateWalletScreen({ navigation }: any) {
           },
         ]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create wallet');
+    } catch (error: any) {
+      console.error('Create wallet error:', error);
+      Alert.alert('Error', `Failed to create wallet: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -87,7 +89,10 @@ export default function CreateWalletScreen({ navigation }: any) {
   if (mode === 'select') {
     return (
       <View style={styles.container}>
-        <Text style={styles.logo}>🦅</Text>
+        <Image 
+          source={require('../../android/app/src/main/res/drawable/eagle_logo.png')}
+          style={styles.logoImage}
+        />
         <Text style={styles.title}>Eagle Wallet</Text>
         <Text style={styles.subtitle}>Secure BSC & XLAYER Wallet</Text>
 
@@ -241,9 +246,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     padding: 20,
   },
-  logo: {
-    fontSize: 80,
+  logoImage: {
+    width: 120,
+    height: 120,
     marginBottom: 20,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 32,
