@@ -14,6 +14,10 @@ export interface NetworkConfig {
   color: string;
 }
 
+// Eagle RPC nodes with smart switching (US/HK)
+const EAGLE_BSC_RPC_US = 'https://bsc.eagleswap.io'; // US node
+const EAGLE_BSC_RPC_HK = 'https://bsc.eagleswap.llc/26119c762d57f906602c2d4bed374e05bab696dccdd2c8708cfacd4303f71c5f'; // HK node
+
 export const NETWORKS: Record<number, NetworkConfig> = {
   // BSC Mainnet
   56: {
@@ -22,6 +26,8 @@ export const NETWORKS: Record<number, NetworkConfig> = {
     symbol: 'BNB',
     decimals: 18,
     rpcUrls: [
+      EAGLE_BSC_RPC_US,      // Eagle US node (primary)
+      EAGLE_BSC_RPC_HK,      // Eagle HK node (backup)
       'https://binance.llamarpc.com',
       'https://bsc.drpc.org',
       'https://bsc.rpc.blxrbdn.com',

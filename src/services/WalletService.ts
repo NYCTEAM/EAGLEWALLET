@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NETWORKS, DEFAULT_NETWORK } from '../config/networks';
+import RPCService from './RPCService';
 
 const WALLET_KEY = 'EAGLE_WALLET_KEY';
 const WALLET_ADDRESS_KEY = 'EAGLE_WALLET_ADDRESS';
@@ -136,25 +137,34 @@ class WalletService {
   }
 
   /**
-   * Initialize provider for specific chain
+   * Initialize provider for specific chain with smart RPC selection
    */
-  private initProvider(chainId: number) {
+  private async initProvider(chainId: number) {
     const network = NETWORKS[chainId];
     if (!network) {
       throw new Error(`Unsupported network: ${chainId}`);
     }
 
-    // Try multiple RPC URLs for redundancy
-    this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
-      chainId: network.chainId,
-      name: network.name,
-    });
+    console.log(`🔄 Initializing provider for ${network.name}...`);
+    
+    // Use smart RPC selection to find fastest node
+    try {
+      this.provider = await RPCService.getProvider(chainId);
+    } catch (error) {
+      console.error('Smart RPC selection failed, using fallback:', error);
+      // Fallback to first RPC URL
+      this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
+        chainId: network.chainId,
+        name: network.name,
+      });
+    }
     
     if (this.wallet) {
       this.wallet = this.wallet.connect(this.provider);
     }
     
     this.currentChainId = chainId;
+    console.log(`✅ Provider initialized for ${network.name}`);
   }
 
   /**

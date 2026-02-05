@@ -9,8 +9,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  RefreshControl,
   ScrollView,
+  RefreshControl,
+  Alert,
   Image,
 } from 'react-native';
 import WalletService from '../services/WalletService';
@@ -73,7 +74,13 @@ export default function HomeScreen({ navigation }: any) {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>🦅 Eagle Wallet</Text>
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../android/app/src/main/res/drawable/eagle_logo.png')}
+            style={styles.logoImage}
+          />
+          <Text style={styles.logoText}>Eagle Wallet</Text>
+        </View>
         <TouchableOpacity onPress={switchNetwork} style={styles.networkButton}>
           <Text style={styles.networkText}>{network.name}</Text>
         </TouchableOpacity>
@@ -183,8 +190,17 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     backgroundColor: '#FFFFFF',
   },
-  logo: {
-    fontSize: 24,
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 32,
+    height: 32,
+    marginRight: 8,
+  },
+  logoText: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#000',
   },
