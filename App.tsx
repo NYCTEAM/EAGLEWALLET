@@ -17,6 +17,7 @@ import ReceiveScreen from './src/screens/ReceiveScreen';
 import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
 import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import ExportPrivateKeyScreen from './src/screens/ExportPrivateKeyScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -58,6 +59,7 @@ export default function App() {
             <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
             <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="ExportPrivateKey" component={ExportPrivateKeyScreen} />
           </>
         )}
       </Stack.Navigator>

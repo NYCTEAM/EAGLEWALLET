@@ -248,7 +248,77 @@ class WalletService {
   }
 
   /**
-   * Delete wallet (logout)
+   * Export private key (requires password verification)
+   */
+  async exportPrivateKey(password: string): Promise<string> {
+    try {
+      // Get encrypted wallet
+      const credentials = await Keychain.getGenericPassword();
+      if (!credentials) {
+        throw new Error('No wallet found');
+      }
+
+      // Decrypt wallet with password
+      const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
+        credentials.password,
+        password
+      );
+
+      return decryptedWallet.privateKey;
+    } catch (error) {
+      console.error('Export private key error:', error);
+      throw new Error('Incorrect password or wallet not found');
+    }
+  }
+
+  /**
+   * Export mnemonic phrase (requires password verification)
+   */
+  async exportMnemonic(password: string): Promise<string> {
+    try {
+      // Get encrypted wallet
+      const credentials = await Keychain.getGenericPassword();
+      if (!credentials) {
+        throw new Error('No wallet found');
+      }
+
+      // Decrypt wallet with password
+      const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
+        credentials.password,
+        password
+      );
+
+      const mnemonic = decryptedWallet.mnemonic?.phrase;
+      if (!mnemonic) {
+        throw new Error('This wallet was imported with private key and has no mnemonic');
+      }
+
+      return mnemonic;
+    } catch (error) {
+      console.error('Export mnemonic error:', error);
+      throw new Error('Incorrect password or wallet not found');
+    }
+  }
+
+  /**
+   * Verify password
+   */
+  async verifyPassword(password: string): Promise<boolean> {
+    try {
+      const credentials = await Keychain.getGenericPassword();
+      if (!credentials) {
+        return false;
+      }
+
+      await ethers.Wallet.fromEncryptedJson(credentials.password, password);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Delete wallet
    */
   async deleteWallet(): Promise<void> {
     await Keychain.resetGenericPassword();
