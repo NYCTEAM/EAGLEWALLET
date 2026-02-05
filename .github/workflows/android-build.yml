@@ -30,6 +30,10 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Upgrade React Native libraries for compatibility
+      run: |
+        npm install react-native-gesture-handler@latest react-native-screens@latest --legacy-peer-deps
+      
     - name: Link node_modules for Android
       run: |
         cd android
