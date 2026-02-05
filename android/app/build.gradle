@@ -24,7 +24,7 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
-    compileSdk 35
+    compileSdk 34
     namespace "com.eaglewallet"
 
     defaultConfig {
