@@ -12,6 +12,11 @@ import NFTScreen from './src/screens/NFTScreen';
 import NFTDetailScreen from './src/screens/NFTDetailScreen';
 import DAppBrowserScreen from './src/screens/DAppBrowserScreen';
 import AddDAppScreen from './src/screens/AddDAppScreen';
+import SendScreen from './src/screens/SendScreen';
+import ReceiveScreen from './src/screens/ReceiveScreen';
+import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -44,10 +49,15 @@ export default function App() {
         ) : (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Send" component={SendScreen} />
+            <Stack.Screen name="Receive" component={ReceiveScreen} />
             <Stack.Screen name="NFT" component={NFTScreen} />
             <Stack.Screen name="NFTDetail" component={NFTDetailScreen} />
             <Stack.Screen name="DAppBrowser" component={DAppBrowserScreen} />
             <Stack.Screen name="AddDApp" component={AddDAppScreen} />
+            <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+            <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
       </Stack.Navigator>

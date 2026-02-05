@@ -138,7 +138,12 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Transactions */}
       <View style={styles.transactionsSection}>
-        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
+            <Text style={styles.viewAllText}>View All →</Text>
+          </TouchableOpacity>
+        </View>
         {transactions.length === 0 ? (
           <Text style={styles.emptyText}>No transactions yet</Text>
         ) : (
@@ -245,11 +250,21 @@ const styles = StyleSheet.create({
   transactionsSection: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 16,
     color: '#000',
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#F3BA2F',
+    fontWeight: '600',
   },
   emptyText: {
     textAlign: 'center',
