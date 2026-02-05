@@ -88,7 +88,7 @@ export default function HomeScreen({ navigation }: any) {
         <Text style={styles.address}>{formatAddress(address)}</Text>
       </View>
 
-      {/* Action Buttons */}
+      {/* Action Buttons - Row 1 */}
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.actionButton}
@@ -113,6 +113,17 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.actionIcon}>🖼️</Text>
           <Text style={styles.actionText}>NFTs</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Action Buttons - Row 2 */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('DAppBrowser')}
+        >
+          <Text style={styles.actionIcon}>🌐</Text>
+          <Text style={styles.actionText}>DApps</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.actionButton}
@@ -121,6 +132,8 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.actionIcon}>⚙️</Text>
           <Text style={styles.actionText}>Settings</Text>
         </TouchableOpacity>
+
+        <View style={styles.actionButton} />
       </View>
 
       {/* Transactions */}

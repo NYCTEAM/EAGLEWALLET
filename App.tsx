@@ -10,6 +10,8 @@ import CreateWalletScreen from './src/screens/CreateWalletScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import NFTScreen from './src/screens/NFTScreen';
 import NFTDetailScreen from './src/screens/NFTDetailScreen';
+import DAppBrowserScreen from './src/screens/DAppBrowserScreen';
+import AddDAppScreen from './src/screens/AddDAppScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -44,6 +46,8 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="NFT" component={NFTScreen} />
             <Stack.Screen name="NFTDetail" component={NFTDetailScreen} />
+            <Stack.Screen name="DAppBrowser" component={DAppBrowserScreen} />
+            <Stack.Screen name="AddDApp" component={AddDAppScreen} />
           </>
         )}
       </Stack.Navigator>
