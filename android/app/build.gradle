@@ -13,7 +13,7 @@ react {
     debuggableVariants = ["liteDebug", "prodDebug"]
     
     /* Bundling */
-    bundleCommand = "ram-bundle"
+    // bundleCommand = "ram-bundle"  // Disabled: RAM bundle not supported by compose-source-maps
     
     /* Hermes Commands */
     hermesCommand = "../node_modules/react-native/sdks/hermesc/%OS-BIN%/hermesc"
@@ -24,7 +24,7 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
     ndkVersion rootProject.ext.ndkVersion
-    compileSdk 34
+    compileSdk 35
     namespace "com.eaglewallet"
 
     defaultConfig {
