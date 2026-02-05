@@ -3,7 +3,12 @@ rootProject.name = 'EagleWallet'
 def nativeModulesSettingsGradlePath = file("../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
 if (nativeModulesSettingsGradlePath.exists()) {
     apply from: nativeModulesSettingsGradlePath
-    applyNativeModulesSettingsGradle(settings)
+    def hasApplyMethod = this.metaClass.respondsTo(this, 'applyNativeModulesSettingsGradle', settings.class)
+    if (hasApplyMethod) {
+        applyNativeModulesSettingsGradle(settings)
+    } else {
+        println("[WARN] applyNativeModulesSettingsGradle is unavailable. Skipping React Native autolinking.")
+    }
 } else {
     println("[WARN] native_modules.gradle not found. Skipping React Native autolinking. Run 'npm install' before building.")
 }
