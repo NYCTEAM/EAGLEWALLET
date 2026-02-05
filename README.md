@@ -1,5 +1,9 @@
 # 🦅 Eagle Wallet
 
+![Android Build](https://github.com/NYCTEAM/EAGLEWALLET/workflows/Android%20Build/badge.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 **完整功能的 Web3 钱包 - 专为 BSC 和 XLAYER 设计**
 
 一个现代化、安全、功能完整的加密货币钱包，支持 BSC 和 XLAYER 网络。
@@ -13,7 +17,8 @@
 - 🖼️ **NFT 管理** - 自动读取、展示、转账 NFT
 - 🌐 **DApp 浏览器** - 内置生态，一键访问 DeFi/NFT 应用
 - 🚀 **高性能** - React Native 构建，流畅体验
-- 🔄 **快速切换** - 一键切换 BSC 和 XLAYER
+- 🔄 **智能 RPC** - US/HK 节点自动切换，最快连接
+- 🔒 **隐私保护** - RPC URL 完全隐藏
 
 ## 🛠️ Tech Stack
 
@@ -52,7 +57,21 @@ npm run android
 npm run ios
 ```
 
-## 🚀 Quick Start
+## Download
+
+### Latest Release
+[![Download APK](https://img.shields.io/badge/Download-APK-green)](https://github.com/NYCTEAM/EAGLEWALLET/releases/latest)
+
+- **APK**: Direct installation on Android devices
+- **AAB**: For Google Play Store submission
+
+### Build from Source
+See [SETUP.md](./SETUP.md) for detailed instructions.
+
+### GitHub Actions
+Every push automatically builds APK/AAB. Download from [Actions](https://github.com/NYCTEAM/EAGLEWALLET/actions) tab.
+
+## Quick Start
 
 ### 1. Create New Wallet
 - Open the app
