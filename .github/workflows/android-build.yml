@@ -47,9 +47,9 @@ jobs:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
-          ${{ runner.os }}-gradle-
+          ${{ runner.os }}-gradle-v2-
           
     - name: Download Gradle Wrapper JAR
       run: |
@@ -66,6 +66,11 @@ jobs:
           --bundle-output android/app/src/main/assets/index.android.bundle \
           --assets-dest android/app/src/main/res
           
+    - name: Clean Gradle build
+      run: |
+        cd android
+        ./gradlew clean
+        
     - name: Build Debug APK
       run: |
         cd android
