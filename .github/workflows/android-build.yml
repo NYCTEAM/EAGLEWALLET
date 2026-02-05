@@ -32,7 +32,7 @@ jobs:
       
     - name: Upgrade React Native libraries for compatibility
       run: |
-        npm install react-native-gesture-handler@latest react-native-screens@latest --legacy-peer-deps
+        npm install react-native-gesture-handler@2.16.2 react-native-screens@3.31.1 --legacy-peer-deps
       
     - name: Link node_modules for Android
       run: |
