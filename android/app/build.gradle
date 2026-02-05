@@ -1,3 +1,7 @@
+project.ext.react = [
+    entryFile: "../index.js"
+]
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
@@ -7,7 +11,6 @@ react {
     root = file("../")
     reactNativeDir = file("../node_modules/react-native")
     codegenDir = file("../node_modules/@react-native/codegen")
-    entryFile = file("../index.js")
     
     /* Variants */
     debuggableVariants = ["liteDebug", "prodDebug"]
