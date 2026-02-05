@@ -76,16 +76,21 @@ class RPCService {
    */
   async getFastestRPC(chainId: number): Promise<string> {
     const network = NETWORKS[chainId];
-    if (!network || !network.rpcUrls || network.rpcUrls.length === 0) {
-      throw new Error(`No RPC URLs configured for chain ${chainId}`);
+    if (!network || !network.rpcNodes || network.rpcNodes.length === 0) {
+      throw new Error(`No RPC nodes configured for chain ${chainId}`);
     }
 
-    console.log(`🔍 Testing ${network.rpcUrls.length} RPC nodes for ${network.name}...`);
+    console.log(`🔍 Testing ${network.rpcNodes.length} RPC nodes for ${network.name}...`);
 
     // Test all RPCs in parallel
-    const latencyTests = network.rpcUrls.map(async (url) => {
-      const latency = await this.getLatency(url);
-      return { url, latency };
+    const latencyTests = network.rpcNodes.map(async (node) => {
+      const latency = await this.getLatency(node.url);
+      return { 
+        name: node.name, 
+        url: node.url, 
+        region: node.region,
+        latency 
+      };
     });
 
     const results = await Promise.all(latencyTests);
@@ -93,24 +98,25 @@ class RPCService {
     // Sort by latency (fastest first)
     results.sort((a, b) => a.latency - b.latency);
     
-    // Log results
-    console.log('📊 RPC Latency Results:');
+    // Log results (显示名称，隐藏 URL)
+    console.log('📊 RPC Node Status:');
     results.forEach((result, index) => {
       const status = result.latency < 999999 ? '✅' : '❌';
       const latencyStr = result.latency < 999999 ? `${result.latency}ms` : 'Failed';
-      console.log(`  ${status} #${index + 1}: ${result.url} - ${latencyStr}`);
+      const region = result.region ? `[${result.region}]` : '';
+      console.log(`  ${status} #${index + 1}: ${result.name} ${region} - ${latencyStr}`);
     });
 
     // Return fastest available RPC
     const fastest = results[0];
     if (fastest.latency < 999999) {
-      console.log(`✅ Selected fastest RPC: ${fastest.url} (${fastest.latency}ms)`);
+      console.log(`✅ Connected to: ${fastest.name} (${fastest.latency}ms)`);
       return fastest.url;
     }
 
     // Fallback to first URL if all failed
-    console.warn('⚠️ All RPCs failed, using first URL as fallback');
-    return network.rpcUrls[0];
+    console.warn('⚠️ All nodes failed, using first node as fallback');
+    return network.rpcNodes[0].url;
   }
 
   /**
@@ -127,20 +133,26 @@ class RPCService {
   }
 
   /**
-   * Test all RPCs and return detailed report
+   * Test all RPCs and return detailed report (显示名称，不显示 URL)
    */
-  async testAllRPCs(chainId: number): Promise<RPCLatency[]> {
+  async testAllRPCs(chainId: number): Promise<Array<{
+    name: string;
+    region?: string;
+    latency: number;
+    available: boolean;
+  }>> {
     const network = NETWORKS[chainId];
-    if (!network) {
+    if (!network || !network.rpcNodes) {
       return [];
     }
 
-    const results: RPCLatency[] = [];
+    const results = [];
     
-    for (const url of network.rpcUrls) {
-      const latency = await this.testRPCLatency(url);
+    for (const node of network.rpcNodes) {
+      const latency = await this.testRPCLatency(node.url);
       results.push({
-        url,
+        name: node.name,
+        region: node.region,
         latency,
         available: latency < 999999,
       });

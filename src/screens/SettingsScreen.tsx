@@ -115,6 +115,12 @@ export default function SettingsScreen({ navigation }: any) {
             onPress={() => {}}
             showArrow={false}
           />
+          <SettingItem
+            icon="🔌"
+            title="RPC Nodes"
+            subtitle="View and test connection speed"
+            onPress={() => navigation.navigate('RPCNode', { chainId: network.chainId })}
+          />
         </View>
 
         {/* Security */}

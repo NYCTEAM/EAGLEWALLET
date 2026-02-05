@@ -3,12 +3,19 @@
  * Only BSC and XLAYER Mainnet supported
  */
 
+export interface RPCNode {
+  name: string;        // 显示给用户的名称
+  url: string;         // 实际 RPC URL（隐藏）
+  region?: string;     // 地区标识
+}
+
 export interface NetworkConfig {
   chainId: number;
   name: string;
   symbol: string;
   decimals: number;
-  rpcUrls: string[];
+  rpcUrls: string[];           // 内部使用
+  rpcNodes: RPCNode[];         // 显示给用户
   blockExplorerUrl: string;
   logo: string;
   color: string;
@@ -38,6 +45,19 @@ export const NETWORKS: Record<number, NetworkConfig> = {
       'https://bsc-dataseed3.binance.org',
       'https://bsc-dataseed4.binance.org',
     ],
+    rpcNodes: [
+      { name: 'Eagle US Node', url: EAGLE_BSC_RPC_US, region: 'US' },
+      { name: 'Eagle HK Node', url: EAGLE_BSC_RPC_HK, region: 'HK' },
+      { name: 'Binance LlamaRPC', url: 'https://binance.llamarpc.com', region: 'Global' },
+      { name: 'BSC DRPC', url: 'https://bsc.drpc.org', region: 'Global' },
+      { name: 'BSC BloxRoute', url: 'https://bsc.rpc.blxrbdn.com', region: 'Global' },
+      { name: 'BSC Blockrazor', url: 'https://bsc.blockrazor.xyz', region: 'Global' },
+      { name: 'Ankr BSC', url: 'https://rpc.ankr.com/bsc', region: 'Global' },
+      { name: 'Binance Node 1', url: 'https://bsc-dataseed1.binance.org', region: 'Global' },
+      { name: 'Binance Node 2', url: 'https://bsc-dataseed2.binance.org', region: 'Global' },
+      { name: 'Binance Node 3', url: 'https://bsc-dataseed3.binance.org', region: 'Global' },
+      { name: 'Binance Node 4', url: 'https://bsc-dataseed4.binance.org', region: 'Global' },
+    ],
     blockExplorerUrl: 'https://bscscan.com',
     logo: 'bnb',
     color: '#F3BA2F',
@@ -53,6 +73,11 @@ export const NETWORKS: Record<number, NetworkConfig> = {
       'https://rpc.xlayer.tech',
       'https://xlayerrpc.okx.com',
       'https://rpc.ankr.com/xlayer',
+    ],
+    rpcNodes: [
+      { name: 'X Layer Official', url: 'https://rpc.xlayer.tech', region: 'Global' },
+      { name: 'OKX RPC', url: 'https://xlayerrpc.okx.com', region: 'Global' },
+      { name: 'Ankr X Layer', url: 'https://rpc.ankr.com/xlayer', region: 'Global' },
     ],
     blockExplorerUrl: 'https://www.oklink.com/xlayer',
     logo: 'okx',
