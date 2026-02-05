@@ -108,6 +108,14 @@ export default function HomeScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.actionButton}
+          onPress={() => navigation.navigate('NFT')}
+        >
+          <Text style={styles.actionIcon}>🖼️</Text>
+          <Text style={styles.actionText}>NFTs</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
           onPress={() => navigation.navigate('Settings')}
         >
           <Text style={styles.actionIcon}>⚙️</Text>

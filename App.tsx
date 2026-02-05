@@ -8,6 +8,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import CreateWalletScreen from './src/screens/CreateWalletScreen';
 import HomeScreen from './src/screens/HomeScreen';
+import NFTScreen from './src/screens/NFTScreen';
+import NFTDetailScreen from './src/screens/NFTDetailScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -38,7 +40,11 @@ export default function App() {
         {!hasWallet ? (
           <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
         ) : (
-          <Stack.Screen name="Home" component={HomeScreen} />
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="NFT" component={NFTScreen} />
+            <Stack.Screen name="NFTDetail" component={NFTDetailScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
