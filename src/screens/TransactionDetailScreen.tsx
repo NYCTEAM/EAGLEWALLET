@@ -101,7 +101,12 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
           {/* Status */}
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Status</Text>
-            <View style={[styles.statusBadge, styles[`status${tx.status}`]]}>
+            <View style={[
+              styles.statusBadge,
+              tx.status === 'success' && styles.statussuccess,
+              tx.status === 'pending' && styles.statuspending,
+              tx.status === 'failed' && styles.statusfailed,
+            ]}>
               <Text style={styles.statusBadgeText}>
                 {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
               </Text>

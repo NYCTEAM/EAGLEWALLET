@@ -18,7 +18,7 @@ export interface WalletInfo {
 }
 
 class WalletService {
-  private wallet: ethers.Wallet | null = null;
+  private wallet: ethers.HDNodeWallet | ethers.Wallet | null = null;
   private provider: ethers.JsonRpcProvider | null = null;
   private currentChainId: number = DEFAULT_NETWORK;
 
@@ -210,14 +210,15 @@ class WalletService {
     for (let i = 0; i < Math.min(limit, 100); i++) {
       const block = await this.provider.getBlock(currentBlock - i, true);
       if (block && block.transactions) {
-        for (const tx of block.transactions) {
-          if (typeof tx !== 'string') {
+        for (const txData of block.transactions) {
+          if (typeof txData !== 'string') {
+            const tx = txData as any; // Type assertion for transaction response
             if (tx.from === this.wallet.address || tx.to === this.wallet.address) {
               history.push({
-                hash: tx.hash,
-                from: tx.from,
-                to: tx.to,
-                value: ethers.formatEther(tx.value),
+                hash: tx.hash || '',
+                from: tx.from || '',
+                to: tx.to || '',
+                value: ethers.formatEther(tx.value || 0),
                 timestamp: block.timestamp,
               });
             }
@@ -288,12 +289,12 @@ class WalletService {
         password
       );
 
-      const mnemonic = decryptedWallet.mnemonic?.phrase;
-      if (!mnemonic) {
-        throw new Error('This wallet was imported with private key and has no mnemonic');
+      // Check if wallet has mnemonic (HDNodeWallet)
+      if ('mnemonic' in decryptedWallet && decryptedWallet.mnemonic) {
+        return decryptedWallet.mnemonic.phrase;
       }
-
-      return mnemonic;
+      
+      throw new Error('This wallet was imported with private key and has no mnemonic');
     } catch (error) {
       console.error('Export mnemonic error:', error);
       throw new Error('Incorrect password or wallet not found');
