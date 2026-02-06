@@ -20,6 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import WalletService from '../services/WalletService';
 import MultiWalletService from '../services/MultiWalletService';
 import TokenLogoService from '../services/TokenLogoService';
+import PriceService from '../services/PriceService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { NETWORKS } from '../config/networks';
 import { getChainTokens, TokenConfig } from '../config/tokenConfig';
@@ -104,6 +105,7 @@ export default function HomeScreen({ navigation }: any) {
               address: token.address,
               logo: token.logo || token.symbol.toLowerCase(),
               color: token.color,
+              decimals: token.decimals,
             });
           }
         } catch (error) {
@@ -113,6 +115,26 @@ export default function HomeScreen({ navigation }: any) {
       
       setTokens(tokenList);
       console.log(`✅ Loaded ${tokenList.length} tokens (including native)`);
+      
+      // Fetch prices for all tokens using contract addresses
+      console.log('💰 Fetching token prices...');
+      const tokenAddresses = tokenList.map(t => t.address);
+      const prices = await PriceService.getMultipleTokenPrices(tokenAddresses, currentNet.chainId);
+      
+      // Update token list with prices
+      const tokensWithPrices = tokenList.map(token => {
+        const price = prices[token.address.toLowerCase()] || 0;
+        const value = parseFloat(token.balance) * price;
+        
+        return {
+          ...token,
+          price,
+          value: value.toFixed(2),
+        };
+      });
+      
+      setTokens(tokensWithPrices);
+      console.log(`💰 Prices loaded for ${Object.keys(prices).length} tokens`);
 
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -247,6 +269,14 @@ export default function HomeScreen({ navigation }: any) {
                 </View>
                 <View style={styles.tokenBalance}>
                   <Text style={styles.balanceText}>{token.balance}</Text>
+                  {token.price > 0 && (
+                    <Text style={styles.priceText}>
+                      ${token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)}
+                    </Text>
+                  )}
+                  {token.value && parseFloat(token.value) > 0 && (
+                    <Text style={styles.valueText}>≈ ${token.value}</Text>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -439,6 +469,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+  },
+  priceText: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  valueText: {
+    color: '#43A047',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 2,
   },
   manageButton: {
     marginTop: 20,
