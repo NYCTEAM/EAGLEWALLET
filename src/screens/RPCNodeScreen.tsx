@@ -127,6 +127,21 @@ export default function RPCNodeScreen({ navigation }: any) {
     testedNodes.sort((a, b) => a.latency - b.latency);
     
     setNodes(testedNodes);
+    
+    // Auto-select the fastest node
+    if (testedNodes.length > 0 && testedNodes[0].available) {
+      const fastestNode = testedNodes[0];
+      console.log(`🚀 Auto-selecting fastest node: ${fastestNode.name} (${fastestNode.latency}ms)`);
+      
+      setSelectedNode(fastestNode.name);
+      setPinnedNode(fastestNode.name);
+      
+      // Save to storage automatically
+      AsyncStorage.setItem(PINNED_RPC_KEY, fastestNode.name).catch(err => {
+        console.error('Failed to auto-save fastest node:', err);
+      });
+    }
+
     setTesting(false);
     setLoading(false);
     
