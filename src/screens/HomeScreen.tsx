@@ -119,22 +119,23 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       // Fetch prices for all tokens using contract addresses
       console.log('💰 Fetching token prices...');
       const tokenAddresses = tokenList.map(t => t.address);
-      const prices = await PriceService.getMultipleTokenPrices(tokenAddresses, currentNet.chainId);
+      const priceData = await PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId);
       
       // Update token list with prices
       const tokensWithPrices = tokenList.map(token => {
-        const price = prices[token.address.toLowerCase()] || 0;
-        const value = parseFloat(token.balance) * price;
+        const data = priceData[token.address.toLowerCase()] || { price: 0, change24h: 0 };
+        const value = parseFloat(token.balance) * data.price;
         
         return {
           ...token,
-          price,
+          price: data.price,
+          change: data.change24h,
           value: value.toFixed(2),
         };
       });
       
       setTokens(tokensWithPrices);
-      console.log(`💰 Prices loaded for ${Object.keys(prices).length} tokens`);
+      console.log(`💰 Prices loaded for ${Object.keys(priceData).length} tokens`);
 
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -144,6 +145,14 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      
+      // Auto refresh every 30 seconds
+      const interval = setInterval(() => {
+        console.log('🔄 Auto-refreshing token data...');
+        loadData();
+      }, 30000);
+      
+      return () => clearInterval(interval);
     }, [])
   );
 
@@ -272,13 +281,23 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                   <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
                 </View>
                 <View style={styles.tokenRight}>
-                  <Text style={styles.tokenValue}>
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.tokenPrice}>
+                      ${token.price > 0 
+                        ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
+                        : '0.00'}
+                    </Text>
+                    {token.change !== 0 && (
+                      <Text style={[
+                        styles.tokenChange,
+                        { color: token.change >= 0 ? '#43A047' : '#E53935' }
+                      ]}>
+                        {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.tokenValueSmall}>
                     ${token.value && parseFloat(token.value) > 0 ? token.value : '0.00'}
-                  </Text>
-                  <Text style={styles.priceText}>
-                    ${token.price > 0 
-                      ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
-                      : '0.00'}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -470,15 +489,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  tokenValue: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
-  priceText: {
-    color: '#999',
+  tokenPrice: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  tokenChange: {
     fontSize: 12,
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  tokenValueSmall: {
+    color: '#999',
+    fontSize: 13,
   },
   manageButton: {
     marginTop: 20,

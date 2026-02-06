@@ -161,6 +161,74 @@ class PriceService {
   }
 
   /**
+   * Get token prices and 24h change in one call
+   */
+  async getTokenPricesWithChange(
+    tokenAddresses: string[],
+    chainId: number
+  ): Promise<Record<string, { price: number; change24h: number }>> {
+    try {
+      const network = NETWORK_NAMES[chainId];
+      if (!network) {
+        return {};
+      }
+
+      // Map 'native' to wrapped token address and filter out empty addresses
+      const processedAddresses = tokenAddresses.map(addr => {
+        if (addr === 'native') {
+          // Return Wrapped Token address for native currency
+          if (chainId === 56) return '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // WBNB
+          if (chainId === 196) return '0xe538905cf8410324e03A5A23C1c177a474D59b2b'; // WOKB
+        }
+        return addr;
+      }).filter(Boolean);
+
+      // GeckoTerminal multi-token endpoint
+      const addressList = processedAddresses.join(',');
+      const url = `${GECKOTERMINAL_API}/networks/${network}/tokens/multi/${addressList}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Price API error: ${response.status}`);
+        return {};
+      }
+
+      const data = await response.json();
+      const results: Record<string, { price: number; change24h: number }> = {};
+      const tokensData = data?.data || [];
+
+      for (const tokenData of tokensData) {
+        const attrs = tokenData.attributes;
+        const address = attrs.address.toLowerCase();
+        const price = parseFloat(attrs.price_usd || '0');
+        const change24h = parseFloat(attrs.price_change_percentage_24h || '0');
+
+        results[address] = { price, change24h };
+
+        // Handle wrapped token mapping for native
+        if (chainId === 56 && address === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
+          results['native'] = { price, change24h };
+        }
+        if (chainId === 196 && address === '0xe538905cf8410324e03a5a23c1c177a474d59b2b') {
+          results['native'] = { price, change24h };
+        }
+
+        // Update cache (only price for now to keep compatibility)
+        const cacheKey = `${chainId}-${address}`;
+        this.priceCache.set(cacheKey, {
+          price,
+          timestamp: Date.now(),
+        });
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Get token prices with change error:', error);
+      return {};
+    }
+  }
+
+  /**
    * Get token price by symbol (convenience method)
    */
   async getTokenPriceBySymbol(symbol: string, chainId: number): Promise<number> {
