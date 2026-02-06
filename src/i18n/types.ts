@@ -431,6 +431,8 @@ export interface TranslationStrings {
     hiddenUrl: string;
     fastestNode: string;
     bsc: string;
+    rpcNode: string;
+    selected: string;
   };
 
   // ===== PRICE ALERT =====

@@ -393,9 +393,11 @@ export const en: TranslationStrings = {
     mainnet: 'Mainnet',
     testnet: 'Testnet',
     nodesAvailable: 'nodes available',
-    hiddenUrl: '🔒 RPC URLs are hidden for security',
-    fastestNode: 'Fastest node is automatically selected',
-    bsc: 'BNB Smart Chain',
+    hiddenUrl: 'URL hidden for security',
+    fastestNode: 'Fastest Node',
+    bsc: 'BSC',
+    rpcNode: 'RPC Node',
+    selected: 'selected',
   },
 
   priceAlert: {

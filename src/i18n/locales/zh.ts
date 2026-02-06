@@ -393,9 +393,11 @@ export const zh: TranslationStrings = {
     mainnet: '主网',
     testnet: '测试网',
     nodesAvailable: '个可用节点',
-    hiddenUrl: '🔒 RPC地址已隐藏以确保安全',
-    fastestNode: '自动选择最快节点',
-    bsc: 'BNB 智能链',
+    hiddenUrl: '出于安全考虑，URL已隐藏',
+    fastestNode: '最快节点',
+    bsc: 'BSC',
+    rpcNode: 'RPC节点',
+    selected: '已选择',
   },
 
   priceAlert: {

@@ -12,8 +12,11 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import WalletService from '../services/WalletService';
+import { NETWORKS } from '../config/networks';
 
 interface RPCNode {
   name: string;
@@ -21,42 +24,129 @@ interface RPCNode {
   latency: number;
   available: boolean;
   region?: string;
+  apiKey?: string;
+  fetchOptions?: any;
 }
+
+const PINNED_RPC_KEY = 'EAGLE_PINNED_RPC';
 
 export default function RPCNodeScreen({ navigation }: any) {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [nodes, setNodes] = useState<RPCNode[]>([]);
-  const [selectedNode, setSelectedNode] = useState('Official');
+  const [selectedNode, setSelectedNode] = useState<string>('');
+  const [pinnedNode, setPinnedNode] = useState<string>('');
   
   const network = WalletService.getCurrentNetwork();
 
   useEffect(() => {
+    loadPinnedNode();
     testNodes();
   }, []);
 
-  const testNodes = async () => {
-    setTesting(true);
-    // Mock testing RPC nodes
-    setTimeout(() => {
-      const mockNodes: RPCNode[] = [
-        { name: 'Official', url: 'https://bsc-dataseed.binance.org', latency: 120, available: true, region: 'Global' },
-        { name: 'QuickNode', url: 'https://...quicknode.com', latency: 45, available: true, region: 'US' },
-        { name: 'Ankr', url: 'https://rpc.ankr.com/bsc', latency: 85, available: true, region: 'EU' },
-        { name: 'Backup 1', url: 'https://bsc-dataseed1.defibit.io', latency: 150, available: true, region: 'Asia' },
-        { name: 'Backup 2', url: 'https://bsc-dataseed1.ninicoin.io', latency: 999, available: false, region: 'Global' },
-      ];
-      
-      setNodes(mockNodes.sort((a, b) => a.latency - b.latency));
-      setTesting(false);
-      setLoading(false);
-    }, 1500);
+  const loadPinnedNode = async () => {
+    try {
+      const pinned = await AsyncStorage.getItem(PINNED_RPC_KEY);
+      if (pinned) {
+        setPinnedNode(pinned);
+        setSelectedNode(pinned);
+      }
+    } catch (error) {
+      console.error('Failed to load pinned node:', error);
+    }
   };
 
-  const handleSelectNode = (nodeName: string) => {
+  const testNodes = async () => {
+    setTesting(true);
+    const networkConfig = NETWORKS[network.chainId];
+    const rpcNodes = networkConfig.rpcNodes || [];
+    
+    console.log(`🔍 Testing ${rpcNodes.length} RPC nodes for ${network.name}...`);
+    
+    const testedNodes: RPCNode[] = [];
+    
+    for (const node of rpcNodes) {
+      try {
+        const startTime = Date.now();
+        
+        // Test RPC with eth_blockNumber call
+        const response = await fetch(node.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(node.fetchOptions?.headers || {}),
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'eth_blockNumber',
+            params: [],
+            id: 1,
+          }),
+        });
+        
+        const endTime = Date.now();
+        const latency = endTime - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.result) {
+            testedNodes.push({
+              ...node,
+              latency,
+              available: true,
+            });
+            console.log(`✅ ${node.name}: ${latency}ms`);
+          } else {
+            testedNodes.push({
+              ...node,
+              latency: 9999,
+              available: false,
+            });
+            console.log(`❌ ${node.name}: Invalid response`);
+          }
+        } else {
+          testedNodes.push({
+            ...node,
+            latency: 9999,
+            available: false,
+          });
+          console.log(`❌ ${node.name}: HTTP ${response.status}`);
+        }
+      } catch (error) {
+        testedNodes.push({
+          ...node,
+          latency: 9999,
+          available: false,
+        });
+        console.log(`❌ ${node.name}: ${error}`);
+      }
+    }
+    
+    // Sort by latency (fastest first)
+    testedNodes.sort((a, b) => a.latency - b.latency);
+    
+    setNodes(testedNodes);
+    setTesting(false);
+    setLoading(false);
+    
+    console.log('🏁 RPC testing complete');
+  };
+
+  const handleSelectNode = async (nodeName: string) => {
     setSelectedNode(nodeName);
-    // TODO: Save to storage and update RPC service
+    setPinnedNode(nodeName);
+    
+    try {
+      await AsyncStorage.setItem(PINNED_RPC_KEY, nodeName);
+      Alert.alert(
+        t.common.success,
+        `${t.network.rpcNode} ${nodeName} ${t.network.selected}`,
+        [{ text: t.common.ok }]
+      );
+    } catch (error) {
+      console.error('Failed to save pinned node:', error);
+    }
   };
 
   const getStatusColor = (latency: number) => {
