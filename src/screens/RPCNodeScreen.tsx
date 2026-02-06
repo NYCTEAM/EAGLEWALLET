@@ -150,19 +150,17 @@ export default function RPCNodeScreen({ navigation }: any) {
   };
 
   const getStatusColor = (latency: number) => {
-    if (latency < 50) return '#43A047';      // Excellent - Green
-    if (latency < 100) return '#7CB342';     // Good - Light Green
-    if (latency < 200) return '#FDD835';     // Fair - Yellow
-    if (latency < 500) return '#FB8C00';     // Slow - Orange
-    return '#E53935';                        // Failed - Red
+    if (latency < 200) return '#43A047';     // Fast - Green
+    if (latency < 500) return '#FDD835';     // Normal - Yellow
+    if (latency < 1000) return '#FB8C00';    // Slow - Orange
+    return '#E53935';                        // Very Slow - Red
   };
 
   const getStatusText = (latency: number) => {
-    if (latency < 50) return t.network.fast;
-    if (latency < 100) return t.network.normal;
-    if (latency < 200) return t.network.normal;
-    if (latency < 500) return t.network.slow;
-    return t.transaction.failed;
+    if (latency < 200) return t.network.fast;
+    if (latency < 500) return t.network.normal;
+    if (latency < 1000) return t.network.slow;
+    return t.network.slow; // Or "Very Slow" if translation exists, fallback to Slow
   };
 
   const getRegionFlag = (region?: string) => {
