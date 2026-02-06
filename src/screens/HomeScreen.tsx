@@ -135,15 +135,23 @@ export default function HomeScreen({ navigation }: any) {
 
         <TouchableOpacity
           style={styles.actionButton}
-          onPress={() => navigation.navigate('NFT')}
+          onPress={() => navigation.navigate('Swap')}
         >
-          <Text style={styles.actionIcon}>🖼️</Text>
-          <Text style={styles.actionText}>NFTs</Text>
+          <Text style={styles.actionIcon}>🔄</Text>
+          <Text style={styles.actionText}>Swap</Text>
         </TouchableOpacity>
       </View>
 
       {/* Action Buttons - Row 2 */}
       <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('NFT')}
+        >
+          <Text style={styles.actionIcon}>🖼️</Text>
+          <Text style={styles.actionText}>NFTs</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => navigation.navigate('DAppBrowser')}
@@ -159,8 +167,6 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.actionIcon}>⚙️</Text>
           <Text style={styles.actionText}>Settings</Text>
         </TouchableOpacity>
-
-        <View style={styles.actionButton} />
       </View>
 
       {/* Tabs */}

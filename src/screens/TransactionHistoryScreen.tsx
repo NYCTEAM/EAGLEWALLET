@@ -12,20 +12,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import WalletService from '../services/WalletService';
-
-interface Transaction {
-  hash: string;
-  from: string;
-  to: string;
-  value: string;
-  timestamp: number;
-  status: 'success' | 'pending' | 'failed';
-  type: 'send' | 'receive';
-  gasUsed?: string;
-  gasPrice?: string;
-}
+import TransactionService, { Transaction } from '../services/TransactionService';
 
 export default function TransactionHistoryScreen({ navigation }: any) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -44,20 +34,18 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       const addr = await WalletService.getAddress();
       if (addr) {
         setAddress(addr);
-        const txs = await WalletService.getTransactionHistory(50);
+        const net = WalletService.getCurrentNetwork();
         
-        // Format transactions
-        const formattedTxs: Transaction[] = txs.map(tx => ({
-          hash: tx.hash,
-          from: tx.from,
-          to: tx.to,
-          value: tx.value,
-          timestamp: tx.timestamp,
-          status: 'success',
-          type: tx.from.toLowerCase() === addr.toLowerCase() ? 'send' : 'receive',
-        }));
+        // Get transactions from TransactionService
+        const txs = await TransactionService.getTransactionHistory(addr, net.chainId, 50);
         
-        setTransactions(formattedTxs);
+        // Get pending transactions
+        const pending = await TransactionService.getPendingTransactions();
+        
+        // Combine and sort
+        const allTxs = [...pending, ...txs].sort((a, b) => b.timestamp - a.timestamp);
+        
+        setTransactions(allTxs);
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -97,49 +85,54 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     return date.toLocaleDateString();
   };
 
-  const renderTransaction = ({ item }: { item: Transaction }) => (
-    <TouchableOpacity
-      style={styles.txCard}
-      onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
-    >
-      <View style={styles.txIcon}>
-        <Text style={styles.txIconText}>
-          {item.type === 'send' ? '📤' : '📥'}
-        </Text>
-      </View>
-      
-      <View style={styles.txInfo}>
-        <View style={styles.txHeader}>
-          <Text style={styles.txType}>
-            {item.type === 'send' ? 'Sent' : 'Received'}
-          </Text>
-          <Text style={[
-            styles.txAmount,
-            item.type === 'send' ? styles.txAmountSend : styles.txAmountReceive
-          ]}>
-            {item.type === 'send' ? '-' : '+'}{parseFloat(item.value).toFixed(6)} {network.symbol}
+  const renderTransaction = ({ item }: { item: Transaction }) => {
+    const isSent = item.from.toLowerCase() === address.toLowerCase();
+    const txType = isSent ? 'send' : 'receive';
+    
+    return (
+      <TouchableOpacity
+        style={styles.txCard}
+        onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
+      >
+        <View style={styles.txIcon}>
+          <Text style={styles.txIconText}>
+            {isSent ? '📤' : '📥'}
           </Text>
         </View>
         
-        <View style={styles.txDetails}>
-          <Text style={styles.txAddress}>
-            {item.type === 'send' ? 'To: ' : 'From: '}
-            {formatAddress(item.type === 'send' ? item.to : item.from)}
-          </Text>
-          <Text style={styles.txTime}>{formatDate(item.timestamp)}</Text>
-        </View>
-        
-        <View style={styles.txFooter}>
-          <Text style={styles.txHash}>{formatAddress(item.hash)}</Text>
-          <View style={[styles.txStatus, styles[`txStatus${item.status}`]]}>
-            <Text style={styles.txStatusText}>
-              {item.status === 'success' ? '✓' : item.status === 'pending' ? '⏳' : '✗'}
+        <View style={styles.txInfo}>
+          <View style={styles.txHeader}>
+            <Text style={styles.txType}>
+              {isSent ? 'Sent' : 'Received'}
+            </Text>
+            <Text style={[
+              styles.txAmount,
+              isSent ? styles.txAmountSend : styles.txAmountReceive
+            ]}>
+              {isSent ? '-' : '+'}{parseFloat(item.value).toFixed(6)} {network.symbol}
             </Text>
           </View>
+          
+          <View style={styles.txDetails}>
+            <Text style={styles.txAddress}>
+              {isSent ? 'To: ' : 'From: '}
+              {formatAddress(isSent ? item.to : item.from)}
+            </Text>
+            <Text style={styles.txTime}>{formatDate(item.timestamp)}</Text>
+          </View>
+          
+          <View style={styles.txFooter}>
+            <Text style={styles.txHash}>{formatAddress(item.hash)}</Text>
+            <View style={[styles.txStatus, styles[`txStatus${item.status}`]]}>
+              <Text style={styles.txStatusText}>
+                {item.status === 'success' ? '✓' : item.status === 'pending' ? '⏳' : '✗'}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -163,7 +156,12 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       </View>
 
       {/* Transaction List */}
-      {transactions.length === 0 ? (
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#F3BA2F" />
+          <Text style={styles.loadingText}>Loading transactions...</Text>
+        </View>
+      ) : transactions.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📜</Text>
           <Text style={styles.emptyText}>No transactions yet</Text>
@@ -340,5 +338,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
   },
 });
