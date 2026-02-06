@@ -19,7 +19,7 @@ import WalletService from '../services/WalletService';
 import SwapService from '../services/SwapService';
 import { useLanguage } from '../i18n/LanguageContext';
 
-export default function SwapScreen({ navigation }: any) {
+export default function SwapScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
   const [fromToken, setFromToken] = useState<any>(null);
   const [toToken, setToToken] = useState<any>(null);
@@ -116,9 +116,13 @@ export default function SwapScreen({ navigation }: any) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.common.back}</Text>
-        </TouchableOpacity>
+        {isTabScreen ? (
+          <View style={{ width: 60 }} />
+        ) : (
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← {t.common.back}</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>{t.swap.swap}</Text>
         <TouchableOpacity onPress={() => setShowSlippageModal(true)}>
           <Text style={styles.settingsButton}>⚙️</Text>

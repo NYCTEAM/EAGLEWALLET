@@ -16,7 +16,7 @@ import {
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
-export default function SettingsScreen({ navigation }: any) {
+export default function SettingsScreen({ navigation, isTabScreen }: any) {
   const { t, language, availableLanguages } = useLanguage();
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [currency, setCurrency] = useState('USD');
@@ -101,9 +101,13 @@ export default function SettingsScreen({ navigation }: any) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.settings.back}</Text>
-        </TouchableOpacity>
+        {isTabScreen ? (
+          <View style={{ width: 60 }} />
+        ) : (
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← {t.settings.back}</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>{t.settings.settings}</Text>
         <View style={{ width: 60 }} />
       </View>

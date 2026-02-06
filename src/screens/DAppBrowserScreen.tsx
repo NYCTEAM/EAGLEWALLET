@@ -18,7 +18,7 @@ import {
 import { FEATURED_DAPPS, DAPP_CATEGORIES, getDAppsByCategory, searchDApps, DApp } from '../config/dappsConfig';
 import WalletService from '../services/WalletService';
 
-export default function DAppBrowserScreen({ navigation }: any) {
+export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState(t.common.all);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,9 +71,13 @@ export default function DAppBrowserScreen({ navigation }: any) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.common.back}</Text>
-        </TouchableOpacity>
+        {isTabScreen ? (
+          <View style={{ width: 40 }} />
+        ) : (
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← {t.common.back}</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.title}>{t.dapp.dappBrowser}</Text>
         <View style={{ width: 40 }} />
       </View>

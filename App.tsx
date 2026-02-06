@@ -11,6 +11,7 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import CreateWalletScreen from './src/screens/CreateWalletScreen';
+import MainScreen from './src/screens/MainScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import NFTScreen from './src/screens/NFTScreen';
 import NFTDetailScreen from './src/screens/NFTDetailScreen';
@@ -94,7 +95,7 @@ export default function App() {
           <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
         ) : (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Home" component={MainScreen} />
             <Stack.Screen name="Send" component={SendScreen} />
             <Stack.Screen name="Receive" component={ReceiveScreen} />
             <Stack.Screen name="NFT" component={NFTScreen} />

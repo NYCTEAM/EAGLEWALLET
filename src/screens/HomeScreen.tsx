@@ -28,7 +28,7 @@ import { ethers } from 'ethers';
 
 const { width } = Dimensions.get('window');
 
-export default function HomeScreen({ navigation }: any) {
+export default function HomeScreen({ navigation, isTabScreen }: any) {
   console.log('🏠 HomeScreen: Component rendering');
   const { t } = useLanguage();
   const [balance, setBalance] = useState('0.0000');
@@ -94,20 +94,18 @@ export default function HomeScreen({ navigation }: any) {
           const tokenBalance = await contract.balanceOf(addr);
           const formattedBalance = ethers.formatUnits(tokenBalance, token.decimals);
           
-          // Only add tokens with non-zero balance
-          if (parseFloat(formattedBalance) > 0) {
-            tokenList.push({
-              symbol: token.symbol,
-              name: token.name,
-              balance: parseFloat(formattedBalance).toFixed(4),
-              price: 0,
-              change: 0,
-              address: token.address,
-              logo: token.logo || token.symbol.toLowerCase(),
-              color: token.color,
-              decimals: token.decimals,
-            });
-          }
+          // Add all tokens (including zero balance for testing)
+          tokenList.push({
+            symbol: token.symbol,
+            name: token.name,
+            balance: parseFloat(formattedBalance).toFixed(4),
+            price: 0,
+            change: 0,
+            address: token.address,
+            logo: token.logo || token.symbol.toLowerCase(),
+            color: token.color,
+            decimals: token.decimals,
+          });
         } catch (error) {
           console.error(`Failed to load balance for ${token.symbol}:`, error);
         }
@@ -174,12 +172,16 @@ export default function HomeScreen({ navigation }: any) {
         </TouchableOpacity>
         
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => navigation.navigate('DAppBrowser')}>
-            <Text style={styles.iconButton}>🌐</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Text style={styles.iconButton}>⚙️</Text>
-          </TouchableOpacity>
+          {!isTabScreen && (
+            <>
+              <TouchableOpacity onPress={() => navigation.navigate('DAppBrowser')}>
+                <Text style={styles.iconButton}>🌐</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                <Text style={styles.iconButton}>⚙️</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
 
