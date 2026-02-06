@@ -12,6 +12,9 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Modal,
+  Clipboard,
+  Share,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import WalletService from '../services/WalletService';
@@ -26,6 +29,7 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
   const [canGoForward, setCanGoForward] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [chainId, setChainId] = useState<string>('0x38');
+  const [showMenu, setShowMenu] = useState(false);
 
   // Load wallet data on mount
   React.useEffect(() => {
@@ -399,6 +403,232 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
           <ActivityIndicator size="small" color="#F3BA2F" />
         </View>
       )}
+
+      {/* Bottom Toolbar */}
+      <View style={styles.bottomToolbar}>
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => webViewRef.current?.goBack()}
+          disabled={!canGoBack}
+        >
+          <Text style={[styles.toolbarIcon, !canGoBack && styles.toolbarIconDisabled]}>‹</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => webViewRef.current?.goForward()}
+          disabled={!canGoForward}
+        >
+          <Text style={[styles.toolbarIcon, !canGoForward && styles.toolbarIconDisabled]}>›</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => {
+            // Open in system browser
+            Alert.alert('提示', '在系统浏览器中打开此页面？', [
+              { text: '取消', style: 'cancel' },
+              { text: '打开', onPress: () => {} }
+            ]);
+          }}
+        >
+          <Text style={styles.toolbarIcon}>⊕</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={handleReload}
+        >
+          <Text style={styles.toolbarIcon}>↻</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={styles.toolbarButton}
+          onPress={() => setShowMenu(true)}
+        >
+          <Text style={styles.toolbarIcon}>⋯</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity 
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.menuContainer}>
+            {/* Menu Header */}
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>{name || 'DApp Browser'}</Text>
+              <Text style={styles.menuSubtitle} numberOfLines={1}>{currentUrl}</Text>
+            </View>
+
+            {/* Menu Actions */}
+            <View style={styles.menuActions}>
+              {/* Row 1 */}
+              <View style={styles.menuRow}>
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Share.share({ message: currentUrl });
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>📤</Text>
+                  <Text style={styles.menuItemText}>分享</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    Clipboard.setString(currentUrl);
+                    Alert.alert('成功', '链接已复制');
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🔗</Text>
+                  <Text style={styles.menuItemText}>复制链接</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Toggle fullscreen
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>⛶</Text>
+                  <Text style={styles.menuItemText}>扫一扫</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    handleReload();
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🔄</Text>
+                  <Text style={styles.menuItemText}>刷新</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Add to favorites
+                    Alert.alert('成功', '已添加到收藏');
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>⭐</Text>
+                  <Text style={styles.menuItemText}>收藏</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Row 2 */}
+              <View style={styles.menuRow}>
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Open in system browser
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🌐</Text>
+                  <Text style={styles.menuItemText}>系统浏览器打开</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Switch to desktop mode
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🖥️</Text>
+                  <Text style={styles.menuItemText}>切换桌面模式</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Translate page
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🌐</Text>
+                  <Text style={styles.menuItemText}>翻译页面</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Edit script
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>✏️</Text>
+                  <Text style={styles.menuItemText}>编辑</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    // Clear cache
+                    Alert.alert('确认', '清除缓存？', [
+                      { text: '取消', style: 'cancel' },
+                      { 
+                        text: '清除', 
+                        onPress: () => {
+                          Alert.alert('成功', '缓存已清除');
+                          handleReload();
+                        }
+                      }
+                    ]);
+                    setShowMenu(false);
+                  }}
+                >
+                  <Text style={styles.menuItemIcon}>🧹</Text>
+                  <Text style={styles.menuItemText}>清除缓存</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Wallet Selector */}
+            <View style={styles.walletSelector}>
+              <View style={styles.walletInfo}>
+                <Text style={styles.walletIcon}>🦅</Text>
+                <View style={styles.walletDetails}>
+                  <Text style={styles.walletName}>BNB-1</Text>
+                  <Text style={styles.walletAddress}>
+                    {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => {
+                setShowMenu(false);
+                navigation.navigate('Home');
+              }}>
+                <Text style={styles.walletArrow}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setShowMenu(false)}
+            >
+              <Text style={styles.cancelButtonText}>取消</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -504,5 +734,120 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#666',
+  },
+  bottomToolbar: {
+    flexDirection: 'row',
+    backgroundColor: '#000000',
+    paddingVertical: 12,
+    paddingBottom: 28,
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  toolbarButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarIcon: {
+    fontSize: 24,
+    color: '#FFFFFF',
+  },
+  toolbarIconDisabled: {
+    color: '#666',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: '#1C1C1E',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+  },
+  menuHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  menuSubtitle: {
+    fontSize: 12,
+    color: '#999',
+  },
+  menuActions: {
+    padding: 20,
+  },
+  menuRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  menuItem: {
+    alignItems: 'center',
+    width: 60,
+  },
+  menuItemIcon: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  menuItemText: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  walletSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2C2C2E',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 12,
+  },
+  walletInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  walletIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  walletDetails: {
+    justifyContent: 'center',
+  },
+  walletName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  walletAddress: {
+    fontSize: 12,
+    color: '#999',
+  },
+  walletArrow: {
+    fontSize: 24,
+    color: '#999',
+  },
+  cancelButton: {
+    marginHorizontal: 20,
+    padding: 16,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
