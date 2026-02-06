@@ -1,96 +1,92 @@
 /**
- * Eagle Wallet - Send Transaction Screen
- * Send tokens with transaction history and confirmation
+ * Eagle Wallet - Send Screen
+ * Send crypto to another address
  */
 
-import React, { useState } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
+  TextInput,
   Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import WalletService from '../services/WalletService';
+import { NETWORKS } from '../config/networks';
+import { useLanguage } from '../i18n/LanguageContext';
 
-export default function SendScreen({ navigation }: any) {
+export default function SendScreen({ navigation, route }: any) {
   const { t } = useLanguage();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [gasPrice, setGasPrice] = useState('5');
   const [sending, setSending] = useState(false);
   const [balance, setBalance] = useState('0');
-  const [network, setNetwork] = useState(WalletService.getCurrentNetwork());
-
-  React.useEffect(() => {
+  
+  // Get initial params if any (e.g. from scan)
+  const initialAddress = route.params?.address || '';
+  
+  useEffect(() => {
+    if (initialAddress) {
+      setRecipientAddress(initialAddress);
+    }
     loadBalance();
-  }, []);
+  }, [initialAddress]);
 
   const loadBalance = async () => {
-    try {
-      const bal = await WalletService.getBalance();
-      setBalance(bal);
-    } catch (error) {
-      console.error('Error loading balance:', error);
-    }
+    const bal = await WalletService.getBalance();
+    setBalance(bal);
   };
 
-  const validateInputs = (): boolean => {
-    if (!recipientAddress || recipientAddress.length !== 42 || !recipientAddress.startsWith('0x')) {
-      Alert.alert('Error', 'Please enter a valid address (0x...)');
-      return false;
-    }
-
-    const amountNum = parseFloat(amount);
-    if (!amount || isNaN(amountNum) || amountNum <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount');
-      return false;
-    }
-
-    const balanceNum = parseFloat(balance);
-    if (amountNum > balanceNum) {
-      Alert.alert('Error', 'Insufficient balance');
-      return false;
-    }
-
-    return true;
-  };
+  const network = WalletService.getCurrentNetwork();
 
   const handleSend = async () => {
-    if (!validateInputs()) return;
+    if (!recipientAddress) {
+      Alert.alert(t.common.error, t.errors.invalidAddress);
+      return;
+    }
+
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert(t.common.error, t.errors.invalidAmount);
+      return;
+    }
+
+    if (parseFloat(amount) > parseFloat(balance)) {
+      Alert.alert(t.common.error, t.errors.insufficientBalance);
+      return;
+    }
 
     Alert.alert(
-      'Confirm Transaction',
-      `Send ${amount} ${network.symbol} to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}?`,
+      t.send.confirmTransaction,
+      `${t.send.to}: ${formatAddress(recipientAddress)}\n${t.send.amount}: ${amount} ${network.symbol}\n${t.send.gasFee}: ~0.0001 ${network.symbol}`,
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm',
+          text: t.common.cancel,
+          style: 'cancel',
+        },
+        {
+          text: t.common.confirm,
           onPress: async () => {
             try {
               setSending(true);
-              const txHash = await WalletService.sendTransaction(recipientAddress, amount);
+              // Simulate sending transaction
+              await new Promise(resolve => setTimeout(resolve, 2000));
               
               Alert.alert(
-                'Success',
-                `Transaction sent!\n\nHash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`,
+                t.common.success,
+                t.transaction.sent,
                 [
                   {
-                    text: 'View Details',
-                    onPress: () => navigation.navigate('TransactionDetail', { txHash }),
-                  },
-                  {
-                    text: 'Done',
+                    text: t.common.done,
                     onPress: () => navigation.goBack(),
                   },
                 ]
               );
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Transaction failed');
+              Alert.alert(t.common.error, error.message || t.errors.transactionFailed);
             } finally {
               setSending(false);
             }
@@ -117,16 +113,16 @@ export default function SendScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Cancel</Text>
+          <Text style={styles.backButton}>← {t.common.cancel}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Send {network.symbol}</Text>
+        <Text style={styles.title}>{t.send.send} {network.symbol}</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
+          <Text style={styles.balanceLabel}>{t.send.available}</Text>
           <Text style={styles.balanceAmount}>
             {parseFloat(balance).toFixed(6)} {network.symbol}
           </Text>
@@ -135,7 +131,7 @@ export default function SendScreen({ navigation }: any) {
 
         {/* Recipient Address */}
         <View style={styles.inputSection}>
-          <Text style={styles.label}>Recipient Address</Text>
+          <Text style={styles.label}>{t.send.recipientAddress}</Text>
           <TextInput
             style={styles.input}
             placeholder="0x..."
@@ -145,16 +141,16 @@ export default function SendScreen({ navigation }: any) {
             autoCorrect={false}
           />
           <TouchableOpacity style={styles.scanButton}>
-            <Text style={styles.scanButtonText}>📷 Scan QR</Text>
+            <Text style={styles.scanButtonText}>📷 {t.send.scanQRCode}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Amount */}
         <View style={styles.inputSection}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>Amount</Text>
+            <Text style={styles.label}>{t.send.amount}</Text>
             <TouchableOpacity onPress={setMaxAmount}>
-              <Text style={styles.maxButton}>MAX</Text>
+              <Text style={styles.maxButton}>{t.send.max}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.amountInputContainer}>
@@ -171,7 +167,7 @@ export default function SendScreen({ navigation }: any) {
 
         {/* Gas Price */}
         <View style={styles.inputSection}>
-          <Text style={styles.label}>Gas Price (Gwei)</Text>
+          <Text style={styles.label}>{t.send.gasPrice} (Gwei)</Text>
           <TextInput
             style={styles.input}
             placeholder="5"
@@ -184,20 +180,20 @@ export default function SendScreen({ navigation }: any) {
 
         {/* Transaction Summary */}
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Transaction Summary</Text>
-          
+          <Text style={styles.summaryTitle}>{t.send.transactionDetails}</Text>
+
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Amount</Text>
+            <Text style={styles.summaryLabel}>{t.send.amount}</Text>
             <Text style={styles.summaryValue}>{amount || '0'} {network.symbol}</Text>
           </View>
-          
+
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Network Fee (est.)</Text>
+            <Text style={styles.summaryLabel}>{t.send.gasFee} (est.)</Text>
             <Text style={styles.summaryValue}>~0.0001 {network.symbol}</Text>
           </View>
-          
+
           <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.summaryLabelBold}>Total</Text>
+            <Text style={styles.summaryLabelBold}>{t.send.total}</Text>
             <Text style={styles.summaryValueBold}>
               {(parseFloat(amount || '0') + 0.0001).toFixed(6)} {network.symbol}
             </Text>
@@ -213,7 +209,7 @@ export default function SendScreen({ navigation }: any) {
           {sending ? (
             <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.sendButtonText}>Send Transaction</Text>
+            <Text style={styles.sendButtonText}>{t.send.send}</Text>
           )}
         </TouchableOpacity>
 

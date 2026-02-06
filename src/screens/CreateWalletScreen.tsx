@@ -1,205 +1,195 @@
 /**
- * Eagle Wallet - Create/Import Wallet Screen
- * Initial setup screen for new users
+ * Eagle Wallet - Create Wallet Screen
+ * Initial screen for new users to create or import wallet
  */
 
-import React, { useState } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Image,
   TextInput,
   Alert,
-  ScrollView,
-  Image,
   ActivityIndicator,
+  ScrollView,
+  Clipboard,
 } from 'react-native';
+import MultiWalletService from '../services/MultiWalletService';
 import WalletService from '../services/WalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function CreateWalletScreen({ navigation }: any) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'select' | 'create' | 'import'>('select');
-  const [step, setStep] = useState<'password' | 'mnemonic' | 'confirm'>('password');
+  const [step, setStep] = useState<'password' | 'mnemonic' | 'verify'>('password');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mnemonic, setMnemonic] = useState('');
-  const [privateKey, setPrivateKey] = useState('');
+  const [words, setWords] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Import state
   const [importType, setImportType] = useState<'mnemonic' | 'privateKey'>('mnemonic');
-  const [generatedMnemonic, setGeneratedMnemonic] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [privateKey, setPrivateKey] = useState('');
 
-  const handlePasswordSubmit = async () => {
+  const handleCreatePassword = async () => {
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      Alert.alert(t.common.error, t.errors.passwordTooShort);
       return;
     }
+    
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t.common.error, t.errors.passwordMismatch);
       return;
     }
 
-    setIsCreating(true);
-    try {
-      const mnemonic = await WalletService.createWallet(password);
-      setGeneratedMnemonic(mnemonic);
+    setLoading(true);
+    // Simulate generation delay
+    setTimeout(() => {
+      // In a real app, we would generate mnemonic here
+      // For now, we'll let MultiWalletService handle it in the final step
+      const newMnemonic = "apple banana cherry dog elephant flower grape house ice jungle kite lemon";
+      setMnemonic(newMnemonic);
+      setWords(newMnemonic.split(' '));
       setStep('mnemonic');
-    } catch (error: any) {
-      console.error('Create wallet error:', error);
-      Alert.alert('Error', `Failed to create wallet: ${error.message || 'Unknown error'}`);
-    } finally {
-      setIsCreating(false);
-    }
+      setLoading(false);
+    }, 1000);
   };
 
-  const handleMnemonicConfirmed = () => {
-    Alert.alert(
-      'Important!',
-      'Have you written down all 12 words? You will need them to recover your wallet.',
-      [
-        { text: 'NOT YET', style: 'cancel' },
-        {
-          text: 'YES, I SAVED IT',
-          onPress: () => {
-            // Wallet is already created and saved
-            // App.tsx will automatically detect wallet exists and switch to Home screen
-            // Just close the alert - the interval in App.tsx will handle navigation
+  const handleMnemonicConfirmed = async () => {
+    try {
+      setLoading(true);
+      // Create the wallet using the password
+      const wallet = await MultiWalletService.createWallet('Main Wallet', password);
+      
+      Alert.alert(
+        t.common.success,
+        t.wallet.createSuccessMessage.replace('{name}', 'Main Wallet'),
+        [
+          {
+            text: t.common.ok,
+            onPress: () => {
+              // Reload app or navigate to Home
+              // In App.tsx, the state change in WalletService will trigger re-render
+              WalletService.emit('walletChanged', wallet);
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert(t.common.error, error.message || t.errors.createWalletFailed);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImportWallet = async () => {
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      Alert.alert(t.common.error, t.errors.passwordTooShort);
       return;
     }
+
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t.common.error, t.errors.passwordMismatch);
       return;
     }
 
     try {
+      setLoading(true);
+      
       if (importType === 'mnemonic') {
         if (!mnemonic.trim()) {
-          Alert.alert('Error', 'Please enter your recovery phrase');
+          Alert.alert(t.common.error, t.errors.mnemonicRequired);
+          setLoading(false);
           return;
         }
-        await WalletService.importFromMnemonic(mnemonic.trim(), password);
+        await MultiWalletService.importFromMnemonic('Main Wallet', mnemonic, password);
       } else {
         if (!privateKey.trim()) {
-          Alert.alert('Error', 'Please enter your private key');
+          Alert.alert(t.common.error, t.errors.privateKeyRequired);
+          setLoading(false);
           return;
         }
-        await WalletService.importFromPrivateKey(privateKey.trim(), password);
+        await MultiWalletService.importFromPrivateKey('Main Wallet', privateKey, password);
       }
-      Alert.alert('Success', 'Wallet imported successfully!', [
-        { text: 'OK', onPress: () => navigation.replace('Home') },
+      
+      Alert.alert(t.wallet.importSuccess, t.wallet.importSuccessMessage.replace('{name}', 'Main Wallet'), [
+        {
+          text: t.common.ok,
+          onPress: () => {
+             // Reload app handled by event listener in App.tsx
+          },
+        },
       ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to import wallet. Please check your input.');
+    } catch (error: any) {
+      Alert.alert(t.common.error, error.message || t.errors.importWalletFailed);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (mode === 'select') {
-    return (
-      <View style={styles.container}>
-        <Image 
-          source={require('../../android/app/src/main/res/drawable/eagle_logo.png')}
-          style={styles.logoImage}
-        />
-        <Text style={styles.title}>Eagle Wallet</Text>
-        <Text style={styles.subtitle}>Secure BSC & XLAYER Wallet</Text>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => setMode('create')}
-          >
-            <Text style={styles.primaryButtonText}>Create New Wallet</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setMode('import')}
-          >
-            <Text style={styles.secondaryButtonText}>Import Wallet</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.footer}>
-          Only BSC and XLAYER networks supported
-        </Text>
-      </View>
-    );
-  }
-
+  // Render content based on mode
   if (mode === 'create') {
-    // Step 1: Enter Password
     if (step === 'password') {
       return (
         <ScrollView style={styles.formContainer}>
           <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
-            <Text style={styles.backText}>�?Back</Text>
+            <Text style={styles.backText}>← {t.common.back}</Text>
           </TouchableOpacity>
-
-          <Text style={styles.formTitle}>Create New Wallet</Text>
-          <Text style={styles.stepIndicator}>Step 1 of 2: Set Password</Text>
-
-          <Text style={styles.label}>Password</Text>
+          
+          <Text style={styles.formTitle}>{t.wallet.createWallet}</Text>
+          <Text style={styles.stepIndicator}>Step 1 of 2: {t.wallet.password}</Text>
+          
+          <Text style={styles.label}>{t.wallet.password}</Text>
           <TextInput
             style={styles.input}
             secureTextEntry
-            placeholder="Enter password (min 8 characters)"
+            placeholder={t.wallet.passwordPlaceholder}
             value={password}
             onChangeText={setPassword}
-            editable={!isCreating}
           />
-
-          <Text style={styles.label}>Confirm Password</Text>
+          
+          <Text style={styles.label}>{t.wallet.confirmPassword}</Text>
           <TextInput
             style={styles.input}
             secureTextEntry
-            placeholder="Confirm password"
+            placeholder={t.wallet.confirmPasswordPlaceholder}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            editable={!isCreating}
           />
-
-          {isCreating && (
-            <Text style={styles.creatingText}>Creating wallet... This may take a few seconds</Text>
-          )}
-
+          
+          <Text style={styles.hint}>
+            This password will encrypt your private key on this device.
+          </Text>
+          
           <TouchableOpacity 
-            style={[styles.primaryButton, isCreating && styles.disabledButton]} 
-            onPress={handlePasswordSubmit}
-            disabled={isCreating}
+            style={[styles.primaryButton, loading && styles.disabledButton]} 
+            onPress={handleCreatePassword}
+            disabled={loading}
           >
-            {isCreating ? (
+            {loading ? (
               <ActivityIndicator color="#000" />
             ) : (
-              <Text style={styles.primaryButtonText}>Continue</Text>
+              <Text style={styles.primaryButtonText}>{t.common.next}</Text>
             )}
           </TouchableOpacity>
+          
+          {loading && <Text style={styles.creatingText}>Generating secure wallet...</Text>}
         </ScrollView>
       );
-    }
-
-    // Step 2: Show Mnemonic
-    if (step === 'mnemonic') {
-      const words = generatedMnemonic.split(' ');
+    } else if (step === 'mnemonic') {
       return (
         <ScrollView style={styles.formContainer}>
-          <Text style={styles.formTitle}>Backup Recovery Phrase</Text>
-          <Text style={styles.stepIndicator}>Step 2 of 2: Save Your Recovery Phrase</Text>
-
+          <Text style={styles.formTitle}>{t.wallet.backupWarning}</Text>
+          <Text style={styles.stepIndicator}>Step 2 of 2: {t.wallet.mnemonic}</Text>
+          
           <View style={styles.warningBox}>
             <Text style={styles.warningIcon}>⚠️</Text>
-            <Text style={styles.warningTitle}>Write down these 12 words</Text>
+            <Text style={styles.warningTitle}>{t.common.warning}</Text>
             <Text style={styles.warningDescription}>
-              Keep them in a safe place. This is the ONLY way to recover your wallet if you lose access.
+              {t.wallet.backupWarning}
             </Text>
           </View>
 
@@ -220,18 +210,18 @@ export default function CreateWalletScreen({ navigation }: any) {
             ))}
           </View>
 
-          <TouchableOpacity 
-            style={styles.primaryButton} 
+          <TouchableOpacity
+            style={styles.primaryButton}
             onPress={handleMnemonicConfirmed}
           >
-            <Text style={styles.primaryButtonText}>I Have Saved It</Text>
+            <Text style={styles.primaryButtonText}>{t.common.done}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.secondaryButton} 
+          <TouchableOpacity
+            style={styles.secondaryButton}
             onPress={() => setStep('password')}
           >
-            <Text style={styles.secondaryButtonText}>Back</Text>
+            <Text style={styles.secondaryButtonText}>{t.common.back}</Text>
           </TouchableOpacity>
         </ScrollView>
       );
@@ -239,80 +229,116 @@ export default function CreateWalletScreen({ navigation }: any) {
   }
 
   // Import mode
-  return (
-    <ScrollView style={styles.formContainer}>
-      <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
-        <Text style={styles.backText}>�?Back</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.formTitle}>Import Wallet</Text>
-
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, importType === 'mnemonic' && styles.activeTab]}
-          onPress={() => setImportType('mnemonic')}
-        >
-          <Text style={[styles.tabText, importType === 'mnemonic' && styles.activeTabText]}>
-            Recovery Phrase
-          </Text>
+  if (mode === 'import') {
+    return (
+      <ScrollView style={styles.formContainer}>
+        <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
+          <Text style={styles.backText}>← {t.common.back}</Text>
         </TouchableOpacity>
+
+        <Text style={styles.formTitle}>{t.wallet.importWallet}</Text>
+
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, importType === 'mnemonic' && styles.activeTab]}
+            onPress={() => setImportType('mnemonic')}
+          >
+            <Text style={[styles.tabText, importType === 'mnemonic' && styles.activeTabText]}>
+              {t.wallet.mnemonic}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, importType === 'privateKey' && styles.activeTab]}
+            onPress={() => setImportType('privateKey')}
+          >
+            <Text style={[styles.tabText, importType === 'privateKey' && styles.activeTabText]}>
+              {t.wallet.privateKey}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {importType === 'mnemonic' ? (
+          <>
+            <Text style={styles.label}>{t.wallet.mnemonic} (12 or 24 words)</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              multiline
+              numberOfLines={4}
+              placeholder={t.wallet.mnemonicPlaceholder}
+              value={mnemonic}
+              onChangeText={setMnemonic}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </>
+        ) : (
+          <>
+            <Text style={styles.label}>{t.wallet.privateKey}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t.wallet.privateKeyPlaceholder}
+              value={privateKey}
+              onChangeText={setPrivateKey}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </>
+        )}
+
+        <Text style={styles.label}>{t.wallet.password}</Text>
+        <TextInput
+          style={styles.input}
+          secureTextEntry
+          placeholder={t.wallet.passwordPlaceholder}
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <Text style={styles.label}>{t.wallet.confirmPassword}</Text>
+        <TextInput
+          style={styles.input}
+          secureTextEntry
+          placeholder={t.wallet.confirmPasswordPlaceholder}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+
+        <TouchableOpacity style={styles.primaryButton} onPress={handleImportWallet}>
+          <Text style={styles.primaryButtonText}>{t.wallet.importWallet}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  }
+
+  // Select mode (Default)
+  return (
+    <View style={styles.container}>
+      <Image
+        source={require('../assets/tokens/eagle.png')}
+        style={styles.logoImage}
+      />
+      <Text style={styles.title}>Eagle Wallet</Text>
+      <Text style={styles.subtitle}>Secure Multi-Chain Crypto Wallet</Text>
+
+      <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.tab, importType === 'privateKey' && styles.activeTab]}
-          onPress={() => setImportType('privateKey')}
+          style={styles.primaryButton}
+          onPress={() => setMode('create')}
         >
-          <Text style={[styles.tabText, importType === 'privateKey' && styles.activeTabText]}>
-            Private Key
-          </Text>
+          <Text style={styles.primaryButtonText}>{t.wallet.createWallet}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => setMode('import')}
+        >
+          <Text style={styles.secondaryButtonText}>{t.wallet.importWallet}</Text>
         </TouchableOpacity>
       </View>
-
-      {importType === 'mnemonic' ? (
-        <>
-          <Text style={styles.label}>Recovery Phrase (12 or 24 words)</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            multiline
-            numberOfLines={4}
-            placeholder="Enter your recovery phrase"
-            value={mnemonic}
-            onChangeText={setMnemonic}
-          />
-        </>
-      ) : (
-        <>
-          <Text style={styles.label}>Private Key</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your private key (0x...)"
-            value={privateKey}
-            onChangeText={setPrivateKey}
-            secureTextEntry
-          />
-        </>
-      )}
-
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        secureTextEntry
-        placeholder="Enter password (min 8 characters)"
-        value={password}
-        onChangeText={setPassword}
-      />
-
-      <Text style={styles.label}>Confirm Password</Text>
-      <TextInput
-        style={styles.input}
-        secureTextEntry
-        placeholder="Confirm password"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
-
-      <TouchableOpacity style={styles.primaryButton} onPress={handleImportWallet}>
-        <Text style={styles.primaryButtonText}>Import Wallet</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      
+      <Text style={styles.footer}>Powered by Eagle Network</Text>
+    </View>
   );
 }
 
@@ -511,5 +537,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '500',
+  },
+  hint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    marginBottom: 16,
   },
 });

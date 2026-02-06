@@ -1,30 +1,41 @@
 /**
  * Eagle Wallet - Transaction History Screen
- * Complete transaction history with details, hash, and status
+ * View all past transactions
  */
 
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
+  FlatList,
   RefreshControl,
-  Linking,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import WalletService from '../services/WalletService';
-import TransactionService, { Transaction } from '../services/TransactionService';
+import TransactionService from '../services/TransactionService';
+import { useLanguage } from '../i18n/LanguageContext';
+
+interface Transaction {
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  timestamp: number;
+  status: 'success' | 'pending' | 'failed';
+  type: 'send' | 'receive' | 'swap' | 'approval';
+}
 
 export default function TransactionHistoryScreen({ navigation }: any) {
   const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [address, setAddress] = useState('');
-  const [network, setNetwork] = useState(WalletService.getCurrentNetwork());
+  
+  const network = WalletService.getCurrentNetwork();
 
   useEffect(() => {
     loadTransactions();
@@ -32,21 +43,17 @@ export default function TransactionHistoryScreen({ navigation }: any) {
 
   const loadTransactions = async () => {
     try {
-      setLoading(true);
       const addr = await WalletService.getAddress();
       if (addr) {
         setAddress(addr);
-        const net = WalletService.getCurrentNetwork();
-        
-        // Get transactions from TransactionService
-        const txs = await TransactionService.getTransactionHistory(addr, net.chainId, 50);
+        // Load historical transactions
+        const txs = await WalletService.getTransactionHistory(50);
         
         // Get pending transactions
         const pending = await TransactionService.getPendingTransactions();
-        
+
         // Combine and sort
         const allTxs = [...pending, ...txs].sort((a, b) => b.timestamp - a.timestamp);
-        
         setTransactions(allTxs);
       }
     } catch (error) {
@@ -79,18 +86,18 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    
+    if (minutes < 1) return t.transaction.time; // Just now
+    if (minutes < 60) return `${minutes}m ${t.common.back}`;
+    if (hours < 24) return `${hours}h ${t.common.back}`;
+    if (days < 7) return `${days}d ${t.common.back}`;
+
     return date.toLocaleDateString();
   };
 
   const renderTransaction = ({ item }: { item: Transaction }) => {
     const isSent = item.from.toLowerCase() === address.toLowerCase();
     const txType = isSent ? 'send' : 'receive';
-    
+
     return (
       <TouchableOpacity
         style={styles.txCard}
@@ -101,11 +108,11 @@ export default function TransactionHistoryScreen({ navigation }: any) {
             {isSent ? '📤' : '📥'}
           </Text>
         </View>
-        
+
         <View style={styles.txInfo}>
           <View style={styles.txHeader}>
             <Text style={styles.txType}>
-              {isSent ? 'Sent' : 'Received'}
+              {isSent ? t.send.sent : t.receive.received}
             </Text>
             <Text style={[
               styles.txAmount,
@@ -114,20 +121,20 @@ export default function TransactionHistoryScreen({ navigation }: any) {
               {isSent ? '-' : '+'}{parseFloat(item.value).toFixed(6)} {network.symbol}
             </Text>
           </View>
-          
+
           <View style={styles.txDetails}>
             <Text style={styles.txAddress}>
-              {isSent ? 'To: ' : 'From: '}
+              {isSent ? `${t.send.to}: ` : `${t.send.from}: `}
               {formatAddress(isSent ? item.to : item.from)}
             </Text>
             <Text style={styles.txTime}>{formatDate(item.timestamp)}</Text>
           </View>
-          
+
           <View style={styles.txFooter}>
             <Text style={styles.txHash}>{formatAddress(item.hash)}</Text>
             <View style={[styles.txStatus, styles[`txStatus${item.status}`]]}>
               <Text style={styles.txStatusText}>
-                {item.status === 'success' ? '�? : item.status === 'pending' ? '�? : '�?}
+                {item.status === 'success' ? '✓' : item.status === 'pending' ? '⏳' : '✕'}
               </Text>
             </View>
           </View>
@@ -141,9 +148,9 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Transactions</Text>
+        <Text style={styles.title}>{t.transaction.transactions}</Text>
         <TouchableOpacity onPress={() => openExplorer('')}>
           <Text style={styles.explorerButton}>🔍</Text>
         </TouchableOpacity>
@@ -152,7 +159,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       {/* Transaction Count */}
       <View style={styles.countContainer}>
         <Text style={styles.countText}>
-          {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+          {transactions.length} {t.transaction.transactions.toLowerCase()}
         </Text>
         <Text style={styles.networkText}>{network.name}</Text>
       </View>
@@ -161,14 +168,14 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#F3BA2F" />
-          <Text style={styles.loadingText}>Loading transactions...</Text>
+          <Text style={styles.loadingText}>{t.common.loading}</Text>
         </View>
       ) : transactions.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📜</Text>
-          <Text style={styles.emptyText}>No transactions yet</Text>
+          <Text style={styles.emptyIcon}>📭</Text>
+          <Text style={styles.emptyText}>{t.transaction.noTransactions}</Text>
           <Text style={styles.emptySubtext}>
-            Your transaction history will appear here
+            {t.home.noTransactions}
           </Text>
         </View>
       ) : (

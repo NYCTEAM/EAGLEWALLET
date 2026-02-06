@@ -35,13 +35,13 @@ export default function ReceiveScreen({ navigation }: any) {
 
   const copyAddress = () => {
     Clipboard.setString(address);
-    Alert.alert('Copied!', 'Address copied to clipboard');
+    Alert.alert(t.common.copied, t.receive.addressCopied);
   };
 
   const shareAddress = async () => {
     try {
       await Share.share({
-        message: `My ${network.name} Address:\n${address}`,
+        message: `${t.receive.myAddress} (${network.name}):\n${address}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -58,9 +58,9 @@ export default function ReceiveScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Receive {network.symbol}</Text>
+        <Text style={styles.title}>{t.receive.receive} {network.symbol}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -81,14 +81,14 @@ export default function ReceiveScreen({ navigation }: any) {
             />
           ) : (
             <View style={styles.qrPlaceholder}>
-              <Text>Loading...</Text>
+              <Text>{t.common.loading}</Text>
             </View>
           )}
         </View>
 
         {/* Address */}
         <View style={styles.addressContainer}>
-          <Text style={styles.addressLabel}>Your Address</Text>
+          <Text style={styles.addressLabel}>{t.receive.myAddress}</Text>
           <Text style={styles.addressText}>{address}</Text>
           <Text style={styles.addressShort}>{formatAddress(address)}</Text>
         </View>
@@ -97,41 +97,38 @@ export default function ReceiveScreen({ navigation }: any) {
         <View style={styles.actions}>
           <TouchableOpacity style={styles.actionButton} onPress={copyAddress}>
             <Text style={styles.actionIcon}>📋</Text>
-            <Text style={styles.actionText}>Copy Address</Text>
+            <Text style={styles.actionText}>{t.receive.copyAddress}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={shareAddress}>
             <Text style={styles.actionIcon}>📤</Text>
-            <Text style={styles.actionText}>Share</Text>
+            <Text style={styles.actionText}>{t.common.share}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Warning */}
         <View style={styles.warningBox}>
-          <Text style={styles.warningTitle}>⚠️ Important</Text>
+          <Text style={styles.warningTitle}>⚠️ {t.common.warning}</Text>
           <Text style={styles.warningText}>
-            �?Only send {network.symbol} and tokens on {network.name} to this address
+            • {t.receive.onlyReceive.replace('{symbol}', network.symbol)}
           </Text>
           <Text style={styles.warningText}>
-            �?Sending other assets may result in permanent loss
-          </Text>
-          <Text style={styles.warningText}>
-            �?Always verify the network before sending
+            • {t.receive.warningMessage}
           </Text>
         </View>
 
         {/* Network Info */}
         <View style={styles.infoBox}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Network</Text>
+            <Text style={styles.infoLabel}>{t.network.network}</Text>
             <Text style={styles.infoValue}>{network.name}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Chain ID</Text>
+            <Text style={styles.infoLabel}>{t.network.chainId}</Text>
             <Text style={styles.infoValue}>{network.chainId}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Symbol</Text>
+            <Text style={styles.infoLabel}>{t.network.symbol}</Text>
             <Text style={styles.infoValue}>{network.symbol}</Text>
           </View>
         </View>
