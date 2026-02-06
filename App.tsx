@@ -7,6 +7,7 @@
 import 'react-native-get-random-values';
 
 import React, { useState, useEffect } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import CreateWalletScreen from './src/screens/CreateWalletScreen';
@@ -53,12 +54,27 @@ export default function App() {
   }, []);
 
   const checkWallet = async () => {
-    const exists = await WalletService.hasWallet();
-    setHasWallet(exists);
+    try {
+      const exists = await WalletService.hasWallet();
+      console.log('Wallet check result:', exists);
+      setHasWallet(exists);
+    } catch (error) {
+      console.error('Wallet check failed:', error);
+      // If check fails, default to no wallet so user can at least try to create one
+      setHasWallet(false);
+    }
   };
 
   if (hasWallet === null) {
-    return null; // Loading
+    // Show a loading screen instead of null (white screen)
+    return (
+      <LanguageProvider>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
+          <ActivityIndicator size="large" color="#F3BA2F" />
+          <Text style={{ marginTop: 20, color: '#333' }}>Loading Wallet...</Text>
+        </View>
+      </LanguageProvider>
+    );
   }
 
   return (
