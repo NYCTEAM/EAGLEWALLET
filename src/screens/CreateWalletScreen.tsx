@@ -83,6 +83,7 @@ export default function CreateWalletScreen({ navigation }: any) {
       
       // CRITICAL: Do NOT show Alert here.
       // App.tsx polls for WalletService.hasWallet() and will automatically switch to HomeScreen.
+      setLoading(false); // Ensure loading state is reset
       
     } catch (error: any) {
       setLoading(false);
@@ -125,6 +126,7 @@ export default function CreateWalletScreen({ navigation }: any) {
       }
       
       // No Alert here either. App.tsx will navigate.
+      setLoading(false); // Ensure loading state is reset
       
     } catch (error: any) {
       setLoading(false);
