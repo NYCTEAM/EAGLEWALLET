@@ -39,8 +39,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
 
   const handleNext = () => {
     if (parseFloat(amount) > 0) {
-      // Navigate to confirmation screen (to be created)
-      Alert.alert('发送确认', `发送 ${amount} ${token?.symbol} 到 ${address.slice(0, 10)}...`);
+      navigation.navigate('SendConfirmation', { token, address, amount });
     }
   };
 
