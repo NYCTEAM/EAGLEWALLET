@@ -29,6 +29,7 @@ import EnterAmountScreen from './src/screens/EnterAmountScreen';
 import SendConfirmationScreen from './src/screens/SendConfirmationScreen';
 import TransactionResultScreen from './src/screens/TransactionResultScreen';
 import WalletsScreen from './src/screens/WalletsScreen';
+import AddWalletScreen from './src/screens/AddWalletScreen';
 import AddTokenScreen from './src/screens/AddTokenScreen';
 import SwapScreen from './src/screens/SwapScreen';
 import AdvancedSettingsScreen from './src/screens/AdvancedSettingsScreen';
@@ -88,6 +89,7 @@ export default function App() {
             <Stack.Screen name="SendConfirmation" component={SendConfirmationScreen} />
             <Stack.Screen name="TransactionResult" component={TransactionResultScreen} />
             <Stack.Screen name="Wallets" component={WalletsScreen} />
+            <Stack.Screen name="AddWallet" component={AddWalletScreen} />
             <Stack.Screen name="AddToken" component={AddTokenScreen} />
             <Stack.Screen name="Swap" component={SwapScreen} />
             <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
