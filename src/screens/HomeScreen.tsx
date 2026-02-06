@@ -87,12 +87,15 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       {/* Balance Card */}
-      <View style={[styles.balanceCard, { backgroundColor: network.color + '20' }]}>
+      <View style={[styles.balanceCard, { backgroundColor: network.color + '15' }]}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
         <Text style={styles.balanceAmount}>
           {parseFloat(balance).toFixed(4)} {network.symbol}
         </Text>
-        <Text style={styles.address}>{formatAddress(address)}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Receive')}>
+          <Text style={styles.address}>{formatAddress(address)}</Text>
+        </TouchableOpacity>
+        <Text style={styles.usdValue}>≈ $0.00</Text>
       </View>
 
       {/* Action Buttons - Row 1 */}
@@ -152,7 +155,11 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
         {transactions.length === 0 ? (
-          <Text style={styles.emptyText}>No transactions yet</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyTitle}>No transactions yet</Text>
+            <Text style={styles.emptyDescription}>Your transaction history will appear here</Text>
+          </View>
         ) : (
           transactions.map((tx, index) => (
             <View key={index} style={styles.transactionItem}>
@@ -216,52 +223,68 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   balanceCard: {
-    margin: 20,
-    padding: 30,
-    borderRadius: 20,
+    margin: 16,
+    marginTop: 12,
+    padding: 24,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   balanceLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
     marginBottom: 8,
+    fontWeight: '500',
   },
   balanceAmount: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 8,
+    letterSpacing: -1,
   },
   address: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: '#F3BA2F',
     fontFamily: 'monospace',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  usdValue: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   actionButton: {
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 15,
+    padding: 16,
+    borderRadius: 12,
     width: 100,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
   },
   actionIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+    fontSize: 28,
+    marginBottom: 6,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#000',
+    color: '#333',
   },
   transactionsSection: {
     padding: 20,
@@ -282,18 +305,40 @@ const styles = StyleSheet.create({
     color: '#F3BA2F',
     fontWeight: '600',
   },
-  emptyText: {
-    textAlign: 'center',
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  emptyDescription: {
+    fontSize: 13,
     color: '#999',
-    padding: 20,
+    textAlign: 'center',
   },
   transactionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   txInfo: {
     flex: 1,
