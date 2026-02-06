@@ -118,6 +118,35 @@ class WalletService {
   }
 
   /**
+   * Initialize wallet from stored credentials
+   * This should be called when app starts or when HomeScreen loads
+   */
+  async init(): Promise<boolean> {
+    try {
+      console.log('🔐 WalletService: Initializing from Keychain...');
+      const credentials = await Keychain.getGenericPassword();
+      
+      if (!credentials) {
+        console.log('🔐 WalletService: No credentials found');
+        return false;
+      }
+
+      // Restore wallet from private key
+      const privateKey = credentials.password;
+      this.wallet = new ethers.Wallet(privateKey);
+      
+      // Initialize provider
+      await this.initProvider(this.currentChainId);
+      
+      console.log('🔐 WalletService: Wallet initialized successfully:', this.wallet.address);
+      return true;
+    } catch (error) {
+      console.error('🔐 WalletService: Init failed:', error);
+      return false;
+    }
+  }
+
+  /**
    * Check if wallet exists
    */
   async hasWallet(): Promise<boolean> {
@@ -129,9 +158,17 @@ class WalletService {
    * Get wallet address
    */
   async getAddress(): Promise<string | null> {
+    // If wallet not loaded, try to initialize it
+    if (!this.wallet) {
+      console.log('🔐 WalletService: Wallet not loaded, attempting init...');
+      await this.init();
+    }
+    
     if (this.wallet) {
       return this.wallet.address;
     }
+    
+    // Fallback to AsyncStorage
     return await AsyncStorage.getItem(WALLET_ADDRESS_KEY);
   }
 
@@ -187,6 +224,12 @@ class WalletService {
    * Get balance
    */
   async getBalance(): Promise<string> {
+    // Auto-initialize if needed
+    if (!this.wallet) {
+      console.log('🔐 WalletService: Wallet not loaded in getBalance, attempting init...');
+      await this.init();
+    }
+    
     if (!this.wallet || !this.provider) {
       throw new Error('Wallet not initialized');
     }

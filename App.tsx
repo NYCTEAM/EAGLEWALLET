@@ -56,16 +56,20 @@ export default function App() {
   const checkWallet = async () => {
     try {
       const exists = await WalletService.hasWallet();
-      console.log('Wallet check result:', exists);
+      console.log('📱 App: Wallet check result:', exists);
+      if (hasWallet !== exists) {
+        console.log('📱 App: Wallet state changing from', hasWallet, 'to', exists);
+      }
       setHasWallet(exists);
     } catch (error) {
-      console.error('Wallet check failed:', error);
+      console.error('📱 App: Wallet check failed:', error);
       // If check fails, default to no wallet so user can at least try to create one
       setHasWallet(false);
     }
   };
 
   if (hasWallet === null) {
+    console.log('📱 App: Showing loading screen (hasWallet === null)');
     // Show a loading screen instead of null (white screen)
     return (
       <LanguageProvider>
@@ -77,6 +81,7 @@ export default function App() {
     );
   }
 
+  console.log('📱 App: Rendering navigation with hasWallet =', hasWallet);
   return (
     <LanguageProvider>
       <NavigationContainer>
