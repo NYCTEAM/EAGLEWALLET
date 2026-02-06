@@ -28,6 +28,8 @@ import EnterAddressScreen from './src/screens/EnterAddressScreen';
 import EnterAmountScreen from './src/screens/EnterAmountScreen';
 import SendConfirmationScreen from './src/screens/SendConfirmationScreen';
 import TransactionResultScreen from './src/screens/TransactionResultScreen';
+import WalletsScreen from './src/screens/WalletsScreen';
+import AddTokenScreen from './src/screens/AddTokenScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -81,6 +83,8 @@ export default function App() {
             <Stack.Screen name="EnterAmount" component={EnterAmountScreen} />
             <Stack.Screen name="SendConfirmation" component={SendConfirmationScreen} />
             <Stack.Screen name="TransactionResult" component={TransactionResultScreen} />
+            <Stack.Screen name="Wallets" component={WalletsScreen} />
+            <Stack.Screen name="AddToken" component={AddTokenScreen} />
           </>
         )}
       </Stack.Navigator>

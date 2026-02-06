@@ -105,6 +105,23 @@ export default function SettingsScreen({ navigation }: any) {
       </View>
 
       <ScrollView style={styles.content}>
+        {/* Wallet Management */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Wallet Management</Text>
+          <SettingItem
+            icon="👛"
+            title="My Wallets"
+            subtitle="Manage multiple wallets"
+            onPress={() => navigation.navigate('Wallets')}
+          />
+          <SettingItem
+            icon="➕"
+            title="Add Custom Token"
+            subtitle="Add ERC20/721/1155 tokens"
+            onPress={() => navigation.navigate('AddToken')}
+          />
+        </View>
+
         {/* Network Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Network</Text>
