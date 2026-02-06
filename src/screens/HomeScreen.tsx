@@ -23,6 +23,7 @@ export default function HomeScreen({ navigation }: any) {
   const [network, setNetwork] = useState(NETWORKS[56]);
   const [refreshing, setRefreshing] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('tokens');
 
   useEffect(() => {
     loadWalletData();
@@ -66,8 +67,9 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
+    <View style={styles.container}>
     <ScrollView
-      style={styles.container}
+      style={styles.scrollView}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
@@ -146,7 +148,127 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.actionButton} />
       </View>
 
-      {/* Transactions */}
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'tokens' && styles.activeTab]}
+          onPress={() => setActiveTab('tokens')}
+        >
+          <Text style={[styles.tabText, activeTab === 'tokens' && styles.activeTabText]}>Tokens</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'nft' && styles.activeTab]}
+          onPress={() => setActiveTab('nft')}
+        >
+          <Text style={[styles.tabText, activeTab === 'nft' && styles.activeTabText]}>NFT</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'defi' && styles.activeTab]}
+          onPress={() => setActiveTab('defi')}
+        >
+          <Text style={[styles.tabText, activeTab === 'defi' && styles.activeTabText]}>DeFi</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
+          onPress={() => setActiveTab('activity')}
+        >
+          <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Activity</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Token List */}
+      {activeTab === 'tokens' && (
+      <View style={styles.tokensSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Total assets</Text>
+          <TouchableOpacity>
+            <Text style={styles.viewAllText}>Manage →</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Native Token */}
+        <TouchableOpacity style={styles.tokenItem}>
+          <View style={styles.tokenLeft}>
+            <View style={[styles.tokenIcon, { backgroundColor: network.color + '20' }]}>
+              <Text style={styles.tokenIconText}>{network.symbol.charAt(0)}</Text>
+            </View>
+            <View style={styles.tokenInfo}>
+              <Text style={styles.tokenName}>{network.symbol}</Text>
+              <Text style={styles.tokenAmount}>{parseFloat(balance).toFixed(4)}</Text>
+            </View>
+          </View>
+          <View style={styles.tokenRight}>
+            <Text style={styles.tokenValue}>≈ $0.00</Text>
+            <Text style={styles.tokenChange}>+0.00%</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* USDT */}
+        <TouchableOpacity style={styles.tokenItem}>
+          <View style={styles.tokenLeft}>
+            <View style={[styles.tokenIcon, { backgroundColor: '#26A17B20' }]}>
+              <Text style={styles.tokenIconText}>₮</Text>
+            </View>
+            <View style={styles.tokenInfo}>
+              <Text style={styles.tokenName}>USDT</Text>
+              <Text style={styles.tokenAmount}>0.00</Text>
+            </View>
+          </View>
+          <View style={styles.tokenRight}>
+            <Text style={styles.tokenValue}>$0.00</Text>
+            <Text style={[styles.tokenChange, { color: '#26A17B' }]}>+0.00%</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* USDC */}
+        <TouchableOpacity style={styles.tokenItem}>
+          <View style={styles.tokenLeft}>
+            <View style={[styles.tokenIcon, { backgroundColor: '#2775CA20' }]}>
+              <Text style={styles.tokenIconText}>$</Text>
+            </View>
+            <View style={styles.tokenInfo}>
+              <Text style={styles.tokenName}>USDC</Text>
+              <Text style={styles.tokenAmount}>0.00</Text>
+            </View>
+          </View>
+          <View style={styles.tokenRight}>
+            <Text style={styles.tokenValue}>$0.00</Text>
+            <Text style={[styles.tokenChange, { color: '#999' }]}>+0.00%</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Add Token Button */}
+        <TouchableOpacity style={styles.addTokenButton}>
+          <Text style={styles.addTokenIcon}>+</Text>
+          <Text style={styles.addTokenText}>Add Token</Text>
+        </TouchableOpacity>
+      </View>
+      )}
+
+      {/* NFT Tab */}
+      {activeTab === 'nft' && (
+      <View style={styles.tokensSection}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>🖼️</Text>
+          <Text style={styles.emptyTitle}>No NFTs yet</Text>
+          <Text style={styles.emptyDescription}>Your NFT collection will appear here</Text>
+        </View>
+      </View>
+      )}
+
+      {/* DeFi Tab */}
+      {activeTab === 'defi' && (
+      <View style={styles.tokensSection}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>💎</Text>
+          <Text style={styles.emptyTitle}>No DeFi positions</Text>
+          <Text style={styles.emptyDescription}>Your DeFi investments will appear here</Text>
+        </View>
+      </View>
+      )}
+
+      {/* Activity Tab */}
+      {activeTab === 'activity' && (
       <View style={styles.transactionsSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
@@ -180,7 +302,32 @@ export default function HomeScreen({ navigation }: any) {
           ))
         )}
       </View>
+      )}
     </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem} onPress={() => {}}>
+          <Text style={styles.navIconActive}>🏠</Text>
+          <Text style={styles.navTextActive}>Home</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('DAppBrowser')}>
+          <Text style={styles.navIcon}>🌐</Text>
+          <Text style={styles.navText}>Browser</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Send')}>
+          <Text style={styles.navIcon}>💱</Text>
+          <Text style={styles.navText}>Trade</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Settings')}>
+          <Text style={styles.navIcon}>⚙️</Text>
+          <Text style={styles.navText}>Settings</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -188,6 +335,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -286,8 +436,155 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
+  tokensSection: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  tokenItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  tokenLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  tokenIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  tokenIconText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  tokenInfo: {
+    flex: 1,
+  },
+  tokenName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  tokenAmount: {
+    fontSize: 13,
+    color: '#666',
+  },
+  tokenRight: {
+    alignItems: 'flex-end',
+  },
+  tokenValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 2,
+  },
+  tokenChange: {
+    fontSize: 12,
+    color: '#999',
+  },
+  addTokenButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  addTokenIcon: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#F3BA2F',
+    marginRight: 6,
+  },
+  addTokenText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#F3BA2F',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#999',
+  },
+  activeTabText: {
+    color: '#000',
+    fontWeight: '600',
+  },
   transactionsSection: {
     padding: 20,
+    paddingTop: 12,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  navIcon: {
+    fontSize: 24,
+    marginBottom: 2,
+    opacity: 0.5,
+  },
+  navIconActive: {
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  navText: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  navTextActive: {
+    fontSize: 11,
+    color: '#F3BA2F',
+    fontWeight: '600',
   },
   sectionHeader: {
     flexDirection: 'row',
