@@ -22,6 +22,8 @@ import MultiWalletService from '../services/MultiWalletService';
 import TokenLogoService from '../services/TokenLogoService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { NETWORKS } from '../config/networks';
+import { getChainTokens, TokenConfig } from '../config/tokenConfig';
+import { ethers } from 'ethers';
 
 const { width } = Dimensions.get('window');
 
@@ -61,12 +63,56 @@ export default function HomeScreen({ navigation }: any) {
       const currentNet = WalletService.getCurrentNetwork();
       setNetwork(currentNet);
 
-      // In a real app, we would load tokens here
-      // For now, mocking some tokens
-      setTokens([
-        { symbol: currentNet.symbol, name: currentNet.name, balance: formattedBal, price: 0, change: 0, address: 'native' },
-        // Add more mock tokens or load from storage
-      ]);
+      // Load predefined mainstream tokens for current chain
+      const chainTokens = getChainTokens(currentNet.chainId);
+      console.log(`📦 Loading ${chainTokens.length} predefined tokens for ${currentNet.name}`);
+      
+      // Get provider for balance queries
+      const provider = await WalletService.getProvider();
+      
+      // Build token list with native token first
+      const tokenList: any[] = [
+        { 
+          symbol: currentNet.symbol, 
+          name: currentNet.name, 
+          balance: formattedBal, 
+          price: 0, 
+          change: 0, 
+          address: 'native',
+          logo: currentNet.symbol.toLowerCase(),
+        },
+      ];
+      
+      // Load balances for predefined tokens
+      for (const token of chainTokens) {
+        try {
+          // ERC20 ABI for balanceOf
+          const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
+          const contract = new ethers.Contract(token.address, erc20Abi, provider);
+          
+          const tokenBalance = await contract.balanceOf(addr);
+          const formattedBalance = ethers.formatUnits(tokenBalance, token.decimals);
+          
+          // Only add tokens with non-zero balance
+          if (parseFloat(formattedBalance) > 0) {
+            tokenList.push({
+              symbol: token.symbol,
+              name: token.name,
+              balance: parseFloat(formattedBalance).toFixed(4),
+              price: 0,
+              change: 0,
+              address: token.address,
+              logo: token.logo || token.symbol.toLowerCase(),
+              color: token.color,
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to load balance for ${token.symbol}:`, error);
+        }
+      }
+      
+      setTokens(tokenList);
+      console.log(`✅ Loaded ${tokenList.length} tokens (including native)`);
 
     } catch (error) {
       console.error('Error loading home data:', error);
@@ -177,24 +223,34 @@ export default function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
 
-          {tokens.map((token, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.tokenItem}
-              onPress={() => navigation.navigate('TokenDetail', { token })}
-            >
-              <View style={styles.tokenIcon}>
-                <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
-              </View>
-              <View style={styles.tokenInfo}>
-                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                <Text style={styles.tokenName}>{token.name}</Text>
-              </View>
-              <View style={styles.tokenBalance}>
-                <Text style={styles.balanceText}>{token.balance}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {tokens.map((token, index) => {
+            const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+            
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.tokenItem}
+                onPress={() => navigation.navigate('TokenDetail', { token })}
+              >
+                {/* Token Logo */}
+                {tokenLogo ? (
+                  <Image source={tokenLogo} style={styles.tokenLogoImage} />
+                ) : (
+                  <View style={[styles.tokenIcon, { backgroundColor: token.color || '#333' }]}>
+                    <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
+                  </View>
+                )}
+                
+                <View style={styles.tokenInfo}>
+                  <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                  <Text style={styles.tokenName}>{token.name}</Text>
+                </View>
+                <View style={styles.tokenBalance}>
+                  <Text style={styles.balanceText}>{token.balance}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
           
           <TouchableOpacity 
             style={styles.manageButton}
@@ -350,6 +406,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 15,
+  },
+  tokenLogoImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 15,
   },
   tokenIconText: {
