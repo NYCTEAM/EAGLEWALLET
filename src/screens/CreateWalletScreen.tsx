@@ -56,10 +56,16 @@ export default function CreateWalletScreen({ navigation }: any) {
       'Important!',
       'Have you written down all 12 words? You will need them to recover your wallet.',
       [
-        { text: 'Not yet', style: 'cancel' },
+        { text: 'NOT YET', style: 'cancel' },
         {
-          text: 'Yes, I saved it',
-          onPress: () => navigation.replace('Home'),
+          text: 'YES, I SAVED IT',
+          onPress: () => {
+            // Force navigation reset to ensure clean state
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
+          },
         },
       ]
     );
@@ -329,10 +335,11 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     backgroundColor: '#F3BA2F',
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 10,
     alignItems: 'center',
     marginBottom: 12,
+    marginTop: 8,
   },
   primaryButtonText: {
     color: '#000',
@@ -371,10 +378,10 @@ const styles = StyleSheet.create({
     color: '#F3BA2F',
   },
   formTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   label: {
     fontSize: 14,
@@ -424,55 +431,55 @@ const styles = StyleSheet.create({
   },
   warningBox: {
     backgroundColor: '#FFF3CD',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 20,
     borderWidth: 2,
     borderColor: '#F3BA2F',
   },
   warningIcon: {
-    fontSize: 32,
+    fontSize: 24,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   warningTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#856404',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   warningDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#856404',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   mnemonicGrid: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
   mnemonicItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 3,
     backgroundColor: '#F5F5F5',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   mnemonicNumber: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#666',
-    width: 30,
+    width: 28,
   },
   mnemonicWord: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#000',
     flex: 1,
