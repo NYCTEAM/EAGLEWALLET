@@ -2,7 +2,7 @@
  * Eagle Wallet - Translation Types
  */
 
-export type Language = 'en' | 'zh' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'ru' | 'ar' | 'pt' | 'it' | 'tr' | 'vi' | 'th' | 'id';
+export type Language = 'en' | 'zh' | 'zh-TW' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'ru' | 'ar' | 'pt' | 'it' | 'tr' | 'vi' | 'th' | 'id';
 
 export interface TranslationStrings {
   common: {
@@ -106,5 +106,15 @@ export interface TranslationStrings {
     linkCopied: string;
     favoriteAdded: string;
     translateInDevelopment: string;
+  };
+
+  settings: {
+    settings: string;
+    language: string;
+    currency: string;
+    network: string;
+    security: string;
+    advanced: string;
+    preferences: string;
   };
 }

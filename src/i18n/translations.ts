@@ -6,11 +6,11 @@
 import { Language, TranslationStrings } from './types';
 import { en } from './locales/en';
 import { zh } from './locales/zh';
+import { zhTW } from './locales/zh-TW';
 import { ja } from './locales/ja';
+import { es } from './locales/es';
 
 // Use English as fallback for languages not yet fully translated
-// These will be replaced with full translations in future updates
-const es: TranslationStrings = { ...en }; // Spanish
 const fr: TranslationStrings = { ...en }; // French
 const de: TranslationStrings = { ...en }; // German
 const ko: TranslationStrings = { ...en }; // Korean
@@ -26,6 +26,7 @@ const id: TranslationStrings = { ...en }; // Indonesian
 export const translations: Record<Language, TranslationStrings> = {
   en,
   zh,
+  'zh-TW': zhTW,
   es,
   fr,
   de,

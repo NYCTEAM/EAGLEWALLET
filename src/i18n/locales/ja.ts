@@ -99,4 +99,13 @@ export const ja: TranslationStrings = {
     favoriteAdded: 'お気に入りに追加されました',
     translateInDevelopment: '翻訳機能は開発中です',
   },
+  settings: {
+    settings: '設定',
+    language: '言語',
+    currency: '通貨',
+    network: 'ネットワーク',
+    security: 'セキュリティ',
+    advanced: '詳細設定',
+    preferences: '環境設定',
+  },
 };

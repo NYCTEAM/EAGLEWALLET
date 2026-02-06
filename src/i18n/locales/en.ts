@@ -99,4 +99,13 @@ export const en: TranslationStrings = {
     favoriteAdded: 'Added to favorites',
     translateInDevelopment: 'Translation feature in development',
   },
+  settings: {
+    settings: 'Settings',
+    language: 'Language',
+    currency: 'Currency',
+    network: 'Network',
+    security: 'Security',
+    advanced: 'Advanced',
+    preferences: 'Preferences',
+  },
 };

@@ -99,4 +99,13 @@ export const zh: TranslationStrings = {
     favoriteAdded: '已添加到收藏',
     translateInDevelopment: '翻译功能开发中',
   },
+  settings: {
+    settings: '设置',
+    language: '语言',
+    currency: '货币',
+    network: '网络',
+    security: '安全',
+    advanced: '高级',
+    preferences: '偏好设置',
+  },
 };

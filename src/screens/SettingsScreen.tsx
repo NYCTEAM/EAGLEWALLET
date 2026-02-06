@@ -14,12 +14,16 @@ import {
   Switch,
 } from 'react-native';
 import WalletService from '../services/WalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function SettingsScreen({ navigation }: any) {
+  const { t, language, availableLanguages } = useLanguage();
   const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [language, setLanguage] = useState('English');
   const [currency, setCurrency] = useState('USD');
   const network = WalletService.getCurrentNetwork();
+  
+  // Get current language display name
+  const currentLanguage = availableLanguages.find(lang => lang.code === language)?.nativeName || 'English';
 
   const handleExportPrivateKey = () => {
     Alert.alert(
@@ -205,15 +209,9 @@ export default function SettingsScreen({ navigation }: any) {
           
           <SettingItem
             icon="🌍"
-            title="Language"
-            subtitle={language}
-            onPress={() => {
-              Alert.alert('Language', 'Choose language', [
-                { text: 'English', onPress: () => setLanguage('English') },
-                { text: '中文', onPress: () => setLanguage('中文') },
-                { text: 'Cancel', style: 'cancel' },
-              ]);
-            }}
+            title={t.settings.language}
+            subtitle={currentLanguage}
+            onPress={() => navigation.navigate('LanguageSettings')}
           />
           
           <SettingItem
