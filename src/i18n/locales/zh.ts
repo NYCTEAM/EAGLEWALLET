@@ -86,6 +86,10 @@ export const zh: TranslationStrings = {
     walletAddress: '钱包地址',
     copyAddress: '复制地址',
     addressCopied: '地址已复制',
+    passwordHint: '此密码将用于加密您设备上的私钥。',
+    generating: '正在生成安全钱包...',
+    appSubtitle: '安全的多链加密钱包',
+    poweredBy: '由 Eagle Network 提供支持',
   },
 
   send: {

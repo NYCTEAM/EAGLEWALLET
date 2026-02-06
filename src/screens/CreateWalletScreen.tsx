@@ -3,7 +3,7 @@
  * Initial screen for new users to create or import wallet
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,8 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  Clipboard,
 } from 'react-native';
 import MultiWalletService from '../services/MultiWalletService';
-import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export default function CreateWalletScreen({ navigation }: any) {
@@ -62,26 +60,16 @@ export default function CreateWalletScreen({ navigation }: any) {
     try {
       setLoading(true);
       // Create the wallet using the password
-      const wallet = await MultiWalletService.createWallet('Main Wallet', password);
+      // This will persist the wallet data
+      await MultiWalletService.createWallet('Main Wallet', password);
       
-      Alert.alert(
-        t.common.success,
-        t.wallet.createSuccessMessage.replace('{name}', 'Main Wallet'),
-        [
-          {
-            text: t.common.ok,
-            onPress: () => {
-              // Reload app or navigate to Home
-              // In App.tsx, the state change in WalletService will trigger re-render
-              WalletService.emit('walletChanged', wallet);
-            },
-          },
-        ]
-      );
+      // CRITICAL: Do NOT show Alert here.
+      // App.tsx polls for wallet existence and will automatically switch to HomeScreen.
+      // Showing an Alert creates a race condition where the screen unmounts while Alert is open, causing a crash.
+      
     } catch (error: any) {
-      Alert.alert(t.common.error, error.message || t.errors.createWalletFailed);
-    } finally {
       setLoading(false);
+      Alert.alert(t.common.error, error.message || t.errors.createWalletFailed);
     }
   };
 
@@ -115,18 +103,12 @@ export default function CreateWalletScreen({ navigation }: any) {
         await MultiWalletService.importFromPrivateKey('Main Wallet', privateKey, password);
       }
       
-      Alert.alert(t.wallet.importSuccess, t.wallet.importSuccessMessage.replace('{name}', 'Main Wallet'), [
-        {
-          text: t.common.ok,
-          onPress: () => {
-             // Reload app handled by event listener in App.tsx
-          },
-        },
-      ]);
+      // CRITICAL: Do NOT show Alert here either.
+      // Let App.tsx handle the navigation automatically.
+      
     } catch (error: any) {
-      Alert.alert(t.common.error, error.message || t.errors.importWalletFailed);
-    } finally {
       setLoading(false);
+      Alert.alert(t.common.error, error.message || t.errors.importWalletFailed);
     }
   };
 
@@ -161,7 +143,7 @@ export default function CreateWalletScreen({ navigation }: any) {
           />
           
           <Text style={styles.hint}>
-            This password will encrypt your private key on this device.
+            {t.wallet.passwordHint}
           </Text>
           
           <TouchableOpacity 
@@ -176,7 +158,7 @@ export default function CreateWalletScreen({ navigation }: any) {
             )}
           </TouchableOpacity>
           
-          {loading && <Text style={styles.creatingText}>Generating secure wallet...</Text>}
+          {loading && <Text style={styles.creatingText}>{t.wallet.generating}</Text>}
         </ScrollView>
       );
     } else if (step === 'mnemonic') {
@@ -211,18 +193,25 @@ export default function CreateWalletScreen({ navigation }: any) {
           </View>
 
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={[styles.primaryButton, loading && styles.disabledButton]}
             onPress={handleMnemonicConfirmed}
+            disabled={loading}
           >
-            <Text style={styles.primaryButtonText}>{t.common.done}</Text>
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.primaryButtonText}>{t.common.done}</Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setStep('password')}
-          >
-            <Text style={styles.secondaryButtonText}>{t.common.back}</Text>
-          </TouchableOpacity>
+          {!loading && (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => setStep('password')}
+            >
+              <Text style={styles.secondaryButtonText}>{t.common.back}</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       );
     }
@@ -304,8 +293,16 @@ export default function CreateWalletScreen({ navigation }: any) {
           onChangeText={setConfirmPassword}
         />
 
-        <TouchableOpacity style={styles.primaryButton} onPress={handleImportWallet}>
-          <Text style={styles.primaryButtonText}>{t.wallet.importWallet}</Text>
+        <TouchableOpacity 
+          style={[styles.primaryButton, loading && styles.disabledButton]} 
+          onPress={handleImportWallet}
+          disabled={loading}
+        >
+           {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.primaryButtonText}>{t.wallet.importWallet}</Text>
+            )}
         </TouchableOpacity>
       </ScrollView>
     );
@@ -319,7 +316,7 @@ export default function CreateWalletScreen({ navigation }: any) {
         style={styles.logoImage}
       />
       <Text style={styles.title}>Eagle Wallet</Text>
-      <Text style={styles.subtitle}>Secure Multi-Chain Crypto Wallet</Text>
+      <Text style={styles.subtitle}>{t.wallet.appSubtitle}</Text>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
@@ -337,7 +334,7 @@ export default function CreateWalletScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
       
-      <Text style={styles.footer}>Powered by Eagle Network</Text>
+      <Text style={styles.footer}>{t.wallet.poweredBy}</Text>
     </View>
   );
 }

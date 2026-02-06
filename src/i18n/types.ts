@@ -94,6 +94,10 @@ export interface TranslationStrings {
     walletAddress: string;
     copyAddress: string;
     addressCopied: string;
+    passwordHint: string;
+    generating: string;
+    appSubtitle: string;
+    poweredBy: string;
   };
 
   // ===== SEND =====

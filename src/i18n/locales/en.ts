@@ -86,6 +86,10 @@ export const en: TranslationStrings = {
     walletAddress: 'Wallet Address',
     copyAddress: 'Copy Address',
     addressCopied: 'Address copied',
+    passwordHint: 'This password will encrypt your private key on this device.',
+    generating: 'Generating secure wallet...',
+    appSubtitle: 'Secure Multi-Chain Crypto Wallet',
+    poweredBy: 'Powered by Eagle Network',
   },
 
   send: {
