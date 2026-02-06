@@ -69,23 +69,20 @@ class TokenService {
           );
 
           const balance = await contract.balanceOf(address);
+          const balanceFormatted = ethers.formatUnits(balance, tokenInfo.decimals);
           
-          // Only include tokens with balance > 0
-          if (balance > 0n) {
-            const balanceFormatted = ethers.formatUnits(balance, tokenInfo.decimals);
-            
-            tokens.push({
-              address: tokenInfo.address,
-              symbol: tokenInfo.symbol,
-              name: tokenInfo.name,
-              decimals: tokenInfo.decimals,
-              balance: balance.toString(),
-              balanceFormatted,
-              value: '0.00',
-              icon: tokenInfo.icon,
-              color: tokenInfo.color,
-            });
-          }
+          // Include all major tokens, even with 0 balance
+          tokens.push({
+            address: tokenInfo.address,
+            symbol: tokenInfo.symbol,
+            name: tokenInfo.name,
+            decimals: tokenInfo.decimals,
+            balance: balance.toString(),
+            balanceFormatted,
+            value: '0.00',
+            icon: tokenInfo.icon,
+            color: tokenInfo.color,
+          });
         } catch (error) {
           console.error(`Error fetching ${tokenInfo.symbol}:`, error);
         }

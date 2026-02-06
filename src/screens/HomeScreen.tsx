@@ -46,6 +46,7 @@ export default function HomeScreen({ navigation }: any) {
         
         // Load user's tokens dynamically with prices
         const userTokens = await TokenService.getUserTokens(net.chainId);
+        console.log('Loaded tokens:', userTokens.length);
         setTokens(userTokens);
         
         // Calculate total portfolio value
@@ -231,7 +232,10 @@ export default function HomeScreen({ navigation }: any) {
         ))}
 
         {/* Add Token Button */}
-        <TouchableOpacity style={styles.addTokenButton}>
+        <TouchableOpacity 
+          style={styles.addTokenButton}
+          onPress={() => navigation.navigate('AddToken')}
+        >
           <Text style={styles.addTokenIcon}>+</Text>
           <Text style={styles.addTokenText}>Add Token</Text>
         </TouchableOpacity>

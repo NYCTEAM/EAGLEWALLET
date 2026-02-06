@@ -36,9 +36,11 @@ export default function DAppBrowserScreen({ navigation }: any) {
     }
   };
 
-  const openDApp = (dapp: DApp) => {
-    // Open in external browser with Web3 support
-    Linking.openURL(dapp.url);
+  const openDApp = (dapp: any) => {
+    navigation.navigate('DAppWebView', {
+      url: dapp.url,
+      name: dapp.name,
+    });
   };
 
   const renderDAppCard = (dapp: DApp) => (

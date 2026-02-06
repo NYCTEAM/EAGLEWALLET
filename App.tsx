@@ -33,6 +33,7 @@ import AddTokenScreen from './src/screens/AddTokenScreen';
 import SwapScreen from './src/screens/SwapScreen';
 import AdvancedSettingsScreen from './src/screens/AdvancedSettingsScreen';
 import PriceAlertScreen from './src/screens/PriceAlertScreen';
+import DAppWebViewScreen from './src/screens/DAppWebViewScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -91,6 +92,7 @@ export default function App() {
             <Stack.Screen name="Swap" component={SwapScreen} />
             <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
             <Stack.Screen name="PriceAlert" component={PriceAlertScreen} />
+            <Stack.Screen name="DAppWebView" component={DAppWebViewScreen} />
           </>
         )}
       </Stack.Navigator>
