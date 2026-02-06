@@ -13,13 +13,23 @@ import {
   RefreshControl,
   Alert,
   Image,
+  Modal,
+  TouchableWithoutFeedback,
+  TextInput,
 } from 'react-native';
 import WalletService from '../services/WalletService';
 import TokenService from '../services/TokenService';
 import CustomTokenService from '../services/CustomTokenService';
 import TokenLogoService from '../services/TokenLogoService';
+import MultiWalletService from '../services/MultiWalletService';
 import { NETWORKS } from '../config/networks';
 import { getChainTokens } from '../config/tokenConfig';
+
+// Network icons
+const NETWORK_ICONS: Record<number, any> = {
+  56: require('../assets/tokens/bnb.png'),
+  196: require('../assets/tokens/okb.png'),
+};
 
 export default function HomeScreen({ navigation }: any) {
   const [balance, setBalance] = useState('0.00');
@@ -31,6 +41,19 @@ export default function HomeScreen({ navigation }: any) {
   const [tokens, setTokens] = useState<any[]>([]);
   const [customTokens, setCustomTokens] = useState<any[]>([]);
   const [totalValue, setTotalValue] = useState('0.00');
+  
+  // New state for selectors
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [currentWallet, setCurrentWallet] = useState<any>(null);
+  
+  // Wallet creation state
+  const [showCreateWallet, setShowCreateWallet] = useState(false);
+  const [newWalletName, setNewWalletName] = useState('');
+  const [importMnemonic, setImportMnemonic] = useState('');
+  const [importPrivateKey, setImportPrivateKey] = useState('');
+  const [importType, setImportType] = useState<'create' | 'mnemonic' | 'privateKey'>('create');
 
   useEffect(() => {
     loadWalletData();
@@ -39,6 +62,13 @@ export default function HomeScreen({ navigation }: any) {
   const loadWalletData = async () => {
     try {
       const addr = await WalletService.getAddress();
+      
+      // Load multi-wallet data
+      const allWallets = await MultiWalletService.getAllWallets();
+      setWallets(allWallets);
+      const active = await MultiWalletService.getActiveWallet();
+      setCurrentWallet(active);
+
       if (addr) {
         setAddress(addr);
         const bal = await WalletService.getBalance();
@@ -106,17 +136,30 @@ export default function HomeScreen({ navigation }: any) {
     setRefreshing(false);
   };
 
-  const switchNetwork = async () => {
+  const handleSwitchNetwork = async (chainId: number) => {
     try {
-      const newChainId = network.chainId === 56 ? 196 : 56;
-      await WalletService.switchNetwork(newChainId);
+      await WalletService.switchNetwork(chainId);
       await loadWalletData();
+      setShowNetworkModal(false);
     } catch (error) {
       console.error('Switch network error:', error);
     }
   };
 
+  const handleSwitchWallet = async (wallet: any) => {
+    try {
+      await MultiWalletService.switchWallet(wallet.id);
+      // In a real app, we would handle password prompt here
+      // For now, we assume the wallet is unlocked or we use the cached password
+      await loadWalletData();
+      setShowWalletModal(false);
+    } catch (error) {
+      console.error('Switch wallet error:', error);
+    }
+  };
+
   const formatAddress = (addr: string) => {
+    if (!addr) return '...';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
@@ -130,14 +173,19 @@ export default function HomeScreen({ navigation }: any) {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.logoContainer}>
+        <TouchableOpacity onPress={() => setShowWalletModal(true)} style={styles.walletSelector}>
           <Image 
-            source={require('../../android/app/src/main/res/drawable/eagle_logo.png')}
+            source={require('../assets/tokens/eagle.png')}
             style={styles.logoImage}
           />
-          <Text style={styles.logoText}>Eagle Wallet</Text>
-        </View>
-        <TouchableOpacity onPress={switchNetwork} style={styles.networkButton}>
+          <View>
+            <Text style={styles.walletName}>{currentWallet?.name || 'My Wallet'}</Text>
+            <Text style={styles.walletAddress}>{formatAddress(address)} ▼</Text>
+          </View>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => setShowNetworkModal(true)} style={styles.networkButton}>
+          <Image source={NETWORK_ICONS[network.chainId]} style={styles.networkButtonIcon} />
           <Text style={styles.networkText}>{network.name}</Text>
         </TouchableOpacity>
       </View>
@@ -406,6 +454,94 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={styles.navText}>Settings</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Network Selector Modal */}
+      <Modal
+        visible={showNetworkModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowNetworkModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowNetworkModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Network</Text>
+            
+            <TouchableOpacity 
+              style={[styles.networkOption, network.chainId === 56 && styles.selectedOption]}
+              onPress={() => handleSwitchNetwork(56)}
+            >
+              <Image source={NETWORK_ICONS[56]} style={styles.networkOptionIcon} />
+              <Text style={styles.networkOptionText}>BNB Smart Chain</Text>
+              {network.chainId === 56 && <Text style={styles.checkMark}>✓</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.networkOption, network.chainId === 196 && styles.selectedOption]}
+              onPress={() => handleSwitchNetwork(196)}
+            >
+              <Image source={NETWORK_ICONS[196]} style={styles.networkOptionIcon} />
+              <Text style={styles.networkOptionText}>X Layer</Text>
+              {network.chainId === 196 && <Text style={styles.checkMark}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Wallet Selector Modal */}
+      <Modal
+        visible={showWalletModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowWalletModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, styles.walletModalContent]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Wallet</Text>
+              <TouchableOpacity onPress={() => setShowWalletModal(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.walletList}>
+              {wallets.map((wallet) => (
+                <TouchableOpacity
+                  key={wallet.id}
+                  style={[styles.walletOption, currentWallet?.id === wallet.id && styles.selectedOption]}
+                  onPress={() => handleSwitchWallet(wallet)}
+                >
+                  <View style={[styles.walletAvatar, { backgroundColor: wallet.color || '#F3BA2F' }]}>
+                    <Text style={styles.walletAvatarText}>
+                      {wallet.name ? wallet.name.charAt(0).toUpperCase() : 'W'}
+                    </Text>
+                  </View>
+                  <View style={styles.walletDetails}>
+                    <Text style={styles.walletNameText}>{wallet.name}</Text>
+                    <Text style={styles.walletAddressText}>{formatAddress(wallet.address)}</Text>
+                  </View>
+                  {currentWallet?.id === wallet.id && <Text style={styles.checkMark}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            
+            <View style={styles.walletActions}>
+              <TouchableOpacity 
+                style={styles.addWalletButton}
+                onPress={() => {
+                  setShowWalletModal(false);
+                  navigation.navigate('Wallets');
+                }}
+              >
+                <Text style={styles.addWalletText}>Manage / Add Wallets</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -426,7 +562,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     backgroundColor: '#FFFFFF',
   },
-  logoContainer: {
+  walletSelector: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -434,22 +570,153 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     marginRight: 8,
+    borderRadius: 16,
   },
-  logoText: {
-    fontSize: 20,
+  walletName: {
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#000',
   },
+  walletAddress: {
+    fontSize: 11,
+    color: '#666',
+  },
   networkButton: {
-    backgroundColor: '#F3BA2F',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  networkButtonIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 6,
+    borderRadius: 10,
   },
   networkText: {
     color: '#000',
     fontWeight: '600',
     fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    minHeight: 200,
+  },
+  walletModalContent: {
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 16,
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#666',
+    fontWeight: '300',
+  },
+  networkOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  selectedOption: {
+    backgroundColor: '#FFF9E6',
+    borderWidth: 1,
+    borderColor: '#F3BA2F',
+  },
+  networkOptionIcon: {
+    width: 32,
+    height: 32,
+    marginRight: 12,
+    borderRadius: 16,
+  },
+  networkOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    flex: 1,
+  },
+  checkMark: {
+    fontSize: 18,
+    color: '#F3BA2F',
+    fontWeight: 'bold',
+  },
+  walletList: {
+    maxHeight: 400,
+  },
+  walletOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  walletAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  walletAvatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  walletDetails: {
+    flex: 1,
+  },
+  walletNameText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  walletAddressText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'monospace',
+  },
+  walletActions: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  addWalletButton: {
+    backgroundColor: '#F3BA2F',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  addWalletText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
   },
   balanceCard: {
     margin: 16,
