@@ -17,6 +17,7 @@ import {
 import WalletService from '../services/WalletService';
 import TokenService from '../services/TokenService';
 import CustomTokenService from '../services/CustomTokenService';
+import TokenLogoService from '../services/TokenLogoService';
 import { NETWORKS } from '../config/networks';
 import { getChainTokens } from '../config/tokenConfig';
 
@@ -248,7 +249,14 @@ export default function HomeScreen({ navigation }: any) {
           >
             <View style={styles.tokenLeft}>
               <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
-                <Text style={styles.tokenIconText}>{token.icon}</Text>
+                {TokenLogoService.hasLogo(token.symbol) ? (
+                  <Image 
+                    source={TokenLogoService.getTokenLogo(token.symbol)} 
+                    style={styles.tokenLogoImage}
+                  />
+                ) : (
+                  <Text style={styles.tokenIconText}>{token.icon}</Text>
+                )}
               </View>
               <View style={styles.tokenInfo}>
                 <Text style={styles.tokenName}>{token.symbol}</Text>
@@ -274,7 +282,14 @@ export default function HomeScreen({ navigation }: any) {
               >
                 <View style={styles.tokenLeft}>
                   <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
-                    <Text style={styles.tokenIconText}>{token.icon}</Text>
+                    {TokenLogoService.hasLogo(token.symbol) ? (
+                      <Image 
+                        source={TokenLogoService.getTokenLogo(token.symbol)} 
+                        style={styles.tokenLogoImage}
+                      />
+                    ) : (
+                      <Text style={styles.tokenIconText}>{token.icon}</Text>
+                    )}
                   </View>
                   <View style={styles.tokenInfo}>
                     <Text style={styles.tokenName}>{token.symbol}</Text>
@@ -524,10 +539,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  tokenLogoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
   tokenIconText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '600',
   },
   tokenInfo: {
     flex: 1,
