@@ -44,7 +44,10 @@ class WalletService {
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, newWallet.address);
       
       this.wallet = newWallet;
-      this.initProvider(DEFAULT_NETWORK);
+      // Initialize provider in background (non-blocking)
+      this.initProvider(DEFAULT_NETWORK).catch(err => 
+        console.warn('Provider init delayed:', err)
+      );
       
       return mnemonic;
     } catch (error) {
@@ -65,7 +68,10 @@ class WalletService {
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
       
       this.wallet = wallet;
-      this.initProvider(DEFAULT_NETWORK);
+      // Initialize provider in background (non-blocking)
+      this.initProvider(DEFAULT_NETWORK).catch(err => 
+        console.warn('Provider init delayed:', err)
+      );
       
       return wallet.address;
     } catch (error) {
@@ -86,7 +92,10 @@ class WalletService {
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
       
       this.wallet = wallet;
-      this.initProvider(DEFAULT_NETWORK);
+      // Initialize provider in background (non-blocking)
+      this.initProvider(DEFAULT_NETWORK).catch(err => 
+        console.warn('Provider init delayed:', err)
+      );
       
       return wallet.address;
     } catch (error) {
@@ -107,8 +116,12 @@ class WalletService {
 
       // Private key is stored directly (not encrypted with scrypt)
       const privateKey = credentials.password;
-      this.wallet = new ethers.Wallet(privateKey);
-      this.initProvider(this.currentChainId);
+      const decryptedWallet = new ethers.Wallet(privateKey);
+      this.wallet = decryptedWallet;
+      // Initialize provider in background (non-blocking)
+      this.initProvider(this.currentChainId).catch(err => 
+        console.warn('Provider init delayed:', err)
+      );
       
       return true;
     } catch (error) {
@@ -217,7 +230,7 @@ class WalletService {
    * Switch network
    */
   async switchNetwork(chainId: number): Promise<void> {
-    this.initProvider(chainId);
+    await this.initProvider(chainId);
   }
 
   /**
@@ -230,12 +243,23 @@ class WalletService {
       await this.init();
     }
     
-    if (!this.wallet || !this.provider) {
+    if (!this.wallet) {
       throw new Error('Wallet not initialized');
     }
 
-    const balance = await this.provider.getBalance(this.wallet.address);
-    return ethers.formatEther(balance);
+    // Ensure provider is ready
+    if (!this.provider) {
+      console.log('🔄 Provider not ready, initializing...');
+      await this.initProvider(this.currentChainId);
+    }
+
+    try {
+      const balance = await this.provider!.getBalance(this.wallet.address);
+      return ethers.formatEther(balance);
+    } catch (error) {
+      console.error('Failed to get balance:', error);
+      return '0.0'; // Return 0 instead of crashing
+    }
   }
 
   /**
