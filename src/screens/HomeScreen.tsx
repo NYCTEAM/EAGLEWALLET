@@ -15,6 +15,7 @@ import {
   Image,
 } from 'react-native';
 import WalletService from '../services/WalletService';
+import TokenService from '../services/TokenService';
 import { NETWORKS } from '../config/networks';
 
 export default function HomeScreen({ navigation }: any) {
@@ -24,6 +25,7 @@ export default function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('tokens');
+  const [tokens, setTokens] = useState<any[]>([]);
 
   useEffect(() => {
     loadWalletData();
@@ -40,6 +42,10 @@ export default function HomeScreen({ navigation }: any) {
         setNetwork(net);
         const txs = await WalletService.getTransactionHistory(10);
         setTransactions(txs);
+        
+        // Load user's tokens dynamically
+        const userTokens = await TokenService.getUserTokens(net.chainId);
+        setTokens(userTokens);
       }
     } catch (error) {
       console.error('Load wallet data error:', error);
@@ -186,92 +192,28 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
         
-        {/* Native Token */}
-        <TouchableOpacity 
-          style={styles.tokenItem}
-          onPress={() => navigation.navigate('TokenDetail', { 
-            token: { 
-              symbol: network.symbol, 
-              name: network.symbol,
-              amount: parseFloat(balance).toFixed(4),
-              value: '0.00',
-              color: network.color,
-              icon: network.symbol.charAt(0)
-            } 
-          })}
-        >
-          <View style={styles.tokenLeft}>
-            <View style={[styles.tokenIcon, { backgroundColor: network.color + '20' }]}>
-              <Text style={styles.tokenIconText}>{network.symbol.charAt(0)}</Text>
+        {/* Dynamic Token List */}
+        {tokens.map((token, index) => (
+          <TouchableOpacity 
+            key={index}
+            style={styles.tokenItem}
+            onPress={() => navigation.navigate('TokenDetail', { token })}
+          >
+            <View style={styles.tokenLeft}>
+              <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
+                <Text style={styles.tokenIconText}>{token.icon}</Text>
+              </View>
+              <View style={styles.tokenInfo}>
+                <Text style={styles.tokenName}>{token.symbol}</Text>
+                <Text style={styles.tokenAmount}>{parseFloat(token.balanceFormatted).toFixed(4)}</Text>
+              </View>
             </View>
-            <View style={styles.tokenInfo}>
-              <Text style={styles.tokenName}>{network.symbol}</Text>
-              <Text style={styles.tokenAmount}>{parseFloat(balance).toFixed(4)}</Text>
+            <View style={styles.tokenRight}>
+              <Text style={styles.tokenValue}>≈ ${token.value}</Text>
+              <Text style={styles.tokenChange}>+0.00%</Text>
             </View>
-          </View>
-          <View style={styles.tokenRight}>
-            <Text style={styles.tokenValue}>≈ $0.00</Text>
-            <Text style={styles.tokenChange}>+0.00%</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* USDT */}
-        <TouchableOpacity 
-          style={styles.tokenItem}
-          onPress={() => navigation.navigate('TokenDetail', { 
-            token: { 
-              symbol: 'USDT', 
-              name: 'Tether USD',
-              amount: '0.00',
-              value: '0.00',
-              color: '#26A17B',
-              icon: '₮'
-            } 
-          })}
-        >
-          <View style={styles.tokenLeft}>
-            <View style={[styles.tokenIcon, { backgroundColor: '#26A17B20' }]}>
-              <Text style={styles.tokenIconText}>₮</Text>
-            </View>
-            <View style={styles.tokenInfo}>
-              <Text style={styles.tokenName}>USDT</Text>
-              <Text style={styles.tokenAmount}>0.00</Text>
-            </View>
-          </View>
-          <View style={styles.tokenRight}>
-            <Text style={styles.tokenValue}>$0.00</Text>
-            <Text style={[styles.tokenChange, { color: '#26A17B' }]}>+0.00%</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* USDC */}
-        <TouchableOpacity 
-          style={styles.tokenItem}
-          onPress={() => navigation.navigate('TokenDetail', { 
-            token: { 
-              symbol: 'USDC', 
-              name: 'USD Coin',
-              amount: '0.00',
-              value: '0.00',
-              color: '#2775CA',
-              icon: '$'
-            } 
-          })}
-        >
-          <View style={styles.tokenLeft}>
-            <View style={[styles.tokenIcon, { backgroundColor: '#2775CA20' }]}>
-              <Text style={styles.tokenIconText}>$</Text>
-            </View>
-            <View style={styles.tokenInfo}>
-              <Text style={styles.tokenName}>USDC</Text>
-              <Text style={styles.tokenAmount}>0.00</Text>
-            </View>
-          </View>
-          <View style={styles.tokenRight}>
-            <Text style={styles.tokenValue}>$0.00</Text>
-            <Text style={[styles.tokenChange, { color: '#999' }]}>+0.00%</Text>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
 
         {/* Add Token Button */}
         <TouchableOpacity style={styles.addTokenButton}>

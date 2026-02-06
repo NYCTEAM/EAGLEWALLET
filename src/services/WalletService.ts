@@ -136,6 +136,16 @@ class WalletService {
   }
 
   /**
+   * Get current provider
+   */
+  async getProvider(): Promise<ethers.Provider> {
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+    }
+    return this.provider!;
+  }
+
+  /**
    * Initialize provider for specific chain with smart RPC selection
    */
   private async initProvider(chainId: number) {
