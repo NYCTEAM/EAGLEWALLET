@@ -8,22 +8,22 @@ import { Image } from 'react-native';
 // Token logo mapping
 const TOKEN_LOGOS: Record<string, any> = {
   // Mainstream tokens
-  'eagle': require('../../android/app/src/main/assets/tokens/eagle.png'),
-  'bnb': require('../../android/app/src/main/assets/tokens/bnb.png'),
-  'usdt': require('../../android/app/src/main/assets/tokens/usdt.png'),
-  'usdc': require('../../android/app/src/main/assets/tokens/usdc.png'),
-  'busd': require('../../android/app/src/main/assets/tokens/busd.png'),
-  'dai': require('../../android/app/src/main/assets/tokens/dai.png'),
-  'eth': require('../../android/app/src/main/assets/tokens/eth.png'),
-  'weth': require('../../android/app/src/main/assets/tokens/weth.png'),
-  'btcb': require('../../android/app/src/main/assets/tokens/btcb.png'),
-  'wbnb': require('../../android/app/src/main/assets/tokens/wbnb.png'),
-  'cake': require('../../android/app/src/main/assets/tokens/cake.png'),
-  'okb': require('../../android/app/src/main/assets/tokens/okb.png'),
-  'wokb': require('../../android/app/src/main/assets/tokens/wokb.png'),
-  'usd1': require('../../android/app/src/main/assets/tokens/usd1.png'),
-  'usds': require('../../android/app/src/main/assets/tokens/usds.png'),
-  'usdt0': require('../../android/app/src/main/assets/tokens/usdt0.png'),
+  'eagle': require('../assets/tokens/eagle.png'),
+  'bnb': require('../assets/tokens/bnb.png'),
+  'usdt': require('../assets/tokens/usdt.png'),
+  'usdc': require('../assets/tokens/usdc.png'),
+  'busd': require('../assets/tokens/busd.png'),
+  'dai': require('../assets/tokens/dai.png'),
+  'eth': require('../assets/tokens/eth.png'),
+  'weth': require('../assets/tokens/weth.png'),
+  'btcb': require('../assets/tokens/btcb.png'),
+  'wbnb': require('../assets/tokens/wbnb.png'),
+  'cake': require('../assets/tokens/cake.png'),
+  'okb': require('../assets/tokens/okb.png'),
+  'wokb': require('../assets/tokens/wokb.png'),
+  'usd1': require('../assets/tokens/usd1.png'),
+  'usds': require('../assets/tokens/usds.png'),
+  'usdt0': require('../assets/tokens/usdt0.png'),
 };
 
 class TokenLogoService {
