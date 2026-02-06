@@ -26,6 +26,7 @@ export default function HomeScreen({ navigation }: any) {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('tokens');
   const [tokens, setTokens] = useState<any[]>([]);
+  const [totalValue, setTotalValue] = useState('0.00');
 
   useEffect(() => {
     loadWalletData();
@@ -43,9 +44,15 @@ export default function HomeScreen({ navigation }: any) {
         const txs = await WalletService.getTransactionHistory(10);
         setTransactions(txs);
         
-        // Load user's tokens dynamically
+        // Load user's tokens dynamically with prices
         const userTokens = await TokenService.getUserTokens(net.chainId);
         setTokens(userTokens);
+        
+        // Calculate total portfolio value
+        const total = userTokens.reduce((sum, token) => {
+          return sum + parseFloat(token.value || '0');
+        }, 0);
+        setTotalValue(total.toFixed(2));
       }
     } catch (error) {
       console.error('Load wallet data error:', error);
@@ -98,12 +105,14 @@ export default function HomeScreen({ navigation }: any) {
       <View style={[styles.balanceCard, { backgroundColor: network.color + '15' }]}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
         <Text style={styles.balanceAmount}>
-          {parseFloat(balance).toFixed(4)} {network.symbol}
+          ${totalValue}
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Receive')}>
           <Text style={styles.address}>{formatAddress(address)}</Text>
         </TouchableOpacity>
-        <Text style={styles.usdValue}>≈ $0.00</Text>
+        <Text style={styles.usdValue}>
+          {parseFloat(balance).toFixed(4)} {network.symbol}
+        </Text>
       </View>
 
       {/* Action Buttons - Row 1 */}
