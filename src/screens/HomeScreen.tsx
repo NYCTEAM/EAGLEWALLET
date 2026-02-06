@@ -16,7 +16,9 @@ import {
 } from 'react-native';
 import WalletService from '../services/WalletService';
 import TokenService from '../services/TokenService';
+import CustomTokenService from '../services/CustomTokenService';
 import { NETWORKS } from '../config/networks';
+import { getChainTokens } from '../config/tokenConfig';
 
 export default function HomeScreen({ navigation }: any) {
   const [balance, setBalance] = useState('0.00');
@@ -26,6 +28,7 @@ export default function HomeScreen({ navigation }: any) {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('tokens');
   const [tokens, setTokens] = useState<any[]>([]);
+  const [customTokens, setCustomTokens] = useState<any[]>([]);
   const [totalValue, setTotalValue] = useState('0.00');
 
   useEffect(() => {
@@ -44,13 +47,41 @@ export default function HomeScreen({ navigation }: any) {
         const txs = await WalletService.getTransactionHistory(10);
         setTransactions(txs);
         
-        // Load user's tokens dynamically with prices
-        const userTokens = await TokenService.getUserTokens(net.chainId);
-        console.log('Loaded tokens:', userTokens.length);
-        setTokens(userTokens);
+        // Load mainstream tokens (always show)
+        const mainTokens = await TokenService.getUserTokens(net.chainId);
+        console.log('Loaded mainstream tokens:', mainTokens.length);
+        setTokens(mainTokens);
+        
+        // Load user's custom tokens for current chain
+        const allCustomTokens = await CustomTokenService.getCustomTokens();
+        const userCustomTokens = allCustomTokens.filter(t => t.chainId === net.chainId);
+        console.log('Loaded custom tokens:', userCustomTokens.length);
+        
+        // Fetch balances for custom tokens
+        const customTokensWithBalance = [];
+        for (const token of userCustomTokens) {
+          try {
+            const balance = await TokenService.getTokenBalance(
+              token.address,
+              addr,
+              await WalletService.getProvider()
+            );
+            customTokensWithBalance.push({
+              ...token,
+              balance: balance,
+              balanceFormatted: balance,
+              value: '0.00',
+              icon: token.symbol.charAt(0),
+              color: '#999999',
+            });
+          } catch (error) {
+            console.error('Error loading custom token:', error);
+          }
+        }
+        setCustomTokens(customTokensWithBalance);
         
         // Calculate total portfolio value
-        const total = userTokens.reduce((sum, token) => {
+        const total = [...mainTokens, ...customTokensWithBalance].reduce((sum, token) => {
           return sum + parseFloat(token.value || '0');
         }, 0);
         setTotalValue(total.toFixed(2));
@@ -208,10 +239,10 @@ export default function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
         
-        {/* Dynamic Token List */}
+        {/* Mainstream Tokens (Fixed) */}
         {tokens.map((token, index) => (
           <TouchableOpacity 
-            key={index}
+            key={`main-${index}`}
             style={styles.tokenItem}
             onPress={() => navigation.navigate('TokenDetail', { token })}
           >
@@ -230,6 +261,34 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           </TouchableOpacity>
         ))}
+        
+        {/* Custom Tokens (User Added) */}
+        {customTokens.length > 0 && (
+          <View style={styles.customTokensSection}>
+            <Text style={styles.customTokensTitle}>Custom Tokens</Text>
+            {customTokens.map((token, index) => (
+              <TouchableOpacity 
+                key={`custom-${index}`}
+                style={styles.tokenItem}
+                onPress={() => navigation.navigate('TokenDetail', { token })}
+              >
+                <View style={styles.tokenLeft}>
+                  <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
+                    <Text style={styles.tokenIconText}>{token.icon}</Text>
+                  </View>
+                  <View style={styles.tokenInfo}>
+                    <Text style={styles.tokenName}>{token.symbol}</Text>
+                    <Text style={styles.tokenAmount}>{parseFloat(token.balanceFormatted).toFixed(4)}</Text>
+                  </View>
+                </View>
+                <View style={styles.tokenRight}>
+                  <Text style={styles.tokenValue}>≈ ${token.value}</Text>
+                  <Text style={styles.tokenChange}>+0.00%</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Add Token Button */}
         <TouchableOpacity 
@@ -588,6 +647,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  customTokensSection: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  customTokensTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 12,
+    textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: 18,
