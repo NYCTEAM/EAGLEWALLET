@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -14,11 +15,12 @@ import {
 } from 'react-native';
 
 export default function SelectTokenScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { action } = route.params || {};
   const [searchQuery, setSearchQuery] = useState('');
 
   const tokens = [
-    { symbol: 'USDT', name: 'Tether USD', chain: 'BNB Chain', amount: '7,727.08', value: '$7,717.19', color: '#26A17B', icon: '₮' },
+    { symbol: 'USDT', name: 'Tether USD', chain: 'BNB Chain', amount: '7,727.08', value: '$7,717.19', color: '#26A17B', icon: '�? },
     { symbol: 'BNB', name: 'BNB', chain: 'BNB Chain', amount: '0.036739', value: '$22.99', color: '#F3BA2F', icon: 'B' },
     { symbol: 'USD1', name: 'World Liberty Financial USD', chain: 'BNB Chain', amount: '<0.01', value: '<$0.01', color: '#D4AF37', icon: '1' },
     { symbol: 'WBNB', name: 'Wrapped BNB', chain: 'BNB Chain', amount: '0.000001', value: '<$0.01', color: '#F3BA2F', icon: 'W' },
@@ -44,7 +46,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backIcon}>�?/Text>
         </TouchableOpacity>
         <Text style={styles.title}>选择币种</Text>
         <View style={styles.placeholder} />

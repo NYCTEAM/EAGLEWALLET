@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import {
 import WalletService from '../services/WalletService';
 
 export default function SendScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [gasPrice, setGasPrice] = useState('5');
@@ -115,7 +117,7 @@ export default function SendScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Cancel</Text>
+          <Text style={styles.backButton}>‚Ü?Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Send {network.symbol}</Text>
         <View style={{ width: 60 }} />

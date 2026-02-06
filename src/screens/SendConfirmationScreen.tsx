@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import {
 import WalletService from '../services/WalletService';
 
 export default function SendConfirmationScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { token, address, amount } = route.params || {};
   const [sending, setSending] = useState(false);
 
@@ -55,31 +57,31 @@ export default function SendConfirmationScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backIcon}>�?/Text>
         </TouchableOpacity>
-        <Text style={styles.title}>确认发送</Text>
+        <Text style={styles.title}>确认发�?/Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Amount Card */}
         <View style={styles.amountCard}>
-          <Text style={styles.amountLabel}>发送金额</Text>
+          <Text style={styles.amountLabel}>发送金�?/Text>
           <Text style={styles.amount}>{amount} {token?.symbol}</Text>
-          <Text style={styles.amountUSD}>≈ ${(parseFloat(amount) * 1.0).toFixed(2)}</Text>
+          <Text style={styles.amountUSD}>�?${(parseFloat(amount) * 1.0).toFixed(2)}</Text>
         </View>
 
         {/* Details */}
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>从</Text>
+            <Text style={styles.detailLabel}>�?/Text>
             <Text style={styles.detailValue}>{formatAddress('0x...')}</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>到</Text>
+            <Text style={styles.detailLabel}>�?/Text>
             <Text style={styles.detailValue}>{formatAddress(address)}</Text>
           </View>
 
@@ -94,7 +96,7 @@ export default function SendConfirmationScreen({ route, navigation }: any) {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>网络费用</Text>
-            <Text style={styles.detailValue}>≈ $0.05</Text>
+            <Text style={styles.detailValue}>�?$0.05</Text>
           </View>
         </View>
 
@@ -117,7 +119,7 @@ export default function SendConfirmationScreen({ route, navigation }: any) {
           {sending ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.confirmButtonText}>确认发送</Text>
+            <Text style={styles.confirmButtonText}>确认发�?/Text>
           )}
         </TouchableOpacity>
       </View>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import { WalletAccount } from '../storage/WalletStorage';
 import WalletService from '../services/WalletService';
 
 export default function WalletsScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [wallets, setWallets] = useState<WalletAccount[]>([]);
   const [activeWalletId, setActiveWalletId] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
@@ -105,14 +107,14 @@ export default function WalletsScreen({ navigation }: any) {
               <Text style={styles.walletName}>{item.name}</Text>
               <Text style={styles.walletAddress}>{formatAddress(item.address)}</Text>
               <Text style={styles.walletType}>
-                {item.type === 'watch' ? '👁️ Watch Only' : '🔐 Full Access'}
+                {item.type === 'watch' ? '👁�?Watch Only' : '🔐 Full Access'}
               </Text>
             </View>
           </View>
           
           {isActive && (
             <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>✓ Active</Text>
+              <Text style={styles.activeBadgeText}>�?Active</Text>
             </View>
           )}
         </View>
@@ -134,7 +136,7 @@ export default function WalletsScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>�?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>My Wallets</Text>
         <TouchableOpacity onPress={() => navigation.navigate('AddWallet')}>

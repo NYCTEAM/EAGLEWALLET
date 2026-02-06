@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 export default function EnterAddressScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { token } = route.params || {};
   const [address, setAddress] = useState('');
   const [activeTab, setActiveTab] = useState('recent');
@@ -46,11 +48,11 @@ export default function EnterAddressScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backIcon}>�?/Text>
         </TouchableOpacity>
         <Text style={styles.title}>发送至</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.closeIcon}>✕</Text>
+          <Text style={styles.closeIcon}>�?/Text>
         </TouchableOpacity>
       </View>
 
@@ -58,7 +60,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="输入钱包地址或域名"
+          placeholder="输入钱包地址或域�?
           placeholderTextColor="#999"
           value={address}
           onChangeText={setAddress}
@@ -74,7 +76,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={() => setActiveTab('recent')}
         >
           <Text style={[styles.tabText, activeTab === 'recent' && styles.activeTabText]}>
-            最近使用
+            最近使�?
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -90,7 +92,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={() => setActiveTab('book')}
         >
           <Text style={[styles.tabText, activeTab === 'book' && styles.activeTabText]}>
-            地址簿
+            地址�?
           </Text>
         </TouchableOpacity>
       </View>
@@ -129,7 +131,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
         {activeTab === 'book' && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>📖</Text>
-            <Text style={styles.emptyText}>地址簿为空</Text>
+            <Text style={styles.emptyText}>地址簿为�?/Text>
           </View>
         )}
       </ScrollView>
@@ -141,7 +143,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={handleNext}
           disabled={address.length === 0}
         >
-          <Text style={styles.nextButtonText}>下一步</Text>
+          <Text style={styles.nextButtonText}>下一�?/Text>
         </TouchableOpacity>
       </View>
     </View>

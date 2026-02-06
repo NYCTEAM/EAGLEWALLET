@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import {
 import WalletService from '../services/WalletService';
 
 export default function CreateWalletScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'select' | 'create' | 'import'>('select');
   const [step, setStep] = useState<'password' | 'mnemonic' | 'confirm'>('password');
   const [password, setPassword] = useState('');
@@ -140,7 +142,7 @@ export default function CreateWalletScreen({ navigation }: any) {
       return (
         <ScrollView style={styles.formContainer}>
           <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
-            <Text style={styles.backText}>‚Üê Back</Text>
+            <Text style={styles.backText}>‚Ü?Back</Text>
           </TouchableOpacity>
 
           <Text style={styles.formTitle}>Create New Wallet</Text>
@@ -240,7 +242,7 @@ export default function CreateWalletScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.formContainer}>
       <TouchableOpacity onPress={() => setMode('select')} style={styles.backButton}>
-        <Text style={styles.backText}>‚Üê Back</Text>
+        <Text style={styles.backText}>‚Ü?Back</Text>
       </TouchableOpacity>
 
       <Text style={styles.formTitle}>Import Wallet</Text>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 export default function TokenDetailScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { token } = route.params || {};
   const [selectedChain, setSelectedChain] = useState('BNB Chain');
 
@@ -31,7 +33,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backIcon}>�?/Text>
         </TouchableOpacity>
         <View style={styles.tokenHeader}>
           <View style={[styles.tokenIconLarge, { backgroundColor: token?.color || '#26A17B20' }]}>
@@ -40,7 +42,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
           <Text style={styles.tokenName}>{token?.name || 'USDT'}</Text>
         </View>
         <TouchableOpacity style={styles.infoButton}>
-          <Text style={styles.infoIcon}>ⓘ</Text>
+          <Text style={styles.infoIcon}>�?/Text>
         </TouchableOpacity>
       </View>
 
@@ -73,9 +75,9 @@ export default function TokenDetailScreen({ route, navigation }: any) {
             onPress={() => navigation.navigate('SelectToken', { action: 'send' })}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↑</Text>
+              <Text style={styles.actionIconText}>�?/Text>
             </View>
-            <Text style={styles.actionText}>发送</Text>
+            <Text style={styles.actionText}>发�?/Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -83,23 +85,23 @@ export default function TokenDetailScreen({ route, navigation }: any) {
             onPress={() => navigation.navigate('Receive', { token })}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↓</Text>
+              <Text style={styles.actionIconText}>�?/Text>
             </View>
             <Text style={styles.actionText}>接收</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>⇄</Text>
+              <Text style={styles.actionIconText}>�?/Text>
             </View>
             <Text style={styles.actionText}>兑换</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>∞</Text>
+              <Text style={styles.actionIconText}>�?/Text>
             </View>
-            <Text style={styles.actionText}>跨链桥</Text>
+            <Text style={styles.actionText}>跨链�?/Text>
           </TouchableOpacity>
         </View>
 
@@ -110,7 +112,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
           </View>
           <View style={styles.defiInfo}>
             <Text style={styles.defiTitle}>年化收益高达 1.03%</Text>
-            <Text style={styles.defiSubtitle}>立即开始 DeFi 赚币</Text>
+            <Text style={styles.defiSubtitle}>立即开�?DeFi 赚币</Text>
           </View>
         </View>
 

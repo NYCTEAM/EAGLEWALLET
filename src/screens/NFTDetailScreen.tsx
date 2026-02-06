@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import NFTService from '../services/NFTService';
 import WalletService from '../services/WalletService';
 
 export default function NFTDetailScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { nft }: { nft: NFT } = route.params;
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -75,7 +77,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>NFT Details</Text>
         <View style={{ width: 60 }} />

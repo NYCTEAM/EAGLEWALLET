@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import WalletService from '../services/WalletService';
 import TransactionService, { Transaction } from '../services/TransactionService';
 
 export default function TransactionHistoryScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,7 +127,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
             <Text style={styles.txHash}>{formatAddress(item.hash)}</Text>
             <View style={[styles.txStatus, styles[`txStatus${item.status}`]]}>
               <Text style={styles.txStatusText}>
-                {item.status === 'success' ? '‚úì' : item.status === 'pending' ? '‚è≥' : '‚úó'}
+                {item.status === 'success' ? '‚ú? : item.status === 'pending' ? '‚è? : '‚ú?}
               </Text>
             </View>
           </View>
@@ -139,7 +141,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Transactions</Text>
         <TouchableOpacity onPress={() => openExplorer('')}>

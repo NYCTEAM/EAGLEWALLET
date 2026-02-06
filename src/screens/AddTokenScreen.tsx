@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import CustomTokenService from '../services/CustomTokenService';
 import WalletService from '../services/WalletService';
 
 export default function AddTokenScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [contractAddress, setContractAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [tokenInfo, setTokenInfo] = useState<any>(null);
@@ -69,7 +71,7 @@ export default function AddTokenScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Add Token</Text>
         <View style={{ width: 60 }} />

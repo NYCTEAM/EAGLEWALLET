@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import {
 import WalletService from '../services/WalletService';
 
 export default function ExportPrivateKeyScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [revealed, setRevealed] = useState(false);
@@ -65,7 +67,7 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Export Private Key</Text>
         <View style={{ width: 60 }} />
@@ -77,16 +79,16 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
           <Text style={styles.warningIcon}>‚ö†Ô∏è</Text>
           <Text style={styles.warningTitle}>Security Warning</Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Never share your private key with anyone
+            ‚Ä?Never share your private key with anyone
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Anyone with your private key can access your funds
+            ‚Ä?Anyone with your private key can access your funds
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Store it in a secure location
+            ‚Ä?Store it in a secure location
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Eagle Wallet will never ask for your private key
+            ‚Ä?Eagle Wallet will never ask for your private key
           </Text>
         </View>
 
@@ -142,21 +144,21 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
 
             {/* Security Reminder */}
             <View style={styles.reminderBox}>
-              <Text style={styles.reminderTitle}>‚úÖ Security Checklist</Text>
+              <Text style={styles.reminderTitle}>‚ú?Security Checklist</Text>
               <Text style={styles.reminderText}>
-                ‚ñ° Store in a password manager
+                ‚ñ?Store in a password manager
               </Text>
               <Text style={styles.reminderText}>
-                ‚ñ° Write it down on paper
+                ‚ñ?Write it down on paper
               </Text>
               <Text style={styles.reminderText}>
-                ‚ñ° Keep multiple backups
+                ‚ñ?Keep multiple backups
               </Text>
               <Text style={styles.reminderText}>
-                ‚ñ° Never share with anyone
+                ‚ñ?Never share with anyone
               </Text>
               <Text style={styles.reminderText}>
-                ‚ñ° Don't store in email or cloud
+                ‚ñ?Don't store in email or cloud
               </Text>
             </View>
 

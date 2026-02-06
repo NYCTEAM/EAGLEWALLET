@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import QRCode from 'react-native-qrcode-svg';
 import WalletService from '../services/WalletService';
 
 export default function ReceiveScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState(WalletService.getCurrentNetwork());
 
@@ -56,7 +58,7 @@ export default function ReceiveScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Receive {network.symbol}</Text>
         <View style={{ width: 60 }} />
@@ -108,13 +110,13 @@ export default function ReceiveScreen({ navigation }: any) {
         <View style={styles.warningBox}>
           <Text style={styles.warningTitle}>‚ö†Ô∏è Important</Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Only send {network.symbol} and tokens on {network.name} to this address
+            ‚Ä?Only send {network.symbol} and tokens on {network.name} to this address
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Sending other assets may result in permanent loss
+            ‚Ä?Sending other assets may result in permanent loss
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä¢ Always verify the network before sending
+            ‚Ä?Always verify the network before sending
           </Text>
         </View>
 

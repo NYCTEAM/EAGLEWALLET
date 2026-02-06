@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import {
 import WalletService from '../services/WalletService';
 
 export default function TransactionDetailScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { transaction, txHash } = route.params;
   const network = WalletService.getCurrentNetwork();
 
@@ -51,7 +53,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Transaction Details</Text>
         <TouchableOpacity onPress={openExplorer}>
@@ -63,7 +65,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
         {/* Status Card */}
         <View style={styles.statusCard}>
           <Text style={styles.statusIcon}>
-            {tx.status === 'success' ? '‚úì' : tx.status === 'pending' ? '‚è≥' : '‚úó'}
+            {tx.status === 'success' ? '‚ú? : tx.status === 'pending' ? '‚è? : '‚ú?}
           </Text>
           <Text style={styles.statusText}>
             {tx.status === 'success' ? 'Confirmed' : tx.status === 'pending' ? 'Pending' : 'Failed'}

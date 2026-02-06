@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -32,6 +33,7 @@ const NETWORK_ICONS: Record<number, any> = {
 };
 
 export default function HomeScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [balance, setBalance] = useState('0.00');
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState(NETWORKS[56]);
@@ -180,7 +182,7 @@ export default function HomeScreen({ navigation }: any) {
           />
           <View>
             <Text style={styles.walletName}>{currentWallet?.name || 'My Wallet'}</Text>
-            <Text style={styles.walletAddress}>{formatAddress(address)} ‚ñº</Text>
+            <Text style={styles.walletAddress}>{formatAddress(address)} ‚ñ?/Text>
           </View>
         </TouchableOpacity>
         
@@ -237,7 +239,7 @@ export default function HomeScreen({ navigation }: any) {
           style={styles.actionButton}
           onPress={() => navigation.navigate('NFT')}
         >
-          <Text style={styles.actionIcon}>üñºÔ∏è</Text>
+          <Text style={styles.actionIcon}>üñºÔ∏?/Text>
           <Text style={styles.actionText}>NFTs</Text>
         </TouchableOpacity>
 
@@ -292,7 +294,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Total assets</Text>
           <TouchableOpacity>
-            <Text style={styles.viewAllText}>Manage ‚Üí</Text>
+            <Text style={styles.viewAllText}>Manage ‚Ü?/Text>
           </TouchableOpacity>
         </View>
         
@@ -320,7 +322,7 @@ export default function HomeScreen({ navigation }: any) {
               </View>
             </View>
             <View style={styles.tokenRight}>
-              <Text style={styles.tokenValue}>‚âà ${token.value}</Text>
+              <Text style={styles.tokenValue}>‚â?${token.value}</Text>
               <Text style={styles.tokenChange}>+0.00%</Text>
             </View>
           </TouchableOpacity>
@@ -353,7 +355,7 @@ export default function HomeScreen({ navigation }: any) {
                   </View>
                 </View>
                 <View style={styles.tokenRight}>
-                  <Text style={styles.tokenValue}>‚âà ${token.value}</Text>
+                  <Text style={styles.tokenValue}>‚â?${token.value}</Text>
                   <Text style={styles.tokenChange}>+0.00%</Text>
                 </View>
               </TouchableOpacity>
@@ -376,7 +378,7 @@ export default function HomeScreen({ navigation }: any) {
       {activeTab === 'nft' && (
       <View style={styles.tokensSection}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>üñºÔ∏è</Text>
+          <Text style={styles.emptyIcon}>üñºÔ∏?/Text>
           <Text style={styles.emptyTitle}>No NFTs yet</Text>
           <Text style={styles.emptyDescription}>Your NFT collection will appear here</Text>
         </View>
@@ -400,7 +402,7 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
           <TouchableOpacity onPress={() => navigation.navigate('TransactionHistory')}>
-            <Text style={styles.viewAllText}>View All ‚Üí</Text>
+            <Text style={styles.viewAllText}>View All ‚Ü?/Text>
           </TouchableOpacity>
         </View>
         {transactions.length === 0 ? (
@@ -476,7 +478,7 @@ export default function HomeScreen({ navigation }: any) {
             >
               <Image source={NETWORK_ICONS[56]} style={styles.networkOptionIcon} />
               <Text style={styles.networkOptionText}>BNB Smart Chain</Text>
-              {network.chainId === 56 && <Text style={styles.checkMark}>‚úì</Text>}
+              {network.chainId === 56 && <Text style={styles.checkMark}>‚ú?/Text>}
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -485,7 +487,7 @@ export default function HomeScreen({ navigation }: any) {
             >
               <Image source={NETWORK_ICONS[196]} style={styles.networkOptionIcon} />
               <Text style={styles.networkOptionText}>X Layer</Text>
-              {network.chainId === 196 && <Text style={styles.checkMark}>‚úì</Text>}
+              {network.chainId === 196 && <Text style={styles.checkMark}>‚ú?/Text>}
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -503,7 +505,7 @@ export default function HomeScreen({ navigation }: any) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Wallet</Text>
               <TouchableOpacity onPress={() => setShowWalletModal(false)}>
-                <Text style={styles.closeButton}>‚úï</Text>
+                <Text style={styles.closeButton}>‚ú?/Text>
               </TouchableOpacity>
             </View>
             
@@ -523,7 +525,7 @@ export default function HomeScreen({ navigation }: any) {
                     <Text style={styles.walletNameText}>{wallet.name}</Text>
                     <Text style={styles.walletAddressText}>{formatAddress(wallet.address)}</Text>
                   </View>
-                  {currentWallet?.id === wallet.id && <Text style={styles.checkMark}>‚úì</Text>}
+                  {currentWallet?.id === wallet.id && <Text style={styles.checkMark}>‚ú?/Text>}
                 </TouchableOpacity>
               ))}
             </ScrollView>

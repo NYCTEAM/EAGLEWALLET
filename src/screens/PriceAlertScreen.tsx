@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import {
 import PriceAlertService, { PriceAlert } from '../services/PriceAlertService';
 
 export default function PriceAlertScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAlert, setNewAlert] = useState({
@@ -88,7 +90,7 @@ export default function PriceAlertScreen({ navigation }: any) {
         <View>
           <Text style={styles.alertToken}>{item.tokenSymbol}</Text>
           <Text style={styles.alertCondition}>
-            {item.condition === 'above' ? '‚Üë' : '‚Üì'} ${item.targetPrice}
+            {item.condition === 'above' ? '‚Ü? : '‚Ü?} ${item.targetPrice}
           </Text>
         </View>
         
@@ -106,14 +108,14 @@ export default function PriceAlertScreen({ navigation }: any) {
             style={styles.deleteButton}
             onPress={() => handleDeleteAlert(item.id)}
           >
-            <Text style={styles.deleteIcon}>üóëÔ∏è</Text>
+            <Text style={styles.deleteIcon}>üóëÔ∏?/Text>
           </TouchableOpacity>
         </View>
       </View>
       
       {item.isTriggered && (
         <View style={styles.triggeredBadge}>
-          <Text style={styles.triggeredText}>‚úì Triggered</Text>
+          <Text style={styles.triggeredText}>‚ú?Triggered</Text>
         </View>
       )}
     </View>
@@ -124,7 +126,7 @@ export default function PriceAlertScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Price Alerts</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
@@ -194,7 +196,7 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'above' && styles.conditionButtonTextActive
                 ]}>
-                  Above ‚Üë
+                  Above ‚Ü?
                 </Text>
               </TouchableOpacity>
               
@@ -209,7 +211,7 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'below' && styles.conditionButtonTextActive
                 ]}>
-                  Below ‚Üì
+                  Below ‚Ü?
                 </Text>
               </TouchableOpacity>
             </View>

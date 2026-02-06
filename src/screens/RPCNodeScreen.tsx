@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import RPCService from '../services/RPCService';
 import { NETWORKS } from '../config/networks';
 
 export default function RPCNodeScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { chainId } = route.params;
   const [nodes, setNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,8 +56,8 @@ export default function RPCNodeScreen({ route, navigation }: any) {
   const getStatusColor = (latency: number) => {
     if (latency < 50) return '#43A047';      // 优秀 - 绿色
     if (latency < 100) return '#7CB342';     // 良好 - 浅绿
-    if (latency < 200) return '#FDD835';     // 一般 - 黄色
-    if (latency < 500) return '#FB8C00';     // 慢 - 橙色
+    if (latency < 200) return '#FDD835';     // 一�?- 黄色
+    if (latency < 500) return '#FB8C00';     // �?- 橙色
     return '#E53935';                        // 失败 - 红色
   };
 
@@ -81,12 +83,12 @@ export default function RPCNodeScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>�?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>RPC Nodes</Text>
         <TouchableOpacity onPress={testNodes} disabled={testing}>
           <Text style={styles.refreshButton}>
-            {testing ? '⏳' : '🔄'}
+            {testing ? '�? : '🔄'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -176,7 +178,7 @@ export default function RPCNodeScreen({ route, navigation }: any) {
               {/* Selected Checkmark */}
               {selectedNode === node.name && (
                 <View style={styles.selectedBadge}>
-                  <Text style={styles.selectedCheck}>✓</Text>
+                  <Text style={styles.selectedCheck}>�?/Text>
                 </View>
               )}
             </TouchableOpacity>

@@ -1,10 +1,12 @@
 /**
- * Eagle Wallet - Translation Types
+ * Eagle Wallet - Extended Translation Types
+ * Complete translation structure for all screens
  */
 
 export type Language = 'en' | 'zh' | 'zh-TW' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'ru' | 'ar' | 'pt' | 'it' | 'tr' | 'vi' | 'th' | 'id';
 
 export interface TranslationStrings {
+  // ===== COMMON =====
   common: {
     confirm: string;
     cancel: string;
@@ -23,8 +25,24 @@ export interface TranslationStrings {
     error: string;
     warning: string;
     ok: string;
+    yes: string;
+    no: string;
+    search: string;
+    filter: string;
+    sort: string;
+    all: string;
+    none: string;
+    select: string;
+    selected: string;
+    add: string;
+    remove: string;
+    refresh: string;
+    retry: string;
+    skip: string;
+    continue: string;
   };
 
+  // ===== HOME SCREEN =====
   home: {
     myWallet: string;
     totalBalance: string;
@@ -37,8 +55,14 @@ export interface TranslationStrings {
     selectWallet: string;
     selectNetwork: string;
     manageAddWallets: string;
+    noTokens: string;
+    noTransactions: string;
+    pullToRefresh: string;
+    hideSmallBalances: string;
+    showSmallBalances: string;
   };
 
+  // ===== WALLET =====
   wallet: {
     createWallet: string;
     importWallet: string;
@@ -67,29 +91,195 @@ export interface TranslationStrings {
     deleteSuccess: string;
     myWallets: string;
     activeWallet: string;
+    walletAddress: string;
+    copyAddress: string;
+    addressCopied: string;
   };
 
-  errors: {
-    walletNameRequired: string;
-    passwordRequired: string;
-    passwordMismatch: string;
-    passwordTooShort: string;
-    mnemonicRequired: string;
-    mnemonicInvalid: string;
-    privateKeyRequired: string;
-    privateKeyInvalid: string;
-    createWalletFailed: string;
-    importWalletFailed: string;
-    switchWalletFailed: string;
-    deleteWalletFailed: string;
+  // ===== SEND =====
+  send: {
+    send: string;
+    sendTo: string;
+    recipient: string;
+    recipientAddress: string;
+    recipientPlaceholder: string;
+    amount: string;
+    amountPlaceholder: string;
+    max: string;
+    balance: string;
+    available: string;
+    gasFee: string;
+    total: string;
+    estimatedTime: string;
+    fast: string;
+    normal: string;
+    slow: string;
+    custom: string;
+    gasPrice: string;
+    gasLimit: string;
+    nonce: string;
+    data: string;
+    sendConfirmation: string;
+    confirmTransaction: string;
+    transactionDetails: string;
+    from: string;
+    to: string;
+    sending: string;
+    sent: string;
+    failed: string;
+    viewTransaction: string;
+    sendAnother: string;
+    backToHome: string;
+    scanQRCode: string;
+    pasteAddress: string;
+    recentAddresses: string;
+    myWallets: string;
+    enterAmount: string;
     insufficientBalance: string;
     invalidAddress: string;
     invalidAmount: string;
-    transactionFailed: string;
-    networkError: string;
-    unknownError: string;
   };
 
+  // ===== RECEIVE =====
+  receive: {
+    receive: string;
+    myAddress: string;
+    qrCode: string;
+    copyAddress: string;
+    share: string;
+    addressCopied: string;
+    shareAddress: string;
+    onlyReceive: string;
+    warningMessage: string;
+    network: string;
+  };
+
+  // ===== SWAP =====
+  swap: {
+    swap: string;
+    from: string;
+    to: string;
+    youPay: string;
+    youReceive: string;
+    selectToken: string;
+    balance: string;
+    max: string;
+    rate: string;
+    priceImpact: string;
+    minimumReceived: string;
+    slippageTolerance: string;
+    transactionFee: string;
+    route: string;
+    swapping: string;
+    swapSuccess: string;
+    swapFailed: string;
+    insufficientLiquidity: string;
+    priceImpactTooHigh: string;
+    enterAmount: string;
+    reviewSwap: string;
+    confirmSwap: string;
+    swapSettings: string;
+    slippage: string;
+    deadline: string;
+    minutes: string;
+  };
+
+  // ===== NFT =====
+  nft: {
+    nft: string;
+    myNFTs: string;
+    collection: string;
+    collections: string;
+    tokenId: string;
+    owner: string;
+    contract: string;
+    description: string;
+    properties: string;
+    details: string;
+    send: string;
+    viewOnExplorer: string;
+    refresh: string;
+    noNFTs: string;
+    loading: string;
+    loadingNFTs: string;
+    sendNFT: string;
+    sendTo: string;
+    confirmSend: string;
+    nftSent: string;
+  };
+
+  // ===== TRANSACTION =====
+  transaction: {
+    transactions: string;
+    history: string;
+    pending: string;
+    completed: string;
+    failed: string;
+    all: string;
+    sent: string;
+    received: string;
+    swapped: string;
+    approved: string;
+    contract: string;
+    noTransactions: string;
+    transactionDetails: string;
+    status: string;
+    from: string;
+    to: string;
+    amount: string;
+    fee: string;
+    total: string;
+    time: string;
+    block: string;
+    hash: string;
+    nonce: string;
+    gasPrice: string;
+    gasUsed: string;
+    gasLimit: string;
+    data: string;
+    viewOnExplorer: string;
+    copyHash: string;
+    hashCopied: string;
+    speedUp: string;
+    cancel: string;
+    success: string;
+    failure: string;
+    confirming: string;
+    confirmed: string;
+  };
+
+  // ===== TOKEN =====
+  token: {
+    tokens: string;
+    token: string;
+    addToken: string;
+    customToken: string;
+    searchToken: string;
+    tokenAddress: string;
+    tokenSymbol: string;
+    tokenDecimals: string;
+    tokenName: string;
+    tokenAdded: string;
+    tokenRemoved: string;
+    invalidTokenAddress: string;
+    tokenAlreadyAdded: string;
+    balance: string;
+    price: string;
+    change24h: string;
+    marketCap: string;
+    volume24h: string;
+    high24h: string;
+    low24h: string;
+    hideToken: string;
+    showToken: string;
+    removeToken: string;
+    tokenDetails: string;
+    contract: string;
+    holders: string;
+    totalSupply: string;
+  };
+
+  // ===== DAPP =====
   dapp: {
     dappBrowser: string;
     share: string;
@@ -106,8 +296,23 @@ export interface TranslationStrings {
     linkCopied: string;
     favoriteAdded: string;
     translateInDevelopment: string;
+    favorites: string;
+    history: string;
+    discover: string;
+    search: string;
+    searchPlaceholder: string;
+    noDApps: string;
+    popularDApps: string;
+    recentlyVisited: string;
+    addDApp: string;
+    dappName: string;
+    dappUrl: string;
+    dappAdded: string;
+    removeDApp: string;
+    openInBrowser: string;
   };
 
+  // ===== SETTINGS =====
   settings: {
     settings: string;
     back: string;
@@ -173,5 +378,60 @@ export interface TranslationStrings {
     show: string;
     showRecoveryPhrase: string;
     chooseCurrency: string;
+  };
+
+  // ===== NETWORK =====
+  network: {
+    network: string;
+    networks: string;
+    selectNetwork: string;
+    customNetwork: string;
+    addNetwork: string;
+    networkName: string;
+    rpcUrl: string;
+    chainId: string;
+    symbol: string;
+    blockExplorer: string;
+    networkAdded: string;
+    networkRemoved: string;
+    invalidRpcUrl: string;
+    testConnection: string;
+    connected: string;
+    disconnected: string;
+    connectionSpeed: string;
+    fast: string;
+    normal: string;
+    slow: string;
+    mainnet: string;
+    testnet: string;
+  };
+
+  // ===== ERRORS =====
+  errors: {
+    walletNameRequired: string;
+    passwordRequired: string;
+    passwordMismatch: string;
+    passwordTooShort: string;
+    mnemonicRequired: string;
+    mnemonicInvalid: string;
+    privateKeyRequired: string;
+    privateKeyInvalid: string;
+    createWalletFailed: string;
+    importWalletFailed: string;
+    switchWalletFailed: string;
+    deleteWalletFailed: string;
+    insufficientBalance: string;
+    invalidAddress: string;
+    invalidAmount: string;
+    transactionFailed: string;
+    networkError: string;
+    unknownError: string;
+    connectionFailed: string;
+    timeout: string;
+    invalidInput: string;
+    operationCancelled: string;
+    permissionDenied: string;
+    notFound: string;
+    alreadyExists: string;
   };
 }

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -18,6 +19,7 @@ import { FEATURED_DAPPS, DAPP_CATEGORIES, getDAppsByCategory, searchDApps, DApp 
 import WalletService from '../services/WalletService';
 
 export default function DAppBrowserScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [displayDApps, setDisplayDApps] = useState<DApp[]>(FEATURED_DAPPS);
@@ -58,7 +60,7 @@ export default function DAppBrowserScreen({ navigation }: any) {
         </Text>
         <Text style={styles.dappCategory}>{dapp.category}</Text>
       </View>
-      <Text style={styles.dappArrow}>‚Üí</Text>
+      <Text style={styles.dappArrow}>‚Ü?/Text>
     </TouchableOpacity>
   );
 
@@ -67,7 +69,7 @@ export default function DAppBrowserScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>DApp Browser</Text>
         <View style={{ width: 40 }} />

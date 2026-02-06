@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import TokenService from '../services/TokenService';
 import { getChainTokens } from '../config/tokenConfig';
 
 export default function SwapScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [fromToken, setFromToken] = useState<any>(null);
   const [toToken, setToToken] = useState<any>(null);
   const [fromAmount, setFromAmount] = useState('');
@@ -149,7 +151,7 @@ export default function SwapScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Üê Back</Text>
+          <Text style={styles.backButton}>‚Ü?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Swap</Text>
         <TouchableOpacity onPress={() => setShowSlippageModal(true)}>
@@ -172,7 +174,7 @@ export default function SwapScreen({ navigation }: any) {
                 <Text style={styles.tokenIcon}>{fromToken?.icon || '?'}</Text>
                 <Text style={styles.tokenSymbol}>{fromToken?.symbol || 'Select'}</Text>
               </View>
-              <Text style={styles.arrow}>‚ñº</Text>
+              <Text style={styles.arrow}>‚ñ?/Text>
             </TouchableOpacity>
             
             <TextInput
@@ -191,7 +193,7 @@ export default function SwapScreen({ navigation }: any) {
             style={styles.switchButton}
             onPress={handleSwitchTokens}
           >
-            <Text style={styles.switchIcon}>‚áÖ</Text>
+            <Text style={styles.switchIcon}>‚á?/Text>
           </TouchableOpacity>
         </View>
 
@@ -209,7 +211,7 @@ export default function SwapScreen({ navigation }: any) {
                 <Text style={styles.tokenIcon}>{toToken?.icon || '?'}</Text>
                 <Text style={styles.tokenSymbol}>{toToken?.symbol || 'Select'}</Text>
               </View>
-              <Text style={styles.arrow}>‚ñº</Text>
+              <Text style={styles.arrow}>‚ñ?/Text>
             </TouchableOpacity>
             
             <TextInput

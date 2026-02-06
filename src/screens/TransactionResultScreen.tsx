@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 
 export default function TransactionResultScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { success, txHash, error, token, amount } = route.params || {};
 
   const handleDone = () => {
@@ -30,18 +32,18 @@ export default function TransactionResultScreen({ route, navigation }: any) {
     <View style={styles.container}>
       {/* Result Icon */}
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>{success ? '✅' : '❌'}</Text>
+        <Text style={styles.icon}>{success ? '�? : '�?}</Text>
       </View>
 
       {/* Title */}
       <Text style={styles.title}>
-        {success ? '发送成功' : '发送失败'}
+        {success ? '发送成�? : '发送失�?}
       </Text>
 
       {/* Message */}
       <Text style={styles.message}>
         {success
-          ? `已成功发送 ${amount} ${token?.symbol}`
+          ? `已成功发�?${amount} ${token?.symbol}`
           : error || '交易失败，请重试'}
       </Text>
 

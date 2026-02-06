@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 60) / 2;
 
 export default function NFTScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -92,7 +94,7 @@ export default function NFTScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>�?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>My NFTs</Text>
         <View style={{ width: 60 }} />
@@ -108,7 +110,7 @@ export default function NFTScreen({ navigation }: any) {
       {/* NFT Grid */}
       {nfts.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🖼️</Text>
+          <Text style={styles.emptyIcon}>🖼�?/Text>
           <Text style={styles.emptyText}>No NFTs found</Text>
           <Text style={styles.emptySubtext}>
             Your NFTs will appear here automatically

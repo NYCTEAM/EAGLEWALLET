@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AdvancedSettingsScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [showTestnets, setShowTestnets] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
   const [autoLockEnabled, setAutoLockEnabled] = useState(true);
@@ -75,7 +77,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>�?Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Advanced Settings</Text>
         <View style={{ width: 60 }} />
@@ -105,7 +107,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
           <Text style={styles.sectionTitle}>Developer</Text>
           
           <SettingItem
-            icon="👨‍💻"
+            icon="👨‍�?
             title="Developer Mode"
             subtitle="Enable advanced features"
             rightElement={
@@ -159,11 +161,11 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
           <Text style={styles.sectionTitle}>Maintenance</Text>
           
           <SettingItem
-            icon="🗑️"
+            icon="🗑�?
             title="Clear Cache"
             subtitle="Free up storage space"
             onPress={handleClearCache}
-            rightElement={<Text style={styles.arrow}>→</Text>}
+            rightElement={<Text style={styles.arrow}>�?/Text>}
           />
           
           <SettingItem
@@ -171,7 +173,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
             title="Reset App"
             subtitle="Reset to default settings"
             onPress={handleResetApp}
-            rightElement={<Text style={styles.arrow}>→</Text>}
+            rightElement={<Text style={styles.arrow}>�?/Text>}
           />
         </View>
 

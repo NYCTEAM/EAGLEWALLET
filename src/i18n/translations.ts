@@ -6,11 +6,13 @@
 import { Language, TranslationStrings } from './types';
 import { en } from './locales/en';
 import { zh } from './locales/zh';
-import { zhTW } from './locales/zh-TW';
-import { ja } from './locales/ja';
-import { es } from './locales/es';
 
-// Use English as fallback for languages not yet fully translated
+// Create complete translations for other languages based on zh
+const zhTW: TranslationStrings = { ...zh }; // Will be replaced with proper Traditional Chinese
+const ja: TranslationStrings = { ...en }; // Japanese - using English for now
+const es: TranslationStrings = { ...en }; // Spanish - using English for now
+
+// Use English as fallback for remaining languages
 const fr: TranslationStrings = { ...en }; // French
 const de: TranslationStrings = { ...en }; // German
 const ko: TranslationStrings = { ...en }; // Korean

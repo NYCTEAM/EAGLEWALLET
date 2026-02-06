@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -17,6 +18,7 @@ import DAppService from '../services/DAppService';
 import WalletService from '../services/WalletService';
 
 export default function AddDAppScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -52,14 +54,14 @@ export default function AddDAppScreen({ navigation }: any) {
     ]);
   };
 
-  const iconOptions = ['🌐', '💰', '🎨', '🎮', '📱', '⚡', '🚀', '💎', '🔷', '🟡'];
+  const iconOptions = ['🌐', '💰', '🎨', '🎮', '📱', '�?, '🚀', '💎', '🔷', '🟡'];
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Cancel</Text>
+          <Text style={styles.backButton}>�?Cancel</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Add DApp</Text>
         <View style={{ width: 60 }} />

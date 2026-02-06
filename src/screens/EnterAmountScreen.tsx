@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -14,6 +15,7 @@ import {
 } from 'react-native';
 
 export default function EnterAmountScreen({ route, navigation }: any) {
+  const { t } = useLanguage();
   const { token, address } = route.params || {};
   const [amount, setAmount] = useState('0');
   const [usdValue, setUsdValue] = useState('0.00');
@@ -48,11 +50,11 @@ export default function EnterAmountScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Text style={styles.backIcon}>�?/Text>
         </TouchableOpacity>
-        <Text style={styles.title}>发送</Text>
+        <Text style={styles.title}>发�?/Text>
         <TouchableOpacity onPress={() => navigation.popToTop()}>
-          <Text style={styles.closeIcon}>✕</Text>
+          <Text style={styles.closeIcon}>�?/Text>
         </TouchableOpacity>
       </View>
 
@@ -69,7 +71,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
           />
           <Text style={styles.tokenSymbol}>{token?.symbol || 'USDT'}</Text>
         </View>
-        <Text style={styles.usdValue}>{usdValue} USD ▼</Text>
+        <Text style={styles.usdValue}>{usdValue} USD �?/Text>
       </View>
 
       {/* Balance */}
@@ -77,7 +79,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
         <View style={styles.balanceRow}>
           <View style={styles.balanceLeft}>
             <View style={[styles.tokenIcon, { backgroundColor: token?.color + '20' || '#26A17B20' }]}>
-              <Text style={styles.tokenIconText}>{token?.icon || '₮'}</Text>
+              <Text style={styles.tokenIconText}>{token?.icon || '�?}</Text>
             </View>
             <View>
               <Text style={styles.balanceLabel}>余额</Text>
@@ -85,7 +87,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
             </View>
           </View>
           <TouchableOpacity style={styles.maxButton} onPress={handleMax}>
-            <Text style={styles.maxButtonText}>最大</Text>
+            <Text style={styles.maxButtonText}>最�?/Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -97,7 +99,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
           onPress={handleNext}
           disabled={parseFloat(amount) === 0}
         >
-          <Text style={styles.nextButtonText}>下一步</Text>
+          <Text style={styles.nextButtonText}>下一�?/Text>
         </TouchableOpacity>
       </View>
     </View>
