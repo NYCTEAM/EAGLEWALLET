@@ -1,6 +1,6 @@
 /**
- * Eagle Wallet - RPC Node Selection Screen
- * 显示 RPC 节点名称和状态，隐藏实际 URL
+ * Eagle Wallet - RPC Node Settings
+ * Manage RPC nodes for current network
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,17 +13,24 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import RPCService from '../services/RPCService';
-import { NETWORKS } from '../config/networks';
+import WalletService from '../services/WalletService';
 
-export default function RPCNodeScreen({ route, navigation }: any) {
+interface RPCNode {
+  name: string;
+  url: string;
+  latency: number;
+  available: boolean;
+  region?: string;
+}
+
+export default function RPCNodeScreen({ navigation }: any) {
   const { t } = useLanguage();
-  const { chainId } = route.params;
-  const [nodes, setNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<string>('');
-  const network = NETWORKS[chainId];
+  const [nodes, setNodes] = useState<RPCNode[]>([]);
+  const [selectedNode, setSelectedNode] = useState('Official');
+  
+  const network = WalletService.getCurrentNetwork();
 
   useEffect(() => {
     testNodes();
@@ -31,21 +38,20 @@ export default function RPCNodeScreen({ route, navigation }: any) {
 
   const testNodes = async () => {
     setTesting(true);
-    try {
-      const results = await RPCService.testAllRPCs(chainId);
-      setNodes(results);
+    // Mock testing RPC nodes
+    setTimeout(() => {
+      const mockNodes: RPCNode[] = [
+        { name: 'Official', url: 'https://bsc-dataseed.binance.org', latency: 120, available: true, region: 'Global' },
+        { name: 'QuickNode', url: 'https://...quicknode.com', latency: 45, available: true, region: 'US' },
+        { name: 'Ankr', url: 'https://rpc.ankr.com/bsc', latency: 85, available: true, region: 'EU' },
+        { name: 'Backup 1', url: 'https://bsc-dataseed1.defibit.io', latency: 150, available: true, region: 'Asia' },
+        { name: 'Backup 2', url: 'https://bsc-dataseed1.ninicoin.io', latency: 999, available: false, region: 'Global' },
+      ];
       
-      // Auto-select fastest node
-      const fastest = results.find((n: any) => n.available);
-      if (fastest && !selectedNode) {
-        setSelectedNode(fastest.name);
-      }
-    } catch (error) {
-      console.error('Test nodes error:', error);
-    } finally {
+      setNodes(mockNodes.sort((a, b) => a.latency - b.latency));
       setTesting(false);
       setLoading(false);
-    }
+    }, 1500);
   };
 
   const handleSelectNode = (nodeName: string) => {
@@ -54,19 +60,19 @@ export default function RPCNodeScreen({ route, navigation }: any) {
   };
 
   const getStatusColor = (latency: number) => {
-    if (latency < 50) return '#43A047';      // 优秀 - 绿色
-    if (latency < 100) return '#7CB342';     // 良好 - 浅绿
-    if (latency < 200) return '#FDD835';     // 一�?- 黄色
-    if (latency < 500) return '#FB8C00';     // �?- 橙色
-    return '#E53935';                        // 失败 - 红色
+    if (latency < 50) return '#43A047';      // Excellent - Green
+    if (latency < 100) return '#7CB342';     // Good - Light Green
+    if (latency < 200) return '#FDD835';     // Fair - Yellow
+    if (latency < 500) return '#FB8C00';     // Slow - Orange
+    return '#E53935';                        // Failed - Red
   };
 
   const getStatusText = (latency: number) => {
-    if (latency < 50) return 'Excellent';
-    if (latency < 100) return 'Good';
-    if (latency < 200) return 'Fair';
-    if (latency < 500) return 'Slow';
-    return 'Failed';
+    if (latency < 50) return t.network.fast;
+    if (latency < 100) return t.network.normal;
+    if (latency < 200) return t.network.normal;
+    if (latency < 500) return t.network.slow;
+    return t.transaction.failed;
   };
 
   const getRegionFlag = (region?: string) => {
@@ -83,12 +89,12 @@ export default function RPCNodeScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>RPC Nodes</Text>
+        <Text style={styles.title}>{t.settings.rpcNodes}</Text>
         <TouchableOpacity onPress={testNodes} disabled={testing}>
           <Text style={styles.refreshButton}>
-            {testing ? '�? : '🔄'}
+            {testing ? '⏳' : '🔄'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -104,13 +110,13 @@ export default function RPCNodeScreen({ route, navigation }: any) {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#F3BA2F" />
-          <Text style={styles.loadingText}>Testing nodes...</Text>
+          <Text style={styles.loadingText}>{t.network.testConnection}...</Text>
         </View>
       ) : (
         <ScrollView style={styles.nodeList}>
           {nodes.map((node, index) => (
-            <TouchableOpacity 
-              key={index} 
+            <TouchableOpacity
+              key={index}
               style={[
                 styles.nodeCard,
                 selectedNode === node.name && styles.nodeCardSelected
@@ -130,7 +136,7 @@ export default function RPCNodeScreen({ route, navigation }: any) {
                     )}
                   </View>
                 </View>
-                
+
                 <View style={styles.nodeRight}>
                   {node.available ? (
                     <>
@@ -154,7 +160,7 @@ export default function RPCNodeScreen({ route, navigation }: any) {
                     </>
                   ) : (
                     <View style={[styles.statusBadge, styles.statusFailed]}>
-                      <Text style={styles.statusTextFailed}>Offline</Text>
+                      <Text style={styles.statusTextFailed}>{t.network.disconnected}</Text>
                     </View>
                   )}
                 </View>
@@ -163,10 +169,10 @@ export default function RPCNodeScreen({ route, navigation }: any) {
               {/* Latency Bar */}
               {node.available && (
                 <View style={styles.latencyBarContainer}>
-                  <View 
+                  <View
                     style={[
                       styles.latencyBar,
-                      { 
+                      {
                         width: `${Math.min((node.latency / 500) * 100, 100)}%`,
                         backgroundColor: getStatusColor(node.latency)
                       }
@@ -174,11 +180,11 @@ export default function RPCNodeScreen({ route, navigation }: any) {
                   />
                 </View>
               )}
-              
+
               {/* Selected Checkmark */}
               {selectedNode === node.name && (
                 <View style={styles.selectedBadge}>
-                  <Text style={styles.selectedCheck}>�?/Text>
+                  <Text style={styles.selectedCheck}>✓</Text>
                 </View>
               )}
             </TouchableOpacity>

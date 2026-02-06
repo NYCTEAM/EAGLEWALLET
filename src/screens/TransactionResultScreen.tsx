@@ -32,25 +32,25 @@ export default function TransactionResultScreen({ route, navigation }: any) {
     <View style={styles.container}>
       {/* Result Icon */}
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>{success ? '�? : '�?}</Text>
+        <Text style={styles.icon}>{success ? '✓' : '✕'}</Text>
       </View>
 
       {/* Title */}
       <Text style={styles.title}>
-        {success ? '发送成�? : '发送失�?}
+        {success ? t.swap.swapSuccess : t.swap.swapFailed}
       </Text>
 
       {/* Message */}
       <Text style={styles.message}>
         {success
-          ? `已成功发�?${amount} ${token?.symbol}`
-          : error || '交易失败，请重试'}
+          ? `${t.transaction.sent} ${amount} ${token?.symbol}`
+          : error || t.errors.transactionFailed}
       </Text>
 
       {/* Transaction Hash */}
       {success && txHash && (
         <View style={styles.hashCard}>
-          <Text style={styles.hashLabel}>交易哈希</Text>
+          <Text style={styles.hashLabel}>{t.transaction.hash}</Text>
           <Text style={styles.hashValue}>{txHash.slice(0, 20)}...</Text>
         </View>
       )}
@@ -59,11 +59,11 @@ export default function TransactionResultScreen({ route, navigation }: any) {
       <View style={styles.buttons}>
         {success && txHash && (
           <TouchableOpacity style={styles.secondaryButton} onPress={handleViewTransaction}>
-            <Text style={styles.secondaryButtonText}>查看交易</Text>
+            <Text style={styles.secondaryButtonText}>{t.transaction.viewOnExplorer}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.primaryButton} onPress={handleDone}>
-          <Text style={styles.primaryButtonText}>完成</Text>
+          <Text style={styles.primaryButtonText}>{t.common.done}</Text>
         </TouchableOpacity>
       </View>
     </View>

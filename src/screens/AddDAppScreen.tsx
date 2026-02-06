@@ -26,17 +26,17 @@ export default function AddDAppScreen({ navigation }: any) {
 
   const handleAdd = () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter a name');
+      Alert.alert(t.common.error, t.dapp.dappName);
       return;
     }
 
     if (!url.trim() || !DAppService.isValidUrl(url)) {
-      Alert.alert('Error', 'Please enter a valid URL');
+      Alert.alert(t.common.error, t.errors.invalidInput);
       return;
     }
 
     const network = WalletService.getCurrentNetwork();
-    
+
     const newDApp = DAppService.addCustomDApp({
       name: name.trim(),
       url: url.trim(),
@@ -46,24 +46,24 @@ export default function AddDAppScreen({ navigation }: any) {
       chainId: network.chainId,
     });
 
-    Alert.alert('Success', 'DApp added successfully!', [
+    Alert.alert(t.common.success, t.dapp.dappAdded, [
       {
-        text: 'OK',
+        text: t.common.ok,
         onPress: () => navigation.goBack(),
       },
     ]);
   };
 
-  const iconOptions = ['🌐', '💰', '🎨', '🎮', '📱', '�?, '🚀', '💎', '🔷', '🟡'];
-
+  const iconOptions = ['🌐', '💰', '🎮', '🖼️', '📊', '⚡', '🚀', '🏦', '🔄', '🔥'];
+  
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Cancel</Text>
+          <Text style={styles.backButton}>← {t.common.cancel}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add DApp</Text>
+        <Text style={styles.title}>{t.dapp.addDApp}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -86,7 +86,7 @@ export default function AddDAppScreen({ navigation }: any) {
         </View>
 
         {/* Name Input */}
-        <Text style={styles.label}>Name *</Text>
+        <Text style={styles.label}>{t.dapp.dappName} *</Text>
         <TextInput
           style={styles.input}
           placeholder="e.g., My DApp"
@@ -96,7 +96,7 @@ export default function AddDAppScreen({ navigation }: any) {
         />
 
         {/* URL Input */}
-        <Text style={styles.label}>URL *</Text>
+        <Text style={styles.label}>{t.dapp.dappUrl} *</Text>
         <TextInput
           style={styles.input}
           placeholder="https://example.com"
@@ -108,7 +108,7 @@ export default function AddDAppScreen({ navigation }: any) {
         />
 
         {/* Description Input */}
-        <Text style={styles.label}>Description (Optional)</Text>
+        <Text style={styles.label}>{t.nft.description} ({t.common.edit})</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Brief description of the DApp"
@@ -129,12 +129,12 @@ export default function AddDAppScreen({ navigation }: any) {
 
         {/* Add Button */}
         <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
-          <Text style={styles.addButtonText}>Add DApp</Text>
+          <Text style={styles.addButtonText}>{t.dapp.addDApp}</Text>
         </TouchableOpacity>
 
         {/* Examples */}
         <View style={styles.examplesSection}>
-          <Text style={styles.examplesTitle}>Popular DApps:</Text>
+          <Text style={styles.examplesTitle}>{t.dapp.popularDApps}:</Text>
           <TouchableOpacity
             style={styles.exampleItem}
             onPress={() => {

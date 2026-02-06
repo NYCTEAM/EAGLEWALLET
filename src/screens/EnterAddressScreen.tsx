@@ -22,15 +22,15 @@ export default function EnterAddressScreen({ route, navigation }: any) {
 
   // Mock data
   const recentAddresses = [
-    { address: '0x89e4014569B9Bc7aE5AFD58e4227B3f2fB99c8a5', avatar: '🎨' },
-    { address: '0x5D0BA3d652A768cA558C02eaAD51d8F926E3d555', avatar: '🎭' },
-    { address: '0x647be98296AB3943Be46711d4a42382769ee0BB6', avatar: '🎪' },
-    { address: '0x15FEd785ff1f4192094d678ecEd4DACb699ef783', avatar: '🎯' },
-    { address: '0x04e2e260fb8108985a21cf9ed36cdc90a273afa4', avatar: '🎲' },
+    { address: '0x89e4014569B9Bc7aE5AFD58e4227B3f2fB99c8a5', avatar: '🐒' },
+    { address: '0x5D0BA3d652A768cA558C02eaAD51d8F926E3d555', avatar: '🐕' },
+    { address: '0x647be98296AB3943Be46711d4a42382769ee0BB6', avatar: '🐈' },
+    { address: '0x15FEd785ff1f4192094d678ecEd4DACb699ef783', avatar: '🦊' },
+    { address: '0x04e2e260fb8108985a21cf9ed36cdc90a273afa4', avatar: '🦄' },
   ];
 
   const myWallets = [
-    { name: '私钥', address: '0x4af7f86c70a6fba4ed9d49074d0805a3c63b1e5b', avatar: '🔐' },
+    { name: 'Private Key', address: '0x4af7f86c70a6fba4ed9d49074d0805a3c63b1e5b', avatar: '🔑' },
   ];
 
   const handleNext = () => {
@@ -48,11 +48,11 @@ export default function EnterAddressScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>�?/Text>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>发送至</Text>
+        <Text style={styles.title}>{t.send.sendTo}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.closeIcon}>�?/Text>
+          <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
       </View>
 
@@ -60,7 +60,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="输入钱包地址或域�?
+          placeholder={t.send.recipientPlaceholder}
           placeholderTextColor="#999"
           value={address}
           onChangeText={setAddress}
@@ -76,7 +76,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={() => setActiveTab('recent')}
         >
           <Text style={[styles.tabText, activeTab === 'recent' && styles.activeTabText]}>
-            最近使�?
+            {t.send.recentAddresses}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -84,7 +84,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={() => setActiveTab('my')}
         >
           <Text style={[styles.tabText, activeTab === 'my' && styles.activeTabText]}>
-            我的钱包
+            {t.wallet.myWallets}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -92,7 +92,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={() => setActiveTab('book')}
         >
           <Text style={[styles.tabText, activeTab === 'book' && styles.activeTabText]}>
-            地址�?
+            {t.receive.copyAddress}
           </Text>
         </TouchableOpacity>
       </View>
@@ -130,8 +130,8 @@ export default function EnterAddressScreen({ route, navigation }: any) {
 
         {activeTab === 'book' && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📖</Text>
-            <Text style={styles.emptyText}>地址簿为�?/Text>
+            <Text style={styles.emptyIcon}>📒</Text>
+            <Text style={styles.emptyText}>{t.common.none}</Text>
           </View>
         )}
       </ScrollView>
@@ -143,7 +143,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
           onPress={handleNext}
           disabled={address.length === 0}
         >
-          <Text style={styles.nextButtonText}>下一�?/Text>
+          <Text style={styles.nextButtonText}>{t.common.next}</Text>
         </TouchableOpacity>
       </View>
     </View>

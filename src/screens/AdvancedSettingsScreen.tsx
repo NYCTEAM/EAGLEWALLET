@@ -25,16 +25,16 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
   const handleClearCache = () => {
     Alert.alert(
-      'Clear Cache',
-      'This will clear all cached data. Continue?',
+      t.dapp.clearCache,
+      t.dapp.cacheClearConfirm,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Clear',
+          text: t.dapp.clearCache,
           style: 'destructive',
           onPress: async () => {
             // Clear cache logic
-            Alert.alert('Success', 'Cache cleared');
+            Alert.alert(t.common.success, t.dapp.cacheCleared);
           },
         },
       ]
@@ -43,16 +43,16 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
   const handleResetApp = () => {
     Alert.alert(
-      'Reset App',
+      t.settings.advancedSettings,
       'This will reset all settings to default. Your wallets will NOT be deleted. Continue?',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Reset',
+          text: t.common.confirm,
           style: 'destructive',
           onPress: async () => {
             await AsyncStorage.clear();
-            Alert.alert('Success', 'App reset to defaults');
+            Alert.alert(t.common.success, 'App reset to defaults');
           },
         },
       ]
@@ -77,20 +77,20 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Advanced Settings</Text>
+        <Text style={styles.title}>{t.settings.advancedSettings}</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Network */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Network</Text>
-          
+          <Text style={styles.sectionTitle}>{t.network.network}</Text>
+
           <SettingItem
-            icon="🧪"
-            title="Show Testnets"
+            icon="🔌"
+            title={t.network.testnet}
             subtitle="Display test networks"
             rightElement={
               <Switch
@@ -104,11 +104,11 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
         {/* Developer */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Developer</Text>
-          
+          <Text style={styles.sectionTitle}>{t.settings.advanced}</Text>
+
           <SettingItem
-            icon="👨‍�?
-            title="Developer Mode"
+            icon="👨‍💻"
+            title={t.settings.advancedSettingsSubtitle}
             subtitle="Enable advanced features"
             rightElement={
               <Switch
@@ -122,8 +122,8 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
         {/* Security */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
-          
+          <Text style={styles.sectionTitle}>{t.settings.security}</Text>
+
           <SettingItem
             icon="🔒"
             title="Auto-Lock"
@@ -140,8 +140,8 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
         {/* Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy</Text>
-          
+          <Text style={styles.sectionTitle}>{t.settings.privacyPolicy}</Text>
+
           <SettingItem
             icon="📊"
             title="Analytics"
@@ -158,22 +158,22 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
         {/* Maintenance */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Maintenance</Text>
-          
+          <Text style={styles.sectionTitle}>{t.settings.advanced}</Text>
+
           <SettingItem
-            icon="🗑�?
-            title="Clear Cache"
+            icon="🧹"
+            title={t.dapp.clearCache}
             subtitle="Free up storage space"
             onPress={handleClearCache}
-            rightElement={<Text style={styles.arrow}>�?/Text>}
+            rightElement={<Text style={styles.arrow}>→</Text>}
           />
-          
+
           <SettingItem
-            icon="🔄"
+            icon="🔧"
             title="Reset App"
             subtitle="Reset to default settings"
             onPress={handleResetApp}
-            rightElement={<Text style={styles.arrow}>�?/Text>}
+            rightElement={<Text style={styles.arrow}>→</Text>}
           />
         </View>
 

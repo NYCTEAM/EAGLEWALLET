@@ -26,7 +26,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
     // Only allow numbers and decimal point
     const cleaned = value.replace(/[^0-9.]/g, '');
     setAmount(cleaned);
-    
+
     // Calculate USD value (mock calculation)
     const numValue = parseFloat(cleaned) || 0;
     setUsdValue((numValue * 1.0).toFixed(2));
@@ -50,11 +50,11 @@ export default function EnterAmountScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>‚Ü?/Text>
+          <Text style={styles.backIcon}>‚Üê</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>ÂèëÈÄ?/Text>
+        <Text style={styles.title}>{t.send.send}</Text>
         <TouchableOpacity onPress={() => navigation.popToTop()}>
-          <Text style={styles.closeIcon}>‚ú?/Text>
+          <Text style={styles.closeIcon}>‚úï</Text>
         </TouchableOpacity>
       </View>
 
@@ -71,7 +71,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
           />
           <Text style={styles.tokenSymbol}>{token?.symbol || 'USDT'}</Text>
         </View>
-        <Text style={styles.usdValue}>{usdValue} USD ‚ñ?/Text>
+        <Text style={styles.usdValue}>{usdValue} USD ‚ñº</Text>
       </View>
 
       {/* Balance */}
@@ -79,15 +79,15 @@ export default function EnterAmountScreen({ route, navigation }: any) {
         <View style={styles.balanceRow}>
           <View style={styles.balanceLeft}>
             <View style={[styles.tokenIcon, { backgroundColor: token?.color + '20' || '#26A17B20' }]}>
-              <Text style={styles.tokenIconText}>{token?.icon || '‚Ç?}</Text>
+              <Text style={styles.tokenIconText}>{token?.icon || 'üí≤'}</Text>
             </View>
             <View>
-              <Text style={styles.balanceLabel}>‰ΩôÈ¢ù</Text>
+              <Text style={styles.balanceLabel}>{t.swap.balance}</Text>
               <Text style={styles.balanceAmount}>{maxBalance} {token?.symbol || 'USDT'}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.maxButton} onPress={handleMax}>
-            <Text style={styles.maxButtonText}>ÊúÄÂ§?/Text>
+            <Text style={styles.maxButtonText}>{t.send.max}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -99,7 +99,7 @@ export default function EnterAmountScreen({ route, navigation }: any) {
           onPress={handleNext}
           disabled={parseFloat(amount) === 0}
         >
-          <Text style={styles.nextButtonText}>‰∏ã‰∏ÄÊ≠?/Text>
+          <Text style={styles.nextButtonText}>{t.common.next}</Text>
         </TouchableOpacity>
       </View>
     </View>

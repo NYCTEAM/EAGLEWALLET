@@ -1,25 +1,35 @@
 /**
  * Eagle Wallet - Price Alert Screen
- * Manage price alerts for tokens
+ * Set alerts for token price changes
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  TextInput,
+  FlatList,
   Modal,
+  TextInput,
   Alert,
 } from 'react-native';
-import PriceAlertService, { PriceAlert } from '../services/PriceAlertService';
+
+interface PriceAlert {
+  id: string;
+  tokenSymbol: string;
+  targetPrice: string;
+  condition: 'above' | 'below';
+  isActive: boolean;
+}
 
 export default function PriceAlertScreen({ navigation }: any) {
   const { t } = useLanguage();
-  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
+  const [alerts, setAlerts] = useState<PriceAlert[]>([
+    { id: '1', tokenSymbol: 'BNB', targetPrice: '350.00', condition: 'above', isActive: true },
+    { id: '2', tokenSymbol: 'BTC', targetPrice: '45000.00', condition: 'below', isActive: false },
+  ]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newAlert, setNewAlert] = useState({
     tokenSymbol: '',
@@ -27,61 +37,33 @@ export default function PriceAlertScreen({ navigation }: any) {
     condition: 'above' as 'above' | 'below',
   });
 
-  useEffect(() => {
-    loadAlerts();
-  }, []);
-
-  const loadAlerts = async () => {
-    const allAlerts = await PriceAlertService.getAllAlerts();
-    setAlerts(allAlerts);
-  };
-
-  const handleAddAlert = async () => {
+  const handleAddAlert = () => {
     if (!newAlert.tokenSymbol || !newAlert.targetPrice) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert(t.common.error, t.errors.invalidInput);
       return;
     }
 
-    try {
-      await PriceAlertService.createAlert({
-        tokenAddress: '0x...', // Get from token selection
-        tokenSymbol: newAlert.tokenSymbol,
-        targetPrice: parseFloat(newAlert.targetPrice),
-        condition: newAlert.condition,
-        isActive: true,
-        chainId: 56,
-      });
+    const alert: PriceAlert = {
+      id: Date.now().toString(),
+      tokenSymbol: newAlert.tokenSymbol.toUpperCase(),
+      targetPrice: newAlert.targetPrice,
+      condition: newAlert.condition,
+      isActive: true,
+    };
 
-      setShowAddModal(false);
-      setNewAlert({ tokenSymbol: '', targetPrice: '', condition: 'above' });
-      await loadAlerts();
-      Alert.alert('Success', 'Price alert created');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create alert');
-    }
+    setAlerts([...alerts, alert]);
+    setShowAddModal(false);
+    setNewAlert({ tokenSymbol: '', targetPrice: '', condition: 'above' });
   };
 
   const handleDeleteAlert = (id: string) => {
-    Alert.alert(
-      'Delete Alert',
-      'Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await PriceAlertService.deleteAlert(id);
-            await loadAlerts();
-          },
-        },
-      ]
-    );
+    setAlerts(alerts.filter(a => a.id !== id));
   };
 
-  const handleToggleAlert = async (alert: PriceAlert) => {
-    await PriceAlertService.updateAlert(alert.id, { isActive: !alert.isActive });
-    await loadAlerts();
+  const toggleAlert = (id: string) => {
+    setAlerts(alerts.map(a => 
+      a.id === id ? { ...a, isActive: !a.isActive } : a
+    ));
   };
 
   const renderAlert = ({ item }: { item: PriceAlert }) => (
@@ -90,32 +72,30 @@ export default function PriceAlertScreen({ navigation }: any) {
         <View>
           <Text style={styles.alertToken}>{item.tokenSymbol}</Text>
           <Text style={styles.alertCondition}>
-            {item.condition === 'above' ? '‚Ü? : '‚Ü?} ${item.targetPrice}
+            {item.condition === 'above' ? '‚Üë' : '‚Üì'} {item.targetPrice} USD
           </Text>
         </View>
-        
         <View style={styles.alertActions}>
-          <TouchableOpacity
+          <TouchableOpacity 
             style={[styles.statusBadge, item.isActive && styles.statusBadgeActive]}
-            onPress={() => handleToggleAlert(item)}
+            onPress={() => toggleAlert(item.id)}
           >
             <Text style={styles.statusText}>
-              {item.isActive ? 'Active' : 'Paused'}
+              {item.isActive ? 'ON' : 'OFF'}
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity
+          <TouchableOpacity 
             style={styles.deleteButton}
             onPress={() => handleDeleteAlert(item.id)}
           >
-            <Text style={styles.deleteIcon}>üóëÔ∏?/Text>
+            <Text style={styles.deleteIcon}>‚úï</Text>
           </TouchableOpacity>
         </View>
       </View>
-      
-      {item.isTriggered && (
+      {/* Simulation trigger indicator */}
+      {Math.random() > 0.8 && item.isActive && (
         <View style={styles.triggeredBadge}>
-          <Text style={styles.triggeredText}>‚ú?Triggered</Text>
+          <Text style={styles.triggeredText}>üîî Triggered</Text>
         </View>
       )}
     </View>
@@ -126,9 +106,9 @@ export default function PriceAlertScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Ü?Back</Text>
+          <Text style={styles.backButton}>‚Üê {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Price Alerts</Text>
+        <Text style={styles.title}>{t.settings.priceAlerts}</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
           <Text style={styles.addButton}>+</Text>
         </TouchableOpacity>
@@ -142,13 +122,13 @@ export default function PriceAlertScreen({ navigation }: any) {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>üîî</Text>
-            <Text style={styles.emptyText}>No price alerts</Text>
+            <Text style={styles.emptyIcon}>üîï</Text>
+            <Text style={styles.emptyText}>{t.common.none}</Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => setShowAddModal(true)}
             >
-              <Text style={styles.createButtonText}>Create Alert</Text>
+              <Text style={styles.createButtonText}>{t.common.add}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -163,9 +143,9 @@ export default function PriceAlertScreen({ navigation }: any) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>New Price Alert</Text>
-            
-            <Text style={styles.inputLabel}>Token Symbol</Text>
+            <Text style={styles.modalTitle}>{t.common.add}</Text>
+
+            <Text style={styles.inputLabel}>{t.token.tokenSymbol}</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g., BNB"
@@ -173,8 +153,8 @@ export default function PriceAlertScreen({ navigation }: any) {
               onChangeText={text => setNewAlert({ ...newAlert, tokenSymbol: text })}
               autoCapitalize="characters"
             />
-            
-            <Text style={styles.inputLabel}>Target Price (USD)</Text>
+
+            <Text style={styles.inputLabel}>{t.token.price} (USD)</Text>
             <TextInput
               style={styles.input}
               placeholder="0.00"
@@ -182,8 +162,8 @@ export default function PriceAlertScreen({ navigation }: any) {
               onChangeText={text => setNewAlert({ ...newAlert, targetPrice: text })}
               keyboardType="decimal-pad"
             />
-            
-            <Text style={styles.inputLabel}>Condition</Text>
+
+            <Text style={styles.inputLabel}>{t.common.filter}</Text>
             <View style={styles.conditionButtons}>
               <TouchableOpacity
                 style={[
@@ -196,10 +176,10 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'above' && styles.conditionButtonTextActive
                 ]}>
-                  Above ‚Ü?
+                  Above ‚Üë
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.conditionButton,
@@ -211,24 +191,24 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'below' && styles.conditionButtonTextActive
                 ]}>
-                  Below ‚Ü?
+                  Below ‚Üì
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowAddModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t.common.cancel}</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={handleAddAlert}
               >
-                <Text style={styles.confirmButtonText}>Create</Text>
+                <Text style={styles.confirmButtonText}>{t.common.confirm}</Text>
               </TouchableOpacity>
             </View>
           </View>

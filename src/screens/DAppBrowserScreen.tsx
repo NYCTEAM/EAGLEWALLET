@@ -20,7 +20,7 @@ import WalletService from '../services/WalletService';
 
 export default function DAppBrowserScreen({ navigation }: any) {
   const { t } = useLanguage();
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState(t.common.all);
   const [searchQuery, setSearchQuery] = useState('');
   const [displayDApps, setDisplayDApps] = useState<DApp[]>(FEATURED_DAPPS);
 
@@ -29,11 +29,14 @@ export default function DAppBrowserScreen({ navigation }: any) {
   }, [selectedCategory, searchQuery]);
 
   const filterDApps = () => {
+    // Handle "All" translation
+    const categoryFilter = selectedCategory === t.common.all ? 'All' : selectedCategory;
+    
     if (searchQuery.trim()) {
       const results = searchDApps(searchQuery);
       setDisplayDApps(results);
     } else {
-      const filtered = getDAppsByCategory(selectedCategory);
+      const filtered = getDAppsByCategory(categoryFilter);
       setDisplayDApps(filtered);
     }
   };
@@ -60,7 +63,7 @@ export default function DAppBrowserScreen({ navigation }: any) {
         </Text>
         <Text style={styles.dappCategory}>{dapp.category}</Text>
       </View>
-      <Text style={styles.dappArrow}>‚Ü?/Text>
+      <Text style={styles.dappArrow}>‚Üí</Text>
     </TouchableOpacity>
   );
 
@@ -69,9 +72,9 @@ export default function DAppBrowserScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Ü?Back</Text>
+          <Text style={styles.backButton}>‚Üê {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>DApp Browser</Text>
+        <Text style={styles.title}>{t.dapp.dappBrowser}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -79,7 +82,7 @@ export default function DAppBrowserScreen({ navigation }: any) {
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search DApps..."
+          placeholder={t.dapp.searchPlaceholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -89,7 +92,7 @@ export default function DAppBrowserScreen({ navigation }: any) {
 
       {/* Category Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs}>
-        {DAPP_CATEGORIES.map(category => (
+        {[t.common.all, ...DAPP_CATEGORIES.filter(c => c !== 'All')].map(category => (
           <TouchableOpacity
             key={category}
             style={[
@@ -116,11 +119,11 @@ export default function DAppBrowserScreen({ navigation }: any) {
               {renderDAppCard(dapp)}
             </View>
           ))}
-          
+
           {displayDApps.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyIcon}>üîç</Text>
-              <Text style={styles.emptyText}>No DApps found</Text>
+              <Text style={styles.emptyText}>{t.dapp.noDApps}</Text>
             </View>
           )}
         </View>

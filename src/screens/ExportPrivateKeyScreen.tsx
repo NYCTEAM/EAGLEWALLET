@@ -1,6 +1,6 @@
 /**
  * Eagle Wallet - Export Private Key Screen
- * Securely display and export private key
+ * View and backup private key
  */
 
 import React, { useState } from 'react';
@@ -26,7 +26,7 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
 
   const handleRevealPrivateKey = async () => {
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      Alert.alert(t.common.error, t.errors.passwordRequired);
       return;
     }
 
@@ -37,7 +37,7 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
       setPrivateKey(key);
       setRevealed(true);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Incorrect password');
+      Alert.alert(t.common.error, error.message || t.errors.invalidInput);
     } finally {
       setLoading(false);
     }
@@ -45,17 +45,17 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
 
   const copyPrivateKey = () => {
     Clipboard.setString(privateKey);
-    Alert.alert('Copied!', 'Private key copied to clipboard');
+    Alert.alert(t.common.copied, t.receive.addressCopied.replace('Address', t.wallet.privateKey));
   };
 
   const handleClose = () => {
     Alert.alert(
-      'Close',
-      'Make sure you have saved your private key securely!',
+      t.common.close,
+      t.settings.exportPrivateKeyMessage,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Close',
+          text: t.common.close,
           onPress: () => navigation.goBack(),
         },
       ]
@@ -67,9 +67,9 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose}>
-          <Text style={styles.backButton}>‚Ü?Back</Text>
+          <Text style={styles.backButton}>‚Üê {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Export Private Key</Text>
+        <Text style={styles.title}>{t.settings.exportPrivateKey}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -77,18 +77,12 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
         {/* Warning */}
         <View style={styles.warningBox}>
           <Text style={styles.warningIcon}>‚ö†Ô∏è</Text>
-          <Text style={styles.warningTitle}>Security Warning</Text>
+          <Text style={styles.warningTitle}>{t.common.warning}</Text>
           <Text style={styles.warningText}>
-            ‚Ä?Never share your private key with anyone
+            ‚Ä¢ {t.settings.exportPrivateKeyMessage}
           </Text>
           <Text style={styles.warningText}>
-            ‚Ä?Anyone with your private key can access your funds
-          </Text>
-          <Text style={styles.warningText}>
-            ‚Ä?Store it in a secure location
-          </Text>
-          <Text style={styles.warningText}>
-            ‚Ä?Eagle Wallet will never ask for your private key
+            ‚Ä¢ {t.wallet.backupWarning}
           </Text>
         </View>
 
@@ -96,10 +90,10 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
           <>
             {/* Password Input */}
             <View style={styles.inputSection}>
-              <Text style={styles.label}>Enter Password to Continue</Text>
+              <Text style={styles.label}>{t.wallet.password}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your wallet password"
+                placeholder={t.wallet.passwordPlaceholder}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -114,7 +108,7 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
               disabled={loading}
             >
               <Text style={styles.revealButtonText}>
-                {loading ? 'Verifying...' : 'Reveal Private Key'}
+                {loading ? t.common.loading : t.settings.show}
               </Text>
             </TouchableOpacity>
           </>
@@ -122,49 +116,30 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
           <>
             {/* Private Key Display */}
             <View style={styles.keyContainer}>
-              <Text style={styles.keyLabel}>Your Private Key</Text>
+              <Text style={styles.keyLabel}>{t.wallet.privateKey}</Text>
               <View style={styles.keyBox}>
                 <Text style={styles.keyText} selectable>
                   {privateKey}
                 </Text>
               </View>
-              
+
               {/* Copy Button */}
               <TouchableOpacity style={styles.copyButton} onPress={copyPrivateKey}>
-                <Text style={styles.copyButtonText}>üìã Copy to Clipboard</Text>
+                <Text style={styles.copyButtonText}>üìã {t.common.copy}</Text>
               </TouchableOpacity>
-            </View>
-
-            {/* QR Code Option */}
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
-                üí° Tip: You can also export as QR code for easier backup
-              </Text>
             </View>
 
             {/* Security Reminder */}
             <View style={styles.reminderBox}>
-              <Text style={styles.reminderTitle}>‚ú?Security Checklist</Text>
+              <Text style={styles.reminderTitle}>üõ°Ô∏è {t.settings.security}</Text>
               <Text style={styles.reminderText}>
-                ‚ñ?Store in a password manager
-              </Text>
-              <Text style={styles.reminderText}>
-                ‚ñ?Write it down on paper
-              </Text>
-              <Text style={styles.reminderText}>
-                ‚ñ?Keep multiple backups
-              </Text>
-              <Text style={styles.reminderText}>
-                ‚ñ?Never share with anyone
-              </Text>
-              <Text style={styles.reminderText}>
-                ‚ñ?Don't store in email or cloud
+                ‚Ä¢ {t.settings.backupWalletMessage}
               </Text>
             </View>
 
             {/* Done Button */}
             <TouchableOpacity style={styles.doneButton} onPress={handleClose}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={styles.doneButtonText}>{t.common.done}</Text>
             </TouchableOpacity>
           </>
         )}
@@ -289,17 +264,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: '600',
-  },
-  infoBox: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#1976D2',
-    lineHeight: 20,
   },
   reminderBox: {
     backgroundColor: '#E8F5E9',
