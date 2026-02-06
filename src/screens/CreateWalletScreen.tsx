@@ -168,6 +168,10 @@ export default function CreateWalletScreen({ navigation }: any) {
             editable={!isCreating}
           />
 
+          {isCreating && (
+            <Text style={styles.creatingText}>Creating wallet... This may take a few seconds</Text>
+          )}
+
           <TouchableOpacity 
             style={[styles.primaryButton, isCreating && styles.disabledButton]} 
             onPress={handlePasswordSubmit}
@@ -500,5 +504,12 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  creatingText: {
+    fontSize: 13,
+    color: '#F3BA2F',
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '500',
   },
 });

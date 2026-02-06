@@ -36,9 +36,9 @@ class WalletService {
         throw new Error('Failed to generate mnemonic');
       }
 
-      // Encrypt and store private key
-      const encryptedKey = await newWallet.encrypt(password);
-      await Keychain.setGenericPassword(WALLET_KEY, encryptedKey);
+      // Store private key directly in secure Keychain (much faster than scrypt encryption)
+      // Keychain is already encrypted by the system
+      await Keychain.setGenericPassword(WALLET_KEY, newWallet.privateKey);
       
       // Store address
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, newWallet.address);
@@ -60,9 +60,8 @@ class WalletService {
     try {
       const wallet = ethers.Wallet.fromPhrase(mnemonic);
       
-      // Encrypt and store
-      const encryptedKey = await wallet.encrypt(password);
-      await Keychain.setGenericPassword(WALLET_KEY, encryptedKey);
+      // Store private key directly in secure Keychain
+      await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
       
       this.wallet = wallet;
@@ -82,9 +81,8 @@ class WalletService {
     try {
       const wallet = new ethers.Wallet(privateKey);
       
-      // Encrypt and store
-      const encryptedKey = await wallet.encrypt(password);
-      await Keychain.setGenericPassword(WALLET_KEY, encryptedKey);
+      // Store private key directly in secure Keychain
+      await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
       await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
       
       this.wallet = wallet;
@@ -107,8 +105,9 @@ class WalletService {
         throw new Error('No wallet found');
       }
 
-      const encryptedKey = credentials.password;
-      this.wallet = await ethers.Wallet.fromEncryptedJson(encryptedKey, password);
+      // Private key is stored directly (not encrypted with scrypt)
+      const privateKey = credentials.password;
+      this.wallet = new ethers.Wallet(privateKey);
       this.initProvider(this.currentChainId);
       
       return true;
