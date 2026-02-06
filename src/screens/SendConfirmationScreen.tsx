@@ -87,14 +87,14 @@ export default function SendConfirmationScreen({ route, navigation }: any) {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t.network.network}</Text>
-            <Text style={styles.detailValue}>BNB Smart Chain</Text>
+            <Text style={styles.detailValue}>{t.network.bsc}</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>{t.send.gasFee}</Text>
-            <Text style={styles.detailValue}>≈ $0.05</Text>
+            <Text style={styles.detailValue}>{t.send.gasFeeValue}</Text>
           </View>
         </View>
 

@@ -34,6 +34,7 @@ export const zh: TranslationStrings = {
     retry: '重试',
     skip: '跳过',
     continue: '继续',
+    contentCopied: '已复制到剪贴板',
   },
 
   home: {
@@ -90,6 +91,7 @@ export const zh: TranslationStrings = {
     generating: '正在生成安全钱包...',
     appSubtitle: '安全的多链加密钱包',
     poweredBy: '由 Eagle Network 提供支持',
+    privateKeyName: '私钥',
   },
 
   send: {
@@ -299,6 +301,11 @@ export const zh: TranslationStrings = {
     dappAdded: 'DApp已添加',
     removeDApp: '移除DApp',
     openInBrowser: '在浏览器打开',
+    customDApp: '自定义DApp',
+    icon: '图标',
+    addInfo: 'ℹ️ 此DApp将被添加到 ',
+    pancakeDesc: 'BSC上的领先DEX',
+    uniswapDesc: '去中心化交易所',
   },
 
   settings: {
@@ -348,6 +355,18 @@ export const zh: TranslationStrings = {
     show: '显示',
     showRecoveryPhrase: '显示助记词',
     chooseCurrency: '选择货币',
+    resetApp: '重置应用',
+    resetMessage: '这将把所有设置重置为默认值。您的钱包不会被删除。继续吗？',
+    appReset: '应用已重置为默认值',
+    displayTestnet: '显示测试网络',
+    enableAdvanced: '启用高级功能',
+    autoLock: '自动锁定',
+    autoLockSubtitle: '不活动时锁定应用',
+    analytics: '分析',
+    analyticsSubtitle: '帮助改进应用',
+    clearCacheSubtitle: '释放存储空间',
+    resetAppSubtitle: '重置为默认设置',
+    advancedWarning: '⚠️ 高级设置仅供有经验的用户使用',
   },
 
   network: {
@@ -373,6 +392,15 @@ export const zh: TranslationStrings = {
     slow: '慢速',
     mainnet: '主网',
     testnet: '测试网',
+    nodesAvailable: '个可用节点',
+    hiddenUrl: '🔒 RPC地址已隐藏以确保安全',
+    fastestNode: '自动选择最快节点',
+    bsc: 'BNB 智能链',
+  },
+
+  priceAlert: {
+    above: '高于',
+    below: '低于',
   },
 
   errors: {

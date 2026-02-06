@@ -30,7 +30,7 @@ export default function EnterAddressScreen({ route, navigation }: any) {
   ];
 
   const myWallets = [
-    { name: 'Private Key', address: '0x4af7f86c70a6fba4ed9d49074d0805a3c63b1e5b', avatar: '🔑' },
+    { name: t.wallet.privateKey, address: '0x4af7f86c70a6fba4ed9d49074d0805a3c63b1e5b', avatar: '🔑' },
   ];
 
   const handleNext = () => {

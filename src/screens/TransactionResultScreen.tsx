@@ -37,7 +37,7 @@ export default function TransactionResultScreen({ route, navigation }: any) {
 
       {/* Title */}
       <Text style={styles.title}>
-        {success ? t.swap.swapSuccess : t.swap.swapFailed}
+        {success ? t.transaction.success : t.transaction.failure}
       </Text>
 
       {/* Message */}

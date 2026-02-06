@@ -45,7 +45,7 @@ export default function ExportPrivateKeyScreen({ navigation }: any) {
 
   const copyPrivateKey = () => {
     Clipboard.setString(privateKey);
-    Alert.alert(t.common.copied, t.receive.addressCopied.replace('Address', t.wallet.privateKey));
+    Alert.alert(t.common.copied, t.common.contentCopied || t.common.copied);
   };
 
   const handleClose = () => {

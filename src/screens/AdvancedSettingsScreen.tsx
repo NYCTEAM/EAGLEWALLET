@@ -44,7 +44,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
   const handleResetApp = () => {
     Alert.alert(
       t.settings.advancedSettings,
-      'This will reset all settings to default. Your wallets will NOT be deleted. Continue?',
+      t.settings.resetMessage,
       [
         { text: t.common.cancel, style: 'cancel' },
         {
@@ -52,7 +52,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
           style: 'destructive',
           onPress: async () => {
             await AsyncStorage.clear();
-            Alert.alert(t.common.success, 'App reset to defaults');
+            Alert.alert(t.common.success, t.settings.appReset);
           },
         },
       ]
@@ -90,8 +90,8 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
           <SettingItem
             icon="🔌"
-            title={t.network.testnet}
-            subtitle="Display test networks"
+            title={t.settings.displayTestnet}
+            subtitle={t.settings.displayTestnet}
             rightElement={
               <Switch
                 value={showTestnets}
@@ -109,7 +109,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
           <SettingItem
             icon="👨‍💻"
             title={t.settings.advancedSettingsSubtitle}
-            subtitle="Enable advanced features"
+            subtitle={t.settings.enableAdvanced}
             rightElement={
               <Switch
                 value={developerMode}
@@ -126,8 +126,8 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
           <SettingItem
             icon="🔒"
-            title="Auto-Lock"
-            subtitle="Lock app when inactive"
+            title={t.settings.autoLock}
+            subtitle={t.settings.autoLockSubtitle}
             rightElement={
               <Switch
                 value={autoLockEnabled}
@@ -144,8 +144,8 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
 
           <SettingItem
             icon="📊"
-            title="Analytics"
-            subtitle="Help improve the app"
+            title={t.settings.analytics}
+            subtitle={t.settings.analyticsSubtitle}
             rightElement={
               <Switch
                 value={analyticsEnabled}
@@ -163,15 +163,15 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
           <SettingItem
             icon="🧹"
             title={t.dapp.clearCache}
-            subtitle="Free up storage space"
+            subtitle={t.settings.clearCacheSubtitle}
             onPress={handleClearCache}
             rightElement={<Text style={styles.arrow}>→</Text>}
           />
 
           <SettingItem
             icon="🔧"
-            title="Reset App"
-            subtitle="Reset to default settings"
+            title={t.settings.resetApp}
+            subtitle={t.settings.resetAppSubtitle}
             onPress={handleResetApp}
             rightElement={<Text style={styles.arrow}>→</Text>}
           />
@@ -180,7 +180,7 @@ export default function AdvancedSettingsScreen({ navigation }: any) {
         {/* Info */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            ⚠️ Advanced settings are for experienced users only
+            {t.settings.advancedWarning}
           </Text>
         </View>
       </ScrollView>

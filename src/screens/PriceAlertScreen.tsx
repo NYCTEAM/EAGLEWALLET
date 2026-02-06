@@ -176,7 +176,7 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'above' && styles.conditionButtonTextActive
                 ]}>
-                  Above ↑
+                  {t.priceAlert.above} ↑
                 </Text>
               </TouchableOpacity>
 
@@ -191,7 +191,7 @@ export default function PriceAlertScreen({ navigation }: any) {
                   styles.conditionButtonText,
                   newAlert.condition === 'below' && styles.conditionButtonTextActive
                 ]}>
-                  Below ↓
+                  {t.priceAlert.below} ↓
                 </Text>
               </TouchableOpacity>
             </View>

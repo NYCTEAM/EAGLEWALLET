@@ -103,7 +103,7 @@ export default function RPCNodeScreen({ navigation }: any) {
       <View style={styles.networkInfo}>
         <Text style={styles.networkName}>{network.name}</Text>
         <Text style={styles.networkSubtext}>
-          {nodes.length} nodes available
+          {nodes.length} {t.network.nodesAvailable}
         </Text>
       </View>
 
@@ -195,10 +195,10 @@ export default function RPCNodeScreen({ navigation }: any) {
       {/* Info Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          🔒 RPC URLs are hidden for security
+          {t.network.hiddenUrl}
         </Text>
         <Text style={styles.footerSubtext}>
-          Fastest node is automatically selected
+          {t.network.fastestNode}
         </Text>
       </View>
     </View>

@@ -40,6 +40,7 @@ export interface TranslationStrings {
     retry: string;
     skip: string;
     continue: string;
+    contentCopied: string;
   };
 
   // ===== HOME SCREEN =====
@@ -98,6 +99,7 @@ export interface TranslationStrings {
     generating: string;
     appSubtitle: string;
     poweredBy: string;
+    privateKeyName: string;
   };
 
   // ===== SEND =====
@@ -314,6 +316,11 @@ export interface TranslationStrings {
     dappAdded: string;
     removeDApp: string;
     openInBrowser: string;
+    customDApp: string;
+    icon: string;
+    addInfo: string;
+    pancakeDesc: string;
+    uniswapDesc: string;
   };
 
   // ===== SETTINGS =====
@@ -382,6 +389,18 @@ export interface TranslationStrings {
     show: string;
     showRecoveryPhrase: string;
     chooseCurrency: string;
+    resetApp: string;
+    resetMessage: string;
+    appReset: string;
+    displayTestnet: string;
+    enableAdvanced: string;
+    autoLock: string;
+    autoLockSubtitle: string;
+    analytics: string;
+    analyticsSubtitle: string;
+    clearCacheSubtitle: string;
+    resetAppSubtitle: string;
+    advancedWarning: string;
   };
 
   // ===== NETWORK =====
@@ -408,6 +427,16 @@ export interface TranslationStrings {
     slow: string;
     mainnet: string;
     testnet: string;
+    nodesAvailable: string;
+    hiddenUrl: string;
+    fastestNode: string;
+    bsc: string;
+  };
+
+  // ===== PRICE ALERT =====
+  priceAlert: {
+    above: string;
+    below: string;
   };
 
   // ===== ERRORS =====

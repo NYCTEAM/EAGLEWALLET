@@ -40,7 +40,7 @@ export default function AddDAppScreen({ navigation }: any) {
     const newDApp = DAppService.addCustomDApp({
       name: name.trim(),
       url: url.trim(),
-      description: description.trim() || 'Custom DApp',
+      description: description.trim() || t.dapp.customDApp,
       icon: icon || '🌐',
       category: 'other',
       chainId: network.chainId,
@@ -69,7 +69,7 @@ export default function AddDAppScreen({ navigation }: any) {
 
       <ScrollView style={styles.content}>
         {/* Icon Selector */}
-        <Text style={styles.label}>Icon</Text>
+        <Text style={styles.label}>{t.dapp.icon}</Text>
         <View style={styles.iconGrid}>
           {iconOptions.map(emoji => (
             <TouchableOpacity
@@ -111,7 +111,7 @@ export default function AddDAppScreen({ navigation }: any) {
         <Text style={styles.label}>{t.nft.description} ({t.common.edit})</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Brief description of the DApp"
+          placeholder={t.dapp.customDApp}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -122,7 +122,7 @@ export default function AddDAppScreen({ navigation }: any) {
         {/* Network Info */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            ℹ️ This DApp will be added to{' '}
+            {t.dapp.addInfo}
             {WalletService.getCurrentNetwork().name}
           </Text>
         </View>
@@ -140,7 +140,7 @@ export default function AddDAppScreen({ navigation }: any) {
             onPress={() => {
               setName('PancakeSwap');
               setUrl('https://pancakeswap.finance');
-              setDescription('Leading DEX on BSC');
+              setDescription(t.dapp.pancakeDesc);
               setIcon('🥞');
             }}
           >
@@ -151,7 +151,7 @@ export default function AddDAppScreen({ navigation }: any) {
             onPress={() => {
               setName('Uniswap');
               setUrl('https://app.uniswap.org');
-              setDescription('Decentralized exchange');
+              setDescription(t.dapp.uniswapDesc);
               setIcon('🦄');
             }}
           >

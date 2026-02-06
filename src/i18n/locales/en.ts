@@ -34,6 +34,7 @@ export const en: TranslationStrings = {
     retry: 'Retry',
     skip: 'Skip',
     continue: 'Continue',
+    contentCopied: 'Copied to clipboard',
   },
 
   home: {
@@ -90,6 +91,7 @@ export const en: TranslationStrings = {
     generating: 'Generating secure wallet...',
     appSubtitle: 'Secure Multi-Chain Crypto Wallet',
     poweredBy: 'Powered by Eagle Network',
+    privateKeyName: 'Private Key',
   },
 
   send: {
@@ -299,6 +301,11 @@ export const en: TranslationStrings = {
     dappAdded: 'DApp added',
     removeDApp: 'Remove DApp',
     openInBrowser: 'Open in Browser',
+    customDApp: 'Custom DApp',
+    icon: 'Icon',
+    addInfo: 'ℹ️ This DApp will be added to ',
+    pancakeDesc: 'Leading DEX on BSC',
+    uniswapDesc: 'Decentralized exchange',
   },
 
   settings: {
@@ -348,6 +355,18 @@ export const en: TranslationStrings = {
     show: 'Show',
     showRecoveryPhrase: 'Show Recovery Phrase',
     chooseCurrency: 'Choose currency',
+    resetApp: 'Reset App',
+    resetMessage: 'This will reset all settings to default. Your wallets will NOT be deleted. Continue?',
+    appReset: 'App reset to defaults',
+    displayTestnet: 'Display test networks',
+    enableAdvanced: 'Enable advanced features',
+    autoLock: 'Auto-Lock',
+    autoLockSubtitle: 'Lock app when inactive',
+    analytics: 'Analytics',
+    analyticsSubtitle: 'Help improve the app',
+    clearCacheSubtitle: 'Free up storage space',
+    resetAppSubtitle: 'Reset to default settings',
+    advancedWarning: '⚠️ Advanced settings are for experienced users only',
   },
 
   network: {
@@ -373,6 +392,15 @@ export const en: TranslationStrings = {
     slow: 'Slow',
     mainnet: 'Mainnet',
     testnet: 'Testnet',
+    nodesAvailable: 'nodes available',
+    hiddenUrl: '🔒 RPC URLs are hidden for security',
+    fastestNode: 'Fastest node is automatically selected',
+    bsc: 'BNB Smart Chain',
+  },
+
+  priceAlert: {
+    above: 'Above',
+    below: 'Below',
   },
 
   errors: {
