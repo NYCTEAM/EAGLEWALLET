@@ -86,29 +86,31 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       
       // Load balances for predefined tokens
       for (const token of chainTokens) {
+        let balance = '0.0000';
+        
         try {
           // ERC20 ABI for balanceOf
           const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
           const contract = new ethers.Contract(token.address, erc20Abi, provider);
           
           const tokenBalance = await contract.balanceOf(addr);
-          const formattedBalance = ethers.formatUnits(tokenBalance, token.decimals);
-          
-          // Add all tokens (including zero balance for testing)
-          tokenList.push({
-            symbol: token.symbol,
-            name: token.name,
-            balance: parseFloat(formattedBalance).toFixed(4),
-            price: 0,
-            change: 0,
-            address: token.address,
-            logo: token.logo || token.symbol.toLowerCase(),
-            color: token.color,
-            decimals: token.decimals,
-          });
+          balance = ethers.formatUnits(tokenBalance, token.decimals);
         } catch (error) {
-          console.error(`Failed to load balance for ${token.symbol}:`, error);
+          console.warn(`Failed to load balance for ${token.symbol}, showing as 0:`, error);
         }
+
+        // Add token regardless of balance or error
+        tokenList.push({
+          symbol: token.symbol,
+          name: token.name,
+          balance: parseFloat(balance).toFixed(4),
+          price: 0,
+          change: 0,
+          address: token.address,
+          logo: token.logo || token.symbol.toLowerCase(),
+          color: token.color,
+          decimals: token.decimals,
+        });
       }
       
       setTokens(tokenList);
