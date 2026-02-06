@@ -14,81 +14,47 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
-import DAppService, { DApp } from '../services/DAppService';
+import { FEATURED_DAPPS, DAPP_CATEGORIES, getDAppsByCategory, searchDApps, DApp } from '../config/dappsConfig';
 import WalletService from '../services/WalletService';
 
 export default function DAppBrowserScreen({ navigation }: any) {
-  const [featuredDApps, setFeaturedDApps] = useState<DApp[]>([]);
-  const [recentDApps, setRecentDApps] = useState<DApp[]>([]);
-  const [customDApps, setCustomDApps] = useState<DApp[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<DApp[]>([]);
-  const [currentChain, setCurrentChain] = useState(56);
+  const [displayDApps, setDisplayDApps] = useState<DApp[]>(FEATURED_DAPPS);
 
   useEffect(() => {
-    loadDApps();
-  }, []);
+    filterDApps();
+  }, [selectedCategory, searchQuery]);
 
-  const loadDApps = () => {
-    const network = WalletService.getCurrentNetwork();
-    setCurrentChain(network.chainId);
-    setFeaturedDApps(DAppService.getFeaturedDApps(network.chainId));
-    setRecentDApps(DAppService.getRecentDApps());
-    setCustomDApps(DAppService.getCustomDApps());
-  };
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    if (query.trim()) {
-      const results = DAppService.searchDApps(query);
-      setSearchResults(results);
+  const filterDApps = () => {
+    if (searchQuery.trim()) {
+      const results = searchDApps(searchQuery);
+      setDisplayDApps(results);
     } else {
-      setSearchResults([]);
+      const filtered = getDAppsByCategory(selectedCategory);
+      setDisplayDApps(filtered);
     }
   };
 
   const openDApp = (dapp: DApp) => {
-    DAppService.addToRecent(dapp);
-    setRecentDApps(DAppService.getRecentDApps());
-    
     // Open in external browser with Web3 support
     Linking.openURL(dapp.url);
   };
 
-  const openCustomURL = () => {
-    if (DAppService.isValidUrl(searchQuery)) {
-      const customDApp: DApp = {
-        id: `temp-${Date.now()}`,
-        name: 'Custom DApp',
-        url: searchQuery,
-        icon: '🌐',
-        description: 'Custom URL',
-        category: 'other',
-        chainId: currentChain,
-      };
-      openDApp(customDApp);
-    }
-  };
-
-  const renderDAppCard = (dapp: DApp, showChain: boolean = false) => (
+  const renderDAppCard = (dapp: DApp) => (
     <TouchableOpacity
-      key={dapp.id}
       style={styles.dappCard}
       onPress={() => openDApp(dapp)}
     >
       <View style={styles.dappIcon}>
-        <Text style={styles.dappIconText}>{dapp.icon}</Text>
+        <Text style={styles.dappIconText}>{dapp.icon || '🌐'}</Text>
       </View>
       <View style={styles.dappInfo}>
         <Text style={styles.dappName}>{dapp.name}</Text>
         <Text style={styles.dappDescription} numberOfLines={1}>
           {dapp.description}
         </Text>
-        {showChain && (
-          <Text style={styles.dappChain}>
-            {dapp.chainId === 56 ? '🟡 BSC' : '🔷 XLAYER'}
-          </Text>
-        )}
+        <Text style={styles.dappCategory}>{dapp.category}</Text>
       </View>
       <Text style={styles.dappArrow}>→</Text>
     </TouchableOpacity>
@@ -102,123 +68,58 @@ export default function DAppBrowserScreen({ navigation }: any) {
           <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.title}>DApp Browser</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('AddDApp')}>
-          <Text style={styles.addButton}>+</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search DApps or enter URL..."
+          placeholder="Search DApps..."
           value={searchQuery}
-          onChangeText={handleSearch}
+          onChangeText={setSearchQuery}
           autoCapitalize="none"
           autoCorrect={false}
         />
-        {DAppService.isValidUrl(searchQuery) && (
-          <TouchableOpacity style={styles.goButton} onPress={openCustomURL}>
-            <Text style={styles.goButtonText}>Go</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
-      <ScrollView>
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Search Results</Text>
-            {searchResults.map(dapp => renderDAppCard(dapp, true))}
-          </View>
-        )}
-
-        {/* Recent DApps */}
-        {!searchQuery && recentDApps.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent</Text>
-            {recentDApps.slice(0, 5).map(dapp => renderDAppCard(dapp))}
-          </View>
-        )}
-
-        {/* Featured DApps */}
-        {!searchQuery && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Featured on {currentChain === 56 ? 'BSC' : 'XLAYER'}
+      {/* Category Tabs */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs}>
+        {DAPP_CATEGORIES.map(category => (
+          <TouchableOpacity
+            key={category}
+            style={[
+              styles.categoryTab,
+              selectedCategory === category && styles.categoryTabActive
+            ]}
+            onPress={() => setSelectedCategory(category)}
+          >
+            <Text style={[
+              styles.categoryTabText,
+              selectedCategory === category && styles.categoryTabTextActive
+            ]}>
+              {category}
             </Text>
-            {featuredDApps.map(dapp => renderDAppCard(dapp))}
-          </View>
-        )}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
-        {/* Categories */}
-        {!searchQuery && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Categories</Text>
-            <View style={styles.categoryGrid}>
-              <TouchableOpacity
-                style={styles.categoryCard}
-                onPress={() => navigation.navigate('DAppCategory', { category: 'defi' })}
-              >
-                <Text style={styles.categoryIcon}>💰</Text>
-                <Text style={styles.categoryName}>DeFi</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.categoryCard}
-                onPress={() => navigation.navigate('DAppCategory', { category: 'nft' })}
-              >
-                <Text style={styles.categoryIcon}>🎨</Text>
-                <Text style={styles.categoryName}>NFT</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.categoryCard}
-                onPress={() => navigation.navigate('DAppCategory', { category: 'game' })}
-              >
-                <Text style={styles.categoryIcon}>🎮</Text>
-                <Text style={styles.categoryName}>Games</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.categoryCard}
-                onPress={() => navigation.navigate('DAppCategory', { category: 'social' })}
-              >
-                <Text style={styles.categoryIcon}>👥</Text>
-                <Text style={styles.categoryName}>Social</Text>
-              </TouchableOpacity>
+      <ScrollView>
+        {/* DApp List */}
+        <View style={styles.section}>
+          {displayDApps.map((dapp, index) => (
+            <View key={index}>
+              {renderDAppCard(dapp)}
             </View>
-          </View>
-        )}
-
-        {/* Custom DApps */}
-        {!searchQuery && customDApps.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>My DApps</Text>
-            {customDApps.map(dapp => renderDAppCard(dapp))}
-          </View>
-        )}
-
-        {/* Quick Links */}
-        {!searchQuery && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Links</Text>
-            <TouchableOpacity
-              style={styles.quickLink}
-              onPress={() => Linking.openURL('https://bscscan.com')}
-            >
-              <Text style={styles.quickLinkIcon}>🔍</Text>
-              <Text style={styles.quickLinkText}>BSCScan Explorer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickLink}
-              onPress={() => Linking.openURL('https://www.oklink.com/xlayer')}
-            >
-              <Text style={styles.quickLinkIcon}>🔍</Text>
-              <Text style={styles.quickLinkText}>XLAYER Explorer</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          ))}
+          
+          {displayDApps.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🔍</Text>
+              <Text style={styles.emptyText}>No DApps found</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -376,5 +277,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
     fontWeight: '500',
+  },
+  categoryTabs: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  categoryTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+  },
+  categoryTabActive: {
+    backgroundColor: '#F3BA2F',
+  },
+  categoryTabText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  categoryTabTextActive: {
+    color: '#000',
+    fontWeight: '600',
+  },
+  dappCategory: {
+    fontSize: 11,
+    color: '#F3BA2F',
+    marginTop: 4,
+    textTransform: 'capitalize',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
   },
 });
