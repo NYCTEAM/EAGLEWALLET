@@ -1,10 +1,9 @@
 /**
  * Eagle Wallet - Transaction Detail Screen
- * Detailed transaction information with hash, gas, and block explorer link
+ * View details of a specific transaction
  */
 
 import React from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
@@ -12,40 +11,29 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Clipboard,
   Alert,
+  Clipboard,
 } from 'react-native';
 import WalletService from '../services/WalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
-export default function TransactionDetailScreen({ route, navigation }: any) {
+export default function TransactionDetailScreen({ navigation, route }: any) {
   const { t } = useLanguage();
-  const { transaction, txHash } = route.params;
+  const { transaction: tx } = route.params;
   const network = WalletService.getCurrentNetwork();
 
-  const copyToClipboard = (text: string, label: string) => {
-    Clipboard.setString(text);
-    Alert.alert('Copied!', `${label} copied to clipboard`);
-  };
-
   const openExplorer = () => {
-    const hash = transaction?.hash || txHash;
-    const url = `${network.blockExplorerUrl}/tx/${hash}`;
+    const url = `${network.blockExplorerUrl}/tx/${tx.hash}`;
     Linking.openURL(url);
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    return date.toLocaleString();
+  const copyToClipboard = (text: string, label: string) => {
+    Clipboard.setString(text);
+    Alert.alert(t.common.copied, `${label} ${t.receive.addressCopied.replace('Address', '')}`);
   };
 
-  const tx = transaction || {
-    hash: txHash,
-    from: '',
-    to: '',
-    value: '0',
-    timestamp: Date.now() / 1000,
-    status: 'pending',
-    type: 'send',
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp * 1000).toLocaleString();
   };
 
   return (
@@ -53,9 +41,9 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Transaction Details</Text>
+        <Text style={styles.title}>{t.transaction.transactionDetails}</Text>
         <TouchableOpacity onPress={openExplorer}>
           <Text style={styles.explorerButton}>🔍</Text>
         </TouchableOpacity>
@@ -65,19 +53,19 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
         {/* Status Card */}
         <View style={styles.statusCard}>
           <Text style={styles.statusIcon}>
-            {tx.status === 'success' ? '�? : tx.status === 'pending' ? '�? : '�?}
+            {tx.status === 'success' ? '✓' : tx.status === 'pending' ? '⏳' : '✕'}
           </Text>
           <Text style={styles.statusText}>
-            {tx.status === 'success' ? 'Confirmed' : tx.status === 'pending' ? 'Pending' : 'Failed'}
+            {tx.status === 'success' ? t.transaction.confirmed : tx.status === 'pending' ? t.transaction.pending : t.transaction.failed}
           </Text>
           <Text style={styles.statusSubtext}>
-            {tx.type === 'send' ? 'Sent' : 'Received'}
+            {tx.type === 'send' ? t.send.sent : t.receive.received}
           </Text>
         </View>
 
         {/* Amount */}
         <View style={styles.amountCard}>
-          <Text style={styles.amountLabel}>Amount</Text>
+          <Text style={styles.amountLabel}>{t.transaction.amount}</Text>
           <Text style={[
             styles.amountValue,
             tx.type === 'send' ? styles.amountSend : styles.amountReceive
@@ -88,12 +76,12 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
 
         {/* Transaction Info */}
         <View style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>Transaction Information</Text>
+          <Text style={styles.sectionTitle}>{t.transaction.transactionDetails}</Text>
 
           {/* Hash */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Transaction Hash</Text>
-            <TouchableOpacity onPress={() => copyToClipboard(tx.hash, 'Hash')}>
+            <Text style={styles.infoLabel}>{t.transaction.hash}</Text>
+            <TouchableOpacity onPress={() => copyToClipboard(tx.hash, t.transaction.hash)}>
               <Text style={styles.infoValue} numberOfLines={1}>
                 {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)} 📋
               </Text>
@@ -102,7 +90,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
 
           {/* Status */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Status</Text>
+            <Text style={styles.infoLabel}>{t.transaction.status}</Text>
             <View style={[
               styles.statusBadge,
               tx.status === 'success' && styles.statussuccess,
@@ -110,7 +98,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
               tx.status === 'failed' && styles.statusfailed,
             ]}>
               <Text style={styles.statusBadgeText}>
-                {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
+                {tx.status === 'success' ? t.transaction.success : tx.status === 'pending' ? t.transaction.pending : t.transaction.failure}
               </Text>
             </View>
           </View>
@@ -118,15 +106,15 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
           {/* Timestamp */}
           {tx.timestamp && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Time</Text>
+              <Text style={styles.infoLabel}>{t.transaction.time}</Text>
               <Text style={styles.infoValue}>{formatDate(tx.timestamp)}</Text>
             </View>
           )}
 
           {/* From */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>From</Text>
-            <TouchableOpacity onPress={() => copyToClipboard(tx.from, 'Address')}>
+            <Text style={styles.infoLabel}>{t.transaction.from}</Text>
+            <TouchableOpacity onPress={() => copyToClipboard(tx.from, t.transaction.from)}>
               <Text style={styles.infoValueMono}>
                 {tx.from.slice(0, 6)}...{tx.from.slice(-4)} 📋
               </Text>
@@ -135,8 +123,8 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
 
           {/* To */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>To</Text>
-            <TouchableOpacity onPress={() => copyToClipboard(tx.to, 'Address')}>
+            <Text style={styles.infoLabel}>{t.transaction.to}</Text>
+            <TouchableOpacity onPress={() => copyToClipboard(tx.to, t.transaction.to)}>
               <Text style={styles.infoValueMono}>
                 {tx.to.slice(0, 6)}...{tx.to.slice(-4)} 📋
               </Text>
@@ -145,13 +133,13 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
 
           {/* Network */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Network</Text>
+            <Text style={styles.infoLabel}>{t.network.network}</Text>
             <Text style={styles.infoValue}>{network.name}</Text>
           </View>
 
           {/* Chain ID */}
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Chain ID</Text>
+            <Text style={styles.infoLabel}>{t.network.chainId}</Text>
             <Text style={styles.infoValue}>{network.chainId}</Text>
           </View>
         </View>
@@ -159,22 +147,22 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
         {/* Gas Info */}
         {tx.gasUsed && (
           <View style={styles.infoCard}>
-            <Text style={styles.sectionTitle}>Gas Information</Text>
+            <Text style={styles.sectionTitle}>{t.send.gasFee}</Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Gas Used</Text>
+              <Text style={styles.infoLabel}>{t.transaction.gasUsed}</Text>
               <Text style={styles.infoValue}>{tx.gasUsed}</Text>
             </View>
 
             {tx.gasPrice && (
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Gas Price</Text>
+                <Text style={styles.infoLabel}>{t.transaction.gasPrice}</Text>
                 <Text style={styles.infoValue}>{tx.gasPrice} Gwei</Text>
               </View>
             )}
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Transaction Fee</Text>
+              <Text style={styles.infoLabel}>{t.transaction.fee}</Text>
               <Text style={styles.infoValue}>
                 ~0.0001 {network.symbol}
               </Text>
@@ -185,15 +173,15 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
         {/* Actions */}
         <TouchableOpacity style={styles.explorerButton2} onPress={openExplorer}>
           <Text style={styles.explorerButtonText}>
-            View on {network.name} Explorer
+            {t.transaction.viewOnExplorer}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.shareButton}
-          onPress={() => copyToClipboard(tx.hash, 'Transaction Hash')}
+          onPress={() => copyToClipboard(tx.hash, t.transaction.hash)}
         >
-          <Text style={styles.shareButtonText}>Share Transaction</Text>
+          <Text style={styles.shareButtonText}>{t.common.share}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

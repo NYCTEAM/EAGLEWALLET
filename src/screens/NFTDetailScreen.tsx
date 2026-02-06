@@ -1,6 +1,6 @@
 /**
  * Eagle Wallet - NFT Detail Screen
- * Show detailed information about a specific NFT
+ * View and transfer NFT
  */
 
 import React, { useState } from 'react';
@@ -10,17 +10,15 @@ import {
   Text,
   StyleSheet,
   Image,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   Alert,
-  TextInput,
   Modal,
+  TextInput,
 } from 'react-native';
 import { NFT } from '../services/NFTService';
-import NFTService from '../services/NFTService';
-import WalletService from '../services/WalletService';
 
-export default function NFTDetailScreen({ route, navigation }: any) {
+export default function NFTDetailScreen({ navigation, route }: any) {
   const { t } = useLanguage();
   const { nft }: { nft: NFT } = route.params;
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -29,36 +27,30 @@ export default function NFTDetailScreen({ route, navigation }: any) {
 
   const handleTransfer = async () => {
     if (!recipientAddress || recipientAddress.length !== 42) {
-      Alert.alert('Error', 'Please enter a valid address');
+      Alert.alert(t.common.error, t.errors.invalidAddress);
       return;
     }
 
     Alert.alert(
-      'Confirm Transfer',
-      `Transfer ${nft.name} to ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}?`,
+      t.nft.confirmSend,
+      `${t.nft.sendNFT} ${nft.name} ${t.send.to} ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Transfer',
+          text: t.common.confirm,
           style: 'destructive',
           onPress: async () => {
             try {
               setTransferring(true);
-              // Get wallet instance (you'll need to implement this in WalletService)
+              // In a real app:
               // const wallet = await WalletService.getWalletInstance();
-              // const txHash = await NFTService.transferNFT(
-              //   wallet,
-              //   nft.contractAddress,
-              //   nft.tokenId,
-              //   recipientAddress,
-              //   nft.chainId
-              // );
-              
-              Alert.alert('Success', 'NFT transferred successfully!');
+              // const txHash = await NFTService.transferNFT(...)
+
+              Alert.alert(t.common.success, t.nft.nftSent);
               setShowTransferModal(false);
               navigation.goBack();
             } catch (error) {
-              Alert.alert('Error', 'Failed to transfer NFT');
+              Alert.alert(t.common.error, t.errors.transactionFailed);
             } finally {
               setTransferring(false);
             }
@@ -77,9 +69,9 @@ export default function NFTDetailScreen({ route, navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‚Ü?Back</Text>
+          <Text style={styles.backButton}>‚Üê {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>NFT Details</Text>
+        <Text style={styles.headerTitle}>{t.nft.details}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -95,29 +87,29 @@ export default function NFTDetailScreen({ route, navigation }: any) {
         <View style={styles.infoContainer}>
           <Text style={styles.collection}>{nft.collection}</Text>
           <Text style={styles.name}>{nft.name}</Text>
-          <Text style={styles.tokenId}>Token ID: #{nft.tokenId}</Text>
+          <Text style={styles.tokenId}>{t.nft.tokenId}: #{nft.tokenId}</Text>
 
           {nft.description ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.sectionTitle}>{t.nft.description}</Text>
               <Text style={styles.description}>{nft.description}</Text>
             </View>
           ) : null}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Details</Text>
+            <Text style={styles.sectionTitle}>{t.nft.details}</Text>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Contract Address</Text>
+              <Text style={styles.detailLabel}>{t.nft.contract}</Text>
               <Text style={styles.detailValue}>
                 {formatAddress(nft.contractAddress)}
               </Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Token Standard</Text>
+              <Text style={styles.detailLabel}>Standard</Text>
               <Text style={styles.detailValue}>ERC-721</Text>
             </View>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Chain</Text>
+              <Text style={styles.detailLabel}>{t.network.network}</Text>
               <Text style={styles.detailValue}>
                 {nft.chainId === 56 ? 'BSC' : 'XLAYER'}
               </Text>
@@ -129,7 +121,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
             style={styles.transferButton}
             onPress={() => setShowTransferModal(true)}
           >
-            <Text style={styles.transferButtonText}>Transfer NFT</Text>
+            <Text style={styles.transferButtonText}>{t.nft.sendNFT}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -143,9 +135,9 @@ export default function NFTDetailScreen({ route, navigation }: any) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Transfer NFT</Text>
-            
-            <Text style={styles.modalLabel}>Recipient Address</Text>
+            <Text style={styles.modalTitle}>{t.nft.sendNFT}</Text>
+
+            <Text style={styles.modalLabel}>{t.send.recipientAddress}</Text>
             <TextInput
               style={styles.modalInput}
               placeholder="0x..."
@@ -160,16 +152,16 @@ export default function NFTDetailScreen({ route, navigation }: any) {
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setShowTransferModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t.common.cancel}</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={handleTransfer}
                 disabled={transferring}
               >
                 <Text style={styles.confirmButtonText}>
-                  {transferring ? 'Transferring...' : 'Confirm'}
+                  {transferring ? t.transaction.confirming : t.common.confirm}
                 </Text>
               </TouchableOpacity>
             </View>

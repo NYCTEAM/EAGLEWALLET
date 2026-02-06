@@ -84,7 +84,7 @@ export default function NFTScreen({ navigation }: any) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#F3BA2F" />
-        <Text style={styles.loadingText}>Loading your NFTs...</Text>
+        <Text style={styles.loadingText}>{t.nft.loadingNFTs}</Text>
       </View>
     );
   }
@@ -94,9 +94,9 @@ export default function NFTScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>My NFTs</Text>
+        <Text style={styles.title}>{t.nft.myNFTs}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -110,13 +110,13 @@ export default function NFTScreen({ navigation }: any) {
       {/* NFT Grid */}
       {nfts.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🖼�?/Text>
-          <Text style={styles.emptyText}>No NFTs found</Text>
+          <Text style={styles.emptyIcon}>🖼️</Text>
+          <Text style={styles.emptyText}>{t.nft.noNFTs}</Text>
           <Text style={styles.emptySubtext}>
-            Your NFTs will appear here automatically
+            {t.nft.noNFTs}
           </Text>
           <TouchableOpacity style={styles.refreshButton} onPress={loadNFTs}>
-            <Text style={styles.refreshButtonText}>Refresh</Text>
+            <Text style={styles.refreshButtonText}>{t.common.refresh}</Text>
           </TouchableOpacity>
         </View>
       ) : (

@@ -1,54 +1,69 @@
 /**
  * Eagle Wallet - Token Detail Screen
- * Shows detailed information about a specific token
+ * View token details, chart, and transaction history
  */
 
 import React, { useState } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
   Alert,
 } from 'react-native';
+import TokenLogoService from '../services/TokenLogoService';
+import { useLanguage } from '../i18n/LanguageContext';
 
-export default function TokenDetailScreen({ route, navigation }: any) {
+export default function TokenDetailScreen({ navigation, route }: any) {
   const { t } = useLanguage();
-  const { token } = route.params || {};
-  const [selectedChain, setSelectedChain] = useState('BNB Chain');
+  const { token } = route.params;
+  const [selectedChain, setSelectedChain] = useState('ALL');
+  
+  const chains = ['ALL', 'BNB Chain', 'X Layer'];
+  const mockAddress = '0x1234...5678';
 
-  const chains = ['BNB Chain', 'X Layer', 'Ethereum', 'Polygon'];
-
-  const formatAddress = (addr: string) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  const formatAmount = (amount: string) => {
+    return parseFloat(amount || '0').toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    });
   };
-
-  const mockAddress = '0xf4f0273696cc3bb2cffe8bb8e9f320586';
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>�?/Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
+        
         <View style={styles.tokenHeader}>
-          <View style={[styles.tokenIconLarge, { backgroundColor: token?.color || '#26A17B20' }]}>
-            <Text style={styles.tokenIconTextLarge}>{token?.symbol?.charAt(0) || 'T'}</Text>
+          <View style={styles.tokenIconLarge}>
+            <Image 
+              source={TokenLogoService.getLogo(token.symbol)} 
+              style={styles.tokenLogoImage}
+            />
           </View>
-          <Text style={styles.tokenName}>{token?.name || 'USDT'}</Text>
+          <Text style={styles.tokenName}>{token.symbol}</Text>
         </View>
+
         <TouchableOpacity style={styles.infoButton}>
-          <Text style={styles.infoIcon}>�?/Text>
+          <Text style={styles.infoIcon}>⋮</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
         {/* Chain Selector */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chainSelector}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.chainSelector}
+        >
           {chains.map((chain) => (
             <TouchableOpacity
               key={chain}
@@ -56,7 +71,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
               onPress={() => setSelectedChain(chain)}
             >
               <Text style={[styles.chainText, selectedChain === chain && styles.chainTextActive]}>
-                {chain}
+                {chain === 'ALL' ? t.common.all : chain}
               </Text>
             </TouchableOpacity>
           ))}
@@ -64,44 +79,47 @@ export default function TokenDetailScreen({ route, navigation }: any) {
 
         {/* Balance */}
         <View style={styles.balanceSection}>
-          <Text style={styles.balanceAmount}>{token?.amount || '7,727.08'}</Text>
-          <Text style={styles.balanceUSD}>${token?.value || '7,717.19'}</Text>
+          <Text style={styles.balanceAmount}>{formatAmount(token.balanceFormatted)}</Text>
+          <Text style={styles.balanceUSD}>${token.value || '0.00'}</Text>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('SelectToken', { action: 'send' })}
+            onPress={() => navigation.navigate('Send', { token })}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>�?/Text>
+              <Text style={styles.actionIconText}>↑</Text>
             </View>
-            <Text style={styles.actionText}>发�?/Text>
+            <Text style={styles.actionText}>{t.send.send}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={() => navigation.navigate('Receive', { token })}
           >
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>�?/Text>
+              <Text style={styles.actionIconText}>↓</Text>
             </View>
-            <Text style={styles.actionText}>接收</Text>
+            <Text style={styles.actionText}>{t.receive.receive}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('Swap', { fromToken: token })}
+          >
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>↔</Text>
+            </View>
+            <Text style={styles.actionText}>{t.swap.swap}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>�?/Text>
+              <Text style={styles.actionIconText}>−</Text>
             </View>
-            <Text style={styles.actionText}>兑换</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>�?/Text>
-            </View>
-            <Text style={styles.actionText}>跨链�?/Text>
+            <Text style={styles.actionText}>{t.token.tokenDetails}</Text>
           </TouchableOpacity>
         </View>
 
@@ -111,17 +129,17 @@ export default function TokenDetailScreen({ route, navigation }: any) {
             <Text style={styles.defiIconText}>💰</Text>
           </View>
           <View style={styles.defiInfo}>
-            <Text style={styles.defiTitle}>年化收益高达 1.03%</Text>
-            <Text style={styles.defiSubtitle}>立即开�?DeFi 赚币</Text>
+            <Text style={styles.defiTitle}>Earn up to 5.0% APY</Text>
+            <Text style={styles.defiSubtitle}>Start earning with DeFi</Text>
           </View>
         </View>
 
         {/* Receive Address */}
         <View style={styles.addressSection}>
-          <Text style={styles.addressLabel}>收款地址</Text>
+          <Text style={styles.addressLabel}>{t.wallet.walletAddress}</Text>
           <View style={styles.addressBox}>
-            <Text style={styles.addressText}>{mockAddress}</Text>
-            <TouchableOpacity onPress={() => Alert.alert('Copied', 'Address copied to clipboard')}>
+            <Text style={styles.addressText}>{token.address || mockAddress}</Text>
+            <TouchableOpacity onPress={() => Alert.alert(t.common.copied, t.receive.addressCopied)}>
               <Text style={styles.copyIcon}>📋</Text>
             </TouchableOpacity>
           </View>
@@ -129,17 +147,10 @@ export default function TokenDetailScreen({ route, navigation }: any) {
 
         {/* Transaction History */}
         <View style={styles.historySection}>
-          <Text style={styles.historyDate}>2026/02/05</Text>
-          <TouchableOpacity style={styles.historyItem}>
-            <View style={styles.historyIcon}>
-              <Text style={styles.historyIconText}>📄</Text>
-            </View>
-            <View style={styles.historyInfo}>
-              <Text style={styles.historyTitle}>合约交互</Text>
-              <Text style={styles.historyAddress}>0xc780...51f6</Text>
-            </View>
-            <Text style={styles.historyAmount}>+222.2 USDT</Text>
-          </TouchableOpacity>
+          <Text style={styles.historyDate}>{new Date().toLocaleDateString()}</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>{t.transaction.noTransactions}</Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -183,10 +194,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
-  tokenIconTextLarge: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+  tokenLogoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   tokenName: {
     fontSize: 20,
@@ -376,5 +387,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#26A17B',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#999',
+    fontSize: 14,
   },
 });

@@ -26,7 +26,7 @@ export default function AddTokenScreen({ navigation }: any) {
 
   const handleSearch = async () => {
     if (!contractAddress || contractAddress.length !== 42) {
-      Alert.alert('Error', 'Please enter a valid contract address');
+      Alert.alert(t.common.error, t.errors.invalidAddress);
       return;
     }
 
@@ -34,16 +34,16 @@ export default function AddTokenScreen({ navigation }: any) {
       setLoading(true);
       const provider = await WalletService.getProvider();
       const network = WalletService.getCurrentNetwork();
-      
+
       const info = await CustomTokenService.getTokenInfo(
         contractAddress,
         network.chainId,
         provider
       );
-      
+
       setTokenInfo(info);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to fetch token information');
+      Alert.alert(t.common.error, error.message || t.errors.unknownError);
       setTokenInfo(null);
     } finally {
       setLoading(false);
@@ -55,14 +55,14 @@ export default function AddTokenScreen({ navigation }: any) {
 
     try {
       await CustomTokenService.addCustomToken(tokenInfo);
-      Alert.alert('Success', 'Token added successfully!', [
+      Alert.alert(t.common.success, t.token.tokenAdded, [
         {
-          text: 'OK',
+          text: t.common.ok,
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add token');
+      Alert.alert(t.common.error, error.message || t.token.invalidTokenAddress);
     }
   };
 
@@ -71,16 +71,16 @@ export default function AddTokenScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>�?Back</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Add Token</Text>
+        <Text style={styles.title}>{t.token.addToken}</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Search Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Token Contract Address</Text>
+          <Text style={styles.sectionTitle}>{t.token.tokenAddress}</Text>
           <TextInput
             style={styles.input}
             placeholder="0x..."
@@ -89,7 +89,7 @@ export default function AddTokenScreen({ navigation }: any) {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          
+
           <TouchableOpacity
             style={[styles.searchButton, loading && styles.searchButtonDisabled]}
             onPress={handleSearch}
@@ -98,7 +98,7 @@ export default function AddTokenScreen({ navigation }: any) {
             {loading ? (
               <ActivityIndicator color="#000" />
             ) : (
-              <Text style={styles.searchButtonText}>Search Token</Text>
+              <Text style={styles.searchButtonText}>{t.token.searchToken}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -106,33 +106,33 @@ export default function AddTokenScreen({ navigation }: any) {
         {/* Token Info */}
         {tokenInfo && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Token Information</Text>
-            
+            <Text style={styles.sectionTitle}>{t.token.tokenDetails}</Text>
+
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Name</Text>
+                <Text style={styles.infoLabel}>{t.token.tokenName}</Text>
                 <Text style={styles.infoValue}>{tokenInfo.name}</Text>
               </View>
-              
+
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Symbol</Text>
+                <Text style={styles.infoLabel}>{t.token.tokenSymbol}</Text>
                 <Text style={styles.infoValue}>{tokenInfo.symbol}</Text>
               </View>
-              
+
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Type</Text>
+                <Text style={styles.infoLabel}>{t.nft.properties}</Text>
                 <Text style={styles.infoValue}>{tokenInfo.type}</Text>
               </View>
-              
+
               {tokenInfo.type === 'ERC20' && (
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Decimals</Text>
+                  <Text style={styles.infoLabel}>{t.token.tokenDecimals}</Text>
                   <Text style={styles.infoValue}>{tokenInfo.decimals}</Text>
                 </View>
               )}
-              
+
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Contract</Text>
+                <Text style={styles.infoLabel}>{t.nft.contract}</Text>
                 <Text style={styles.infoValueSmall} numberOfLines={1}>
                   {tokenInfo.address}
                 </Text>
@@ -143,32 +143,20 @@ export default function AddTokenScreen({ navigation }: any) {
               style={styles.addButton}
               onPress={handleAddToken}
             >
-              <Text style={styles.addButtonText}>Add Token</Text>
+              <Text style={styles.addButtonText}>{t.token.addToken}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Help Text */}
         <View style={styles.helpBox}>
-          <Text style={styles.helpTitle}>💡 How to add a token:</Text>
+          <Text style={styles.helpTitle}>💡 {t.common.warning}:</Text>
           <Text style={styles.helpText}>
-            1. Get the token's contract address from BSCScan or the project website
+            1. {t.receive.warningMessage}
           </Text>
           <Text style={styles.helpText}>
-            2. Paste the address above and tap "Search Token"
+            2. {t.wallet.backupWarning}
           </Text>
-          <Text style={styles.helpText}>
-            3. Verify the token information
-          </Text>
-          <Text style={styles.helpText}>
-            4. Tap "Add Token" to add it to your wallet
-          </Text>
-        </View>
-
-        {/* Popular Tokens */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular Tokens</Text>
-          <Text style={styles.comingSoon}>Coming soon...</Text>
         </View>
       </ScrollView>
     </View>
