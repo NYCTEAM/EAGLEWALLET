@@ -101,11 +101,68 @@ export const zh: TranslationStrings = {
   },
   settings: {
     settings: '设置',
-    language: '语言',
-    currency: '货币',
+    back: '返回',
+    
+    // Sections
+    walletManagement: '钱包管理',
     network: '网络',
     security: '安全',
     advanced: '高级',
     preferences: '偏好设置',
+    about: '关于',
+    dangerZone: '危险区域',
+    
+    // Wallet Management
+    myWallets: '我的钱包',
+    myWalletsSubtitle: '管理多个钱包',
+    addCustomToken: '添加自定义代币',
+    addCustomTokenSubtitle: '添加 ERC20/721/1155 代币',
+    
+    // Network
+    currentNetwork: '当前网络',
+    rpcNodes: 'RPC 节点',
+    rpcNodesSubtitle: '查看和测试连接速度',
+    
+    // Security
+    biometricAuth: '生物识别认证',
+    biometricAuthSubtitle: '使用指纹或面容 ID',
+    exportPrivateKey: '导出私钥',
+    exportPrivateKeySubtitle: '查看您的私钥',
+    backupWallet: '备份钱包',
+    backupWalletSubtitle: '查看助记词',
+    changePassword: '修改密码',
+    changePasswordSubtitle: '更新钱包密码',
+    
+    // Advanced
+    priceAlerts: '价格提醒',
+    priceAlertsSubtitle: '设置价格通知',
+    advancedSettings: '高级设置',
+    advancedSettingsSubtitle: '开发者选项',
+    
+    // Preferences
+    language: '语言',
+    currency: '货币',
+    
+    // About
+    version: '版本',
+    termsOfService: '服务条款',
+    privacyPolicy: '隐私政策',
+    support: '支持',
+    supportSubtitle: '获取帮助',
+    
+    // Danger Zone
+    deleteWallet: '删除钱包',
+    deleteWalletSubtitle: '永久删除钱包',
+    
+    // Alerts
+    exportPrivateKeyTitle: '导出私钥',
+    exportPrivateKeyMessage: '您的私钥可以完全访问您的钱包。切勿与任何人分享！',
+    backupWalletTitle: '备份钱包',
+    backupWalletMessage: '请写下您的助记词并妥善保管',
+    deleteWalletTitle: '删除钱包',
+    deleteWalletMessage: '您确定吗？请确保您已备份助记词！',
+    show: '显示',
+    showRecoveryPhrase: '显示助记词',
+    chooseCurrency: '选择货币',
   },
 };

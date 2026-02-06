@@ -110,11 +110,68 @@ export interface TranslationStrings {
 
   settings: {
     settings: string;
-    language: string;
-    currency: string;
+    back: string;
+    
+    // Sections
+    walletManagement: string;
     network: string;
     security: string;
     advanced: string;
     preferences: string;
+    about: string;
+    dangerZone: string;
+    
+    // Wallet Management
+    myWallets: string;
+    myWalletsSubtitle: string;
+    addCustomToken: string;
+    addCustomTokenSubtitle: string;
+    
+    // Network
+    currentNetwork: string;
+    rpcNodes: string;
+    rpcNodesSubtitle: string;
+    
+    // Security
+    biometricAuth: string;
+    biometricAuthSubtitle: string;
+    exportPrivateKey: string;
+    exportPrivateKeySubtitle: string;
+    backupWallet: string;
+    backupWalletSubtitle: string;
+    changePassword: string;
+    changePasswordSubtitle: string;
+    
+    // Advanced
+    priceAlerts: string;
+    priceAlertsSubtitle: string;
+    advancedSettings: string;
+    advancedSettingsSubtitle: string;
+    
+    // Preferences
+    language: string;
+    currency: string;
+    
+    // About
+    version: string;
+    termsOfService: string;
+    privacyPolicy: string;
+    support: string;
+    supportSubtitle: string;
+    
+    // Danger Zone
+    deleteWallet: string;
+    deleteWalletSubtitle: string;
+    
+    // Alerts
+    exportPrivateKeyTitle: string;
+    exportPrivateKeyMessage: string;
+    backupWalletTitle: string;
+    backupWalletMessage: string;
+    deleteWalletTitle: string;
+    deleteWalletMessage: string;
+    show: string;
+    showRecoveryPhrase: string;
+    chooseCurrency: string;
   };
 }

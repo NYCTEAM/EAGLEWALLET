@@ -101,11 +101,68 @@ export const en: TranslationStrings = {
   },
   settings: {
     settings: 'Settings',
-    language: 'Language',
-    currency: 'Currency',
+    back: 'Back',
+    
+    // Sections
+    walletManagement: 'Wallet Management',
     network: 'Network',
     security: 'Security',
     advanced: 'Advanced',
     preferences: 'Preferences',
+    about: 'About',
+    dangerZone: 'DANGER ZONE',
+    
+    // Wallet Management
+    myWallets: 'My Wallets',
+    myWalletsSubtitle: 'Manage multiple wallets',
+    addCustomToken: 'Add Custom Token',
+    addCustomTokenSubtitle: 'Add ERC20/721/1155 tokens',
+    
+    // Network
+    currentNetwork: 'Current Network',
+    rpcNodes: 'RPC Nodes',
+    rpcNodesSubtitle: 'View and test connection speed',
+    
+    // Security
+    biometricAuth: 'Biometric Authentication',
+    biometricAuthSubtitle: 'Use fingerprint or face ID',
+    exportPrivateKey: 'Export Private Key',
+    exportPrivateKeySubtitle: 'View your private key',
+    backupWallet: 'Backup Wallet',
+    backupWalletSubtitle: 'View recovery phrase',
+    changePassword: 'Change Password',
+    changePasswordSubtitle: 'Update wallet password',
+    
+    // Advanced
+    priceAlerts: 'Price Alerts',
+    priceAlertsSubtitle: 'Set price notifications',
+    advancedSettings: 'Advanced Settings',
+    advancedSettingsSubtitle: 'Developer options',
+    
+    // Preferences
+    language: 'Language',
+    currency: 'Currency',
+    
+    // About
+    version: 'Version',
+    termsOfService: 'Terms of Service',
+    privacyPolicy: 'Privacy Policy',
+    support: 'Support',
+    supportSubtitle: 'Get help',
+    
+    // Danger Zone
+    deleteWallet: 'Delete Wallet',
+    deleteWalletSubtitle: 'Permanently remove wallet',
+    
+    // Alerts
+    exportPrivateKeyTitle: 'Export Private Key',
+    exportPrivateKeyMessage: 'Your private key gives full access to your wallet. Never share it with anyone!',
+    backupWalletTitle: 'Backup Wallet',
+    backupWalletMessage: 'Write down your recovery phrase and store it safely',
+    deleteWalletTitle: 'Delete Wallet',
+    deleteWalletMessage: 'Are you sure? Make sure you have backed up your recovery phrase!',
+    show: 'Show',
+    showRecoveryPhrase: 'Show Recovery Phrase',
+    chooseCurrency: 'Choose currency',
   },
 };

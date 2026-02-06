@@ -27,12 +27,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleExportPrivateKey = () => {
     Alert.alert(
-      'Export Private Key',
-      'Your private key gives full access to your wallet. Never share it with anyone!',
+      t.settings.exportPrivateKeyTitle,
+      t.settings.exportPrivateKeyMessage,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Show',
+          text: t.settings.show,
           style: 'destructive',
           onPress: () => {
             // Navigate to export screen
@@ -45,12 +45,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleBackupWallet = () => {
     Alert.alert(
-      'Backup Wallet',
-      'Write down your recovery phrase and store it safely',
+      t.settings.backupWalletTitle,
+      t.settings.backupWalletMessage,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Show Recovery Phrase',
+          text: t.settings.showRecoveryPhrase,
           onPress: () => {
             navigation.navigate('BackupWallet');
           },
@@ -61,12 +61,12 @@ export default function SettingsScreen({ navigation }: any) {
 
   const handleDeleteWallet = () => {
     Alert.alert(
-      'Delete Wallet',
-      'Are you sure? Make sure you have backed up your recovery phrase!',
+      t.settings.deleteWalletTitle,
+      t.settings.deleteWalletMessage,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: t.common.delete,
           style: 'destructive',
           onPress: async () => {
             await WalletService.deleteWallet();
@@ -102,56 +102,56 @@ export default function SettingsScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={styles.backButton}>← {t.settings.back}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t.settings.settings}</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* Wallet Management */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Wallet Management</Text>
+          <Text style={styles.sectionTitle}>{t.settings.walletManagement}</Text>
           <SettingItem
             icon="👛"
-            title="My Wallets"
-            subtitle="Manage multiple wallets"
+            title={t.settings.myWallets}
+            subtitle={t.settings.myWalletsSubtitle}
             onPress={() => navigation.navigate('Wallets')}
           />
           <SettingItem
             icon="➕"
-            title="Add Custom Token"
-            subtitle="Add ERC20/721/1155 tokens"
+            title={t.settings.addCustomToken}
+            subtitle={t.settings.addCustomTokenSubtitle}
             onPress={() => navigation.navigate('AddToken')}
           />
         </View>
 
         {/* Network Info */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Network</Text>
+          <Text style={styles.sectionTitle}>{t.settings.network}</Text>
           <SettingItem
             icon="🌐"
-            title="Current Network"
+            title={t.settings.currentNetwork}
             subtitle={network.name}
             onPress={() => {}}
             showArrow={false}
           />
           <SettingItem
             icon="🔌"
-            title="RPC Nodes"
-            subtitle="View and test connection speed"
+            title={t.settings.rpcNodes}
+            subtitle={t.settings.rpcNodesSubtitle}
             onPress={() => navigation.navigate('RPCNode', { chainId: network.chainId })}
           />
         </View>
 
         {/* Security */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security</Text>
+          <Text style={styles.sectionTitle}>{t.settings.security}</Text>
           
           <SettingItem
             icon="🔐"
-            title="Biometric Authentication"
-            subtitle="Use fingerprint or face ID"
+            title={t.settings.biometricAuth}
+            subtitle={t.settings.biometricAuthSubtitle}
             showArrow={false}
             rightElement={
               <Switch
@@ -164,48 +164,48 @@ export default function SettingsScreen({ navigation }: any) {
           
           <SettingItem
             icon="🔑"
-            title="Export Private Key"
-            subtitle="View your private key"
+            title={t.settings.exportPrivateKey}
+            subtitle={t.settings.exportPrivateKeySubtitle}
             onPress={handleExportPrivateKey}
           />
           
           <SettingItem
             icon="📝"
-            title="Backup Wallet"
-            subtitle="View recovery phrase"
+            title={t.settings.backupWallet}
+            subtitle={t.settings.backupWalletSubtitle}
             onPress={handleBackupWallet}
           />
           
           <SettingItem
             icon="🔒"
-            title="Change Password"
-            subtitle="Update wallet password"
+            title={t.settings.changePassword}
+            subtitle={t.settings.changePasswordSubtitle}
             onPress={() => navigation.navigate('ChangePassword')}
           />
         </View>
 
         {/* Advanced */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Advanced</Text>
+          <Text style={styles.sectionTitle}>{t.settings.advanced}</Text>
           
           <SettingItem
             icon="🔔"
-            title="Price Alerts"
-            subtitle="Set price notifications"
+            title={t.settings.priceAlerts}
+            subtitle={t.settings.priceAlertsSubtitle}
             onPress={() => navigation.navigate('PriceAlert')}
           />
           
           <SettingItem
             icon="⚙️"
-            title="Advanced Settings"
-            subtitle="Developer options"
+            title={t.settings.advancedSettings}
+            subtitle={t.settings.advancedSettingsSubtitle}
             onPress={() => navigation.navigate('AdvancedSettings')}
           />
         </View>
 
         {/* Preferences */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>{t.settings.preferences}</Text>
           
           <SettingItem
             icon="🌍"
@@ -216,14 +216,14 @@ export default function SettingsScreen({ navigation }: any) {
           
           <SettingItem
             icon="💱"
-            title="Currency"
+            title={t.settings.currency}
             subtitle={currency}
             onPress={() => {
-              Alert.alert('Currency', 'Choose currency', [
+              Alert.alert(t.settings.currency, t.settings.chooseCurrency, [
                 { text: 'USD', onPress: () => setCurrency('USD') },
                 { text: 'EUR', onPress: () => setCurrency('EUR') },
                 { text: 'CNY', onPress: () => setCurrency('CNY') },
-                { text: 'Cancel', style: 'cancel' },
+                { text: t.common.cancel, style: 'cancel' },
               ]);
             }}
           />
@@ -231,38 +231,38 @@ export default function SettingsScreen({ navigation }: any) {
 
         {/* About */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>{t.settings.about}</Text>
           
           <SettingItem
             icon="📱"
-            title="Version"
+            title={t.settings.version}
             subtitle="1.0.0"
             showArrow={false}
           />
           
           <SettingItem
             icon="📄"
-            title="Terms of Service"
+            title={t.settings.termsOfService}
             onPress={() => {}}
           />
           
           <SettingItem
             icon="🔒"
-            title="Privacy Policy"
+            title={t.settings.privacyPolicy}
             onPress={() => {}}
           />
           
           <SettingItem
             icon="💬"
-            title="Support"
-            subtitle="Get help"
+            title={t.settings.support}
+            subtitle={t.settings.supportSubtitle}
             onPress={() => {}}
           />
         </View>
 
         {/* Danger Zone */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, styles.dangerTitle]}>Danger Zone</Text>
+          <Text style={[styles.sectionTitle, styles.dangerTitle]}>{t.settings.dangerZone}</Text>
           
           <TouchableOpacity
             style={styles.dangerButton}
@@ -270,9 +270,9 @@ export default function SettingsScreen({ navigation }: any) {
           >
             <Text style={styles.dangerIcon}>🗑️</Text>
             <View style={styles.dangerText}>
-              <Text style={styles.dangerTitle2}>Delete Wallet</Text>
+              <Text style={styles.dangerTitle2}>{t.settings.deleteWallet}</Text>
               <Text style={styles.dangerSubtitle}>
-                Permanently remove wallet from this device
+                {t.settings.deleteWalletSubtitle}
               </Text>
             </View>
           </TouchableOpacity>
