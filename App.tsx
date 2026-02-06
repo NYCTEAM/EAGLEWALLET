@@ -31,6 +31,10 @@ export default function App() {
 
   useEffect(() => {
     checkWallet();
+    
+    // Check wallet status every 500ms to detect when wallet is created
+    const interval = setInterval(checkWallet, 500);
+    return () => clearInterval(interval);
   }, []);
 
   const checkWallet = async () => {

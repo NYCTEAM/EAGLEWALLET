@@ -60,11 +60,9 @@ export default function CreateWalletScreen({ navigation }: any) {
         {
           text: 'YES, I SAVED IT',
           onPress: () => {
-            // Force navigation reset to ensure clean state
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Home' }],
-            });
+            // Wallet is already created and saved
+            // App.tsx will automatically detect wallet exists and switch to Home screen
+            // Just close the alert - the interval in App.tsx will handle navigation
           },
         },
       ]
