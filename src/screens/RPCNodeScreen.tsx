@@ -20,6 +20,7 @@ export default function RPCNodeScreen({ route, navigation }: any) {
   const [nodes, setNodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<string>('');
   const network = NETWORKS[chainId];
 
   useEffect(() => {
@@ -31,12 +32,23 @@ export default function RPCNodeScreen({ route, navigation }: any) {
     try {
       const results = await RPCService.testAllRPCs(chainId);
       setNodes(results);
+      
+      // Auto-select fastest node
+      const fastest = results.find((n: any) => n.available);
+      if (fastest && !selectedNode) {
+        setSelectedNode(fastest.name);
+      }
     } catch (error) {
       console.error('Test nodes error:', error);
     } finally {
       setTesting(false);
       setLoading(false);
     }
+  };
+
+  const handleSelectNode = (nodeName: string) => {
+    setSelectedNode(nodeName);
+    // TODO: Save to storage and update RPC service
   };
 
   const getStatusColor = (latency: number) => {
@@ -95,7 +107,15 @@ export default function RPCNodeScreen({ route, navigation }: any) {
       ) : (
         <ScrollView style={styles.nodeList}>
           {nodes.map((node, index) => (
-            <View key={index} style={styles.nodeCard}>
+            <TouchableOpacity 
+              key={index} 
+              style={[
+                styles.nodeCard,
+                selectedNode === node.name && styles.nodeCardSelected
+              ]}
+              onPress={() => handleSelectNode(node.name)}
+              disabled={!node.available}
+            >
               <View style={styles.nodeHeader}>
                 <View style={styles.nodeLeft}>
                   <Text style={styles.nodeFlag}>
@@ -152,7 +172,14 @@ export default function RPCNodeScreen({ route, navigation }: any) {
                   />
                 </View>
               )}
-            </View>
+              
+              {/* Selected Checkmark */}
+              {selectedNode === node.name && (
+                <View style={styles.selectedBadge}>
+                  <Text style={styles.selectedCheck}>✓</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
@@ -314,5 +341,26 @@ const styles = StyleSheet.create({
   footerSubtext: {
     fontSize: 12,
     color: '#999',
+  },
+  nodeCardSelected: {
+    borderWidth: 2,
+    borderColor: '#F3BA2F',
+    backgroundColor: '#FFF9E6',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F3BA2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedCheck: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });

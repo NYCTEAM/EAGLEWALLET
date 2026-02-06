@@ -7,6 +7,8 @@ export interface RPCNode {
   name: string;        // 显示给用户的名称
   url: string;         // 实际 RPC URL（隐藏）
   region?: string;     // 地区标识
+  apiKey?: string;     // API Key (for header authentication)
+  fetchOptions?: any;  // Custom fetch options
 }
 
 export interface NetworkConfig {
@@ -23,7 +25,8 @@ export interface NetworkConfig {
 
 // Eagle RPC nodes with smart switching (US/HK)
 const EAGLE_BSC_RPC_US = 'https://bsc.eagleswap.io'; // US node
-const EAGLE_BSC_RPC_HK = 'https://bsc.eagleswap.llc/26119c762d57f906602c2d4bed374e05bab696dccdd2c8708cfacd4303f71c5f'; // HK node
+const EAGLE_BSC_RPC_HK = 'https://bsc.eagleswap.llc'; // HK node (requires API key in header)
+const EAGLE_HK_API_KEY = '26119c762d57f906602c2d4bed374e05bab696dccdd2c8708cfacd4303f71c5f';
 
 export const NETWORKS: Record<number, NetworkConfig> = {
   // BSC Mainnet
@@ -47,7 +50,17 @@ export const NETWORKS: Record<number, NetworkConfig> = {
     ],
     rpcNodes: [
       { name: 'Eagle US Node', url: EAGLE_BSC_RPC_US, region: 'US' },
-      { name: 'Eagle HK Node', url: EAGLE_BSC_RPC_HK, region: 'HK' },
+      { 
+        name: 'Eagle HK Node', 
+        url: EAGLE_BSC_RPC_HK, 
+        region: 'HK',
+        apiKey: EAGLE_HK_API_KEY,
+        fetchOptions: {
+          headers: {
+            'x-api-key': EAGLE_HK_API_KEY
+          }
+        }
+      },
       { name: 'Binance LlamaRPC', url: 'https://binance.llamarpc.com', region: 'Global' },
       { name: 'BSC DRPC', url: 'https://bsc.drpc.org', region: 'Global' },
       { name: 'BSC BloxRoute', url: 'https://bsc.rpc.blxrbdn.com', region: 'Global' },

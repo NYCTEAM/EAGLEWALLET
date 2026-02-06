@@ -20,11 +20,24 @@ class RPCService {
   /**
    * Test RPC node latency
    */
-  async testRPCLatency(rpcUrl: string): Promise<number> {
+  async testRPCLatency(rpcUrl: string, fetchOptions?: any): Promise<number> {
     const startTime = Date.now();
     
     try {
-      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      // Create FetchRequest with custom headers if needed
+      let provider;
+      if (fetchOptions) {
+        const fetchReq = new ethers.FetchRequest(rpcUrl);
+        if (fetchOptions.headers) {
+          Object.keys(fetchOptions.headers).forEach(key => {
+            fetchReq.setHeader(key, fetchOptions.headers[key]);
+          });
+        }
+        provider = new ethers.JsonRpcProvider(fetchReq);
+      } else {
+        provider = new ethers.JsonRpcProvider(rpcUrl);
+      }
+      
       await provider.getBlockNumber();
       const latency = Date.now() - startTime;
       
@@ -84,12 +97,13 @@ class RPCService {
 
     // Test all RPCs in parallel
     const latencyTests = network.rpcNodes.map(async (node) => {
-      const latency = await this.getLatency(node.url);
+      const latency = await this.testRPCLatency(node.url, node.fetchOptions);
       return { 
         name: node.name, 
         url: node.url, 
         region: node.region,
-        latency 
+        latency,
+        fetchOptions: node.fetchOptions
       };
     });
 
@@ -149,7 +163,7 @@ class RPCService {
     const results = [];
     
     for (const node of network.rpcNodes) {
-      const latency = await this.testRPCLatency(node.url);
+      const latency = await this.testRPCLatency(node.url, node.fetchOptions);
       results.push({
         name: node.name,
         region: node.region,
