@@ -15,7 +15,9 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import { ethers } from 'ethers';
 import MultiWalletService from '../services/MultiWalletService';
+import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export default function CreateWalletScreen({ navigation }: any) {
@@ -44,28 +46,43 @@ export default function CreateWalletScreen({ navigation }: any) {
     }
 
     setLoading(true);
-    // Simulate generation delay
+    
+    // Simulate generation delay for UX
     setTimeout(() => {
-      // In a real app, we would generate mnemonic here
-      // For now, we'll let MultiWalletService handle it in the final step
-      const newMnemonic = "apple banana cherry dog elephant flower grape house ice jungle kite lemon";
-      setMnemonic(newMnemonic);
-      setWords(newMnemonic.split(' '));
-      setStep('mnemonic');
-      setLoading(false);
+      try {
+        // Generate REAL random wallet
+        const randomWallet = ethers.Wallet.createRandom();
+        if (randomWallet.mnemonic) {
+          const newMnemonic = randomWallet.mnemonic.phrase;
+          setMnemonic(newMnemonic);
+          setWords(newMnemonic.split(' '));
+          setStep('mnemonic');
+        } else {
+          throw new Error('Failed to generate mnemonic');
+        }
+      } catch (error) {
+        Alert.alert(t.common.error, 'Failed to generate wallet');
+      } finally {
+        setLoading(false);
+      }
     }, 1000);
   };
 
   const handleMnemonicConfirmed = async () => {
     try {
       setLoading(true);
-      // Create the wallet using the password
-      // This will persist the wallet data
-      await MultiWalletService.createWallet('Main Wallet', password);
+      
+      // 1. Create wallet in MultiWalletService (for multi-wallet support)
+      // IMPORTANT: Use importFromMnemonic with the generated mnemonic, NOT createWallet()
+      // because createWallet() generates a NEW random phrase which would mismatch what user backed up!
+      await MultiWalletService.importFromMnemonic('Main Wallet', mnemonic, password);
+      
+      // 2. ALSO create/import into WalletService (for App.tsx detection)
+      // App.tsx uses WalletService.hasWallet() to check if user is logged in
+      await WalletService.importFromMnemonic(mnemonic, password);
       
       // CRITICAL: Do NOT show Alert here.
-      // App.tsx polls for wallet existence and will automatically switch to HomeScreen.
-      // Showing an Alert creates a race condition where the screen unmounts while Alert is open, causing a crash.
+      // App.tsx polls for WalletService.hasWallet() and will automatically switch to HomeScreen.
       
     } catch (error: any) {
       setLoading(false);
@@ -93,18 +110,21 @@ export default function CreateWalletScreen({ navigation }: any) {
           setLoading(false);
           return;
         }
+        // Sync both services
         await MultiWalletService.importFromMnemonic('Main Wallet', mnemonic, password);
+        await WalletService.importFromMnemonic(mnemonic, password);
       } else {
         if (!privateKey.trim()) {
           Alert.alert(t.common.error, t.errors.privateKeyRequired);
           setLoading(false);
           return;
         }
+        // Sync both services
         await MultiWalletService.importFromPrivateKey('Main Wallet', privateKey, password);
+        await WalletService.importFromPrivateKey(privateKey, password);
       }
       
-      // CRITICAL: Do NOT show Alert here either.
-      // Let App.tsx handle the navigation automatically.
+      // No Alert here either. App.tsx will navigate.
       
     } catch (error: any) {
       setLoading(false);
