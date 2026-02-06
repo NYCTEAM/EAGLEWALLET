@@ -24,32 +24,55 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [chainId, setChainId] = useState<string>('0x38');
+
+  // Load wallet data on mount
+  React.useEffect(() => {
+    loadWalletData();
+  }, []);
+
+  const loadWalletData = async () => {
+    try {
+      const address = await WalletService.getAddress();
+      const network = WalletService.getCurrentNetwork();
+      
+      if (address) {
+        setWalletAddress(address);
+        // Convert chainId to hex
+        const hexChainId = '0x' + network.chainId.toString(16);
+        setChainId(hexChainId);
+        
+        console.log('DApp Browser - Wallet:', address);
+        console.log('DApp Browser - Network:', network.name, hexChainId);
+      }
+    } catch (error) {
+      console.error('Load wallet data error:', error);
+    }
+  };
 
   /**
    * Web3 Provider injection script
    */
-  const injectedJavaScript = `
+  const getInjectedJavaScript = () => `
     (function() {
       // Ethereum Provider
       window.ethereum = {
         isMetaMask: true,
         isEagleWallet: true,
-        chainId: '0x38', // BSC mainnet
-        networkVersion: '56',
-        selectedAddress: null,
+        chainId: '${chainId}',
+        networkVersion: '${parseInt(chainId, 16)}',
+        selectedAddress: '${walletAddress}',
         
         // Request accounts
         request: async function(args) {
           if (args.method === 'eth_requestAccounts') {
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'eth_requestAccounts'
-            }));
-            return new Promise((resolve) => {
-              window.resolveAccounts = resolve;
-            });
+            // Auto-return connected address
+            return ['${walletAddress}'];
           }
           
           if (args.method === 'eth_accounts') {
+            // Auto-return connected address
             return window.ethereum.selectedAddress ? [window.ethereum.selectedAddress] : [];
           }
           
@@ -114,6 +137,13 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
       };
       
       console.log('Eagle Wallet Web3 Provider injected');
+      console.log('Auto-connected address:', window.ethereum.selectedAddress);
+      console.log('Chain ID:', window.ethereum.chainId);
+      
+      // Trigger connect event for DApps that listen
+      if (window.ethereum.selectedAddress) {
+        window.dispatchEvent(new Event('ethereum#initialized'));
+      }
     })();
     true;
   `;
@@ -337,24 +367,31 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
       </View>
 
       {/* WebView */}
-      <WebView
-        ref={webViewRef}
-        source={{ uri: currentUrl }}
-        style={styles.webview}
-        injectedJavaScriptBeforeContentLoaded={injectedJavaScript}
-        onMessage={handleMessage}
-        onNavigationStateChange={handleNavigationStateChange}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        startInLoadingState={true}
-        renderLoading={() => (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#F3BA2F" />
-          </View>
-        )}
-      />
+      {walletAddress ? (
+        <WebView
+          ref={webViewRef}
+          source={{ uri: currentUrl }}
+          style={styles.webview}
+          injectedJavaScriptBeforeContentLoaded={getInjectedJavaScript()}
+          onMessage={handleMessage}
+          onNavigationStateChange={handleNavigationStateChange}
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          renderLoading={() => (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#F3BA2F" />
+            </View>
+          )}
+        />
+      ) : (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#F3BA2F" />
+          <Text style={styles.loadingText}>Loading wallet...</Text>
+        </View>
+      )}
 
       {/* Loading Indicator */}
       {loading && (
@@ -462,5 +499,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
 });
