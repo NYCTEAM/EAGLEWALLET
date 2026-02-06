@@ -180,6 +180,25 @@ export default function SettingsScreen({ navigation }: any) {
           />
         </View>
 
+        {/* Advanced */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Advanced</Text>
+          
+          <SettingItem
+            icon="🔔"
+            title="Price Alerts"
+            subtitle="Set price notifications"
+            onPress={() => navigation.navigate('PriceAlert')}
+          />
+          
+          <SettingItem
+            icon="⚙️"
+            title="Advanced Settings"
+            subtitle="Developer options"
+            onPress={() => navigation.navigate('AdvancedSettings')}
+          />
+        </View>
+
         {/* Preferences */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>

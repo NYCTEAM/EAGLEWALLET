@@ -118,15 +118,52 @@ Every push automatically builds APK/AAB. Download from [Actions](https://github.
 
 [Add screenshots here]
 
-## 🛣️ Roadmap
+## ✅ Complete Features
 
-- [ ] Token management (ERC-20/BEP-20)
-- [ ] QR code scanning for addresses
-- [ ] Transaction history with block explorer links
-- [ ] Multiple wallet accounts
-- [ ] Biometric authentication
-- [ ] WalletConnect integration
-- [ ] DApp browser
+### Wallet Management
+- ✅ Multiple wallet accounts
+- ✅ Import/Export wallets
+- ✅ Watch-only wallets
+- ✅ Wallet backup & restore
+
+### Token Features
+- ✅ ERC20/BEP20 tokens
+- ✅ Custom token import
+- ✅ Real-time prices (GeckoTerminal)
+- ✅ Total portfolio value
+- ✅ Token logos
+
+### NFT Features
+- ✅ Auto-detect NFTs
+- ✅ Display NFT images
+- ✅ Token ID display
+- ✅ NFT transfer
+- ✅ ERC721/1155 support
+
+### Transaction Features
+- ✅ Send/Receive tokens
+- ✅ Transaction history
+- ✅ Gas fee settings
+- ✅ Transaction status tracking
+
+### Swap Features
+- ✅ Token swap with aggregator
+- ✅ Best route selection
+- ✅ Multi-DEX comparison
+- ✅ Slippage settings
+
+### DApp Features
+- ✅ Built-in DApp browser
+- ✅ Featured DApps
+- ✅ Category filtering
+- ✅ WalletConnect support
+
+### Advanced Features
+- ✅ Price alerts
+- ✅ Address book
+- ✅ Network management
+- ✅ RPC node selection
+- ✅ Advanced settings
 
 ## 🤝 Contributing
 
