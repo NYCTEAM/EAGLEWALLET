@@ -200,10 +200,18 @@ export default function CreateWalletScreen({ navigation }: any) {
           </View>
 
           <View style={styles.mnemonicGrid}>
-            {words.map((word, index) => (
-              <View key={index} style={styles.mnemonicItem}>
-                <Text style={styles.mnemonicNumber}>{index + 1}.</Text>
-                <Text style={styles.mnemonicWord}>{word}</Text>
+            {[0, 1, 2, 3].map((row) => (
+              <View key={row} style={styles.mnemonicRow}>
+                {[0, 1, 2].map((col) => {
+                  const index = row * 3 + col;
+                  if (index >= words.length) return null;
+                  return (
+                    <View key={index} style={styles.mnemonicItem}>
+                      <Text style={styles.mnemonicNumber}>{index + 1}.</Text>
+                      <Text style={styles.mnemonicWord}>{words[index]}</Text>
+                    </View>
+                  );
+                })}
               </View>
             ))}
           </View>
@@ -463,14 +471,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
+  mnemonicRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   mnemonicItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginBottom: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     backgroundColor: '#F5F5F5',
     borderRadius: 6,
+    flex: 1,
+    marginHorizontal: 2,
   },
   mnemonicNumber: {
     fontSize: 12,
