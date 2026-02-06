@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import WalletService from '../services/WalletService';
+import MultiWalletService from '../services/MultiWalletService';
 
 export default function DAppWebViewScreen({ route, navigation }: any) {
   const { url, name } = route.params;
@@ -30,6 +31,9 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [chainId, setChainId] = useState<string>('0x38');
   const [showMenu, setShowMenu] = useState(false);
+  const [showWalletList, setShowWalletList] = useState(false);
+  const [wallets, setWallets] = useState<any[]>([]);
+  const [currentWallet, setCurrentWallet] = useState<any>(null);
 
   // Load wallet data on mount
   React.useEffect(() => {
@@ -40,6 +44,12 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
     try {
       const address = await WalletService.getAddress();
       const network = WalletService.getCurrentNetwork();
+      
+      // Load all wallets
+      const allWallets = await MultiWalletService.getAllWallets();
+      setWallets(allWallets);
+      const active = await MultiWalletService.getActiveWallet();
+      setCurrentWallet(active);
       
       if (address) {
         setWalletAddress(address);
@@ -533,48 +543,17 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
 
               {/* Row 2 */}
               <View style={styles.menuRow}>
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    // Open in system browser
-                    setShowMenu(false);
-                  }}
-                >
-                  <Text style={styles.menuItemIcon}>🌐</Text>
-                  <Text style={styles.menuItemText}>系统浏览器打开</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    // Switch to desktop mode
-                    setShowMenu(false);
-                  }}
-                >
-                  <Text style={styles.menuItemIcon}>🖥️</Text>
-                  <Text style={styles.menuItemText}>切换桌面模式</Text>
-                </TouchableOpacity>
 
                 <TouchableOpacity 
                   style={styles.menuItem}
                   onPress={() => {
                     // Translate page
+                    Alert.alert('提示', '翻译功能开发中');
                     setShowMenu(false);
                   }}
                 >
                   <Text style={styles.menuItemIcon}>🌐</Text>
                   <Text style={styles.menuItemText}>翻译页面</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={styles.menuItem}
-                  onPress={() => {
-                    // Edit script
-                    setShowMenu(false);
-                  }}
-                >
-                  <Text style={styles.menuItemIcon}>✏️</Text>
-                  <Text style={styles.menuItemText}>编辑</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
@@ -601,28 +580,106 @@ export default function DAppWebViewScreen({ route, navigation }: any) {
             </View>
 
             {/* Wallet Selector */}
-            <View style={styles.walletSelector}>
+            <TouchableOpacity 
+              style={styles.walletSelector}
+              onPress={() => {
+                setShowMenu(false);
+                setShowWalletList(true);
+              }}
+            >
               <View style={styles.walletInfo}>
                 <Text style={styles.walletIcon}>🦅</Text>
                 <View style={styles.walletDetails}>
-                  <Text style={styles.walletName}>BNB-1</Text>
+                  <Text style={styles.walletName}>{currentWallet?.name || 'BNB-1'}</Text>
                   <Text style={styles.walletAddress}>
                     {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => {
-                setShowMenu(false);
-                navigation.navigate('Home');
-              }}>
-                <Text style={styles.walletArrow}>›</Text>
-              </TouchableOpacity>
-            </View>
+              <Text style={styles.walletArrow}>›</Text>
+            </TouchableOpacity>
 
             {/* Cancel Button */}
             <TouchableOpacity 
               style={styles.cancelButton}
               onPress={() => setShowMenu(false)}
+            >
+              <Text style={styles.cancelButtonText}>取消</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Wallet List Modal */}
+      <Modal
+        visible={showWalletList}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowWalletList(false)}
+      >
+        <TouchableOpacity 
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowWalletList(false)}
+        >
+          <View style={styles.menuContainer}>
+            {/* Header */}
+            <View style={styles.menuHeader}>
+              <Text style={styles.menuTitle}>选择钱包</Text>
+              <Text style={styles.menuSubtitle}>切换后将自动重新连接 DApp</Text>
+            </View>
+
+            {/* Wallet List */}
+            <View style={styles.walletList}>
+              {wallets.map((wallet, index) => (
+                <TouchableOpacity
+                  key={wallet.id}
+                  style={[
+                    styles.walletListItem,
+                    currentWallet?.id === wallet.id && styles.walletListItemActive
+                  ]}
+                  onPress={async () => {
+                    try {
+                      // Switch wallet
+                      await MultiWalletService.switchWallet(wallet.id);
+                      
+                      // Reload wallet data
+                      await loadWalletData();
+                      
+                      // Reload WebView to reconnect with new wallet
+                      webViewRef.current?.reload();
+                      
+                      setShowWalletList(false);
+                      Alert.alert('成功', `已切换到 ${wallet.name}`);
+                    } catch (error) {
+                      Alert.alert('错误', '切换钱包失败');
+                    }
+                  }}
+                >
+                  <View style={styles.walletListItemLeft}>
+                    <View style={[styles.walletAvatar, { backgroundColor: wallet.color }]}>
+                      <Text style={styles.walletAvatarText}>
+                        {wallet.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.walletListItemInfo}>
+                      <Text style={styles.walletListItemName}>{wallet.name}</Text>
+                      <Text style={styles.walletListItemAddress}>
+                        {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                      </Text>
+                    </View>
+                  </View>
+                  {currentWallet?.id === wallet.id && (
+                    <Text style={styles.walletListItemCheck}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={() => setShowWalletList(false)}
             >
               <Text style={styles.cancelButtonText}>取消</Text>
             </TouchableOpacity>
@@ -849,5 +906,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  walletList: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  walletListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2C2C2E',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  walletListItemActive: {
+    backgroundColor: '#3A3A3C',
+    borderWidth: 2,
+    borderColor: '#F3BA2F',
+  },
+  walletListItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  walletAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  walletAvatarText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  walletListItemInfo: {
+    flex: 1,
+  },
+  walletListItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  walletListItemAddress: {
+    fontSize: 12,
+    color: '#999',
+  },
+  walletListItemCheck: {
+    fontSize: 24,
+    color: '#F3BA2F',
+    fontWeight: 'bold',
   },
 });
