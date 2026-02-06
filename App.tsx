@@ -22,6 +22,10 @@ import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import ExportPrivateKeyScreen from './src/screens/ExportPrivateKeyScreen';
 import RPCNodeScreen from './src/screens/RPCNodeScreen';
+import TokenDetailScreen from './src/screens/TokenDetailScreen';
+import SelectTokenScreen from './src/screens/SelectTokenScreen';
+import EnterAddressScreen from './src/screens/EnterAddressScreen';
+import EnterAmountScreen from './src/screens/EnterAmountScreen';
 import WalletService from './src/services/WalletService';
 
 const Stack = createStackNavigator();
@@ -69,6 +73,10 @@ export default function App() {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="ExportPrivateKey" component={ExportPrivateKeyScreen} />
             <Stack.Screen name="RPCNode" component={RPCNodeScreen} />
+            <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
+            <Stack.Screen name="SelectToken" component={SelectTokenScreen} />
+            <Stack.Screen name="EnterAddress" component={EnterAddressScreen} />
+            <Stack.Screen name="EnterAmount" component={EnterAmountScreen} />
           </>
         )}
       </Stack.Navigator>

@@ -187,7 +187,19 @@ export default function HomeScreen({ navigation }: any) {
         </View>
         
         {/* Native Token */}
-        <TouchableOpacity style={styles.tokenItem}>
+        <TouchableOpacity 
+          style={styles.tokenItem}
+          onPress={() => navigation.navigate('TokenDetail', { 
+            token: { 
+              symbol: network.symbol, 
+              name: network.symbol,
+              amount: parseFloat(balance).toFixed(4),
+              value: '0.00',
+              color: network.color,
+              icon: network.symbol.charAt(0)
+            } 
+          })}
+        >
           <View style={styles.tokenLeft}>
             <View style={[styles.tokenIcon, { backgroundColor: network.color + '20' }]}>
               <Text style={styles.tokenIconText}>{network.symbol.charAt(0)}</Text>
@@ -204,7 +216,19 @@ export default function HomeScreen({ navigation }: any) {
         </TouchableOpacity>
 
         {/* USDT */}
-        <TouchableOpacity style={styles.tokenItem}>
+        <TouchableOpacity 
+          style={styles.tokenItem}
+          onPress={() => navigation.navigate('TokenDetail', { 
+            token: { 
+              symbol: 'USDT', 
+              name: 'Tether USD',
+              amount: '0.00',
+              value: '0.00',
+              color: '#26A17B',
+              icon: '₮'
+            } 
+          })}
+        >
           <View style={styles.tokenLeft}>
             <View style={[styles.tokenIcon, { backgroundColor: '#26A17B20' }]}>
               <Text style={styles.tokenIconText}>₮</Text>
@@ -221,7 +245,19 @@ export default function HomeScreen({ navigation }: any) {
         </TouchableOpacity>
 
         {/* USDC */}
-        <TouchableOpacity style={styles.tokenItem}>
+        <TouchableOpacity 
+          style={styles.tokenItem}
+          onPress={() => navigation.navigate('TokenDetail', { 
+            token: { 
+              symbol: 'USDC', 
+              name: 'USD Coin',
+              amount: '0.00',
+              value: '0.00',
+              color: '#2775CA',
+              icon: '$'
+            } 
+          })}
+        >
           <View style={styles.tokenLeft}>
             <View style={[styles.tokenIcon, { backgroundColor: '#2775CA20' }]}>
               <Text style={styles.tokenIconText}>$</Text>
