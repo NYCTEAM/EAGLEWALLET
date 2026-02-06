@@ -269,18 +269,17 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                 
                 <View style={styles.tokenInfo}>
                   <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                  <Text style={styles.tokenName}>{token.name}</Text>
+                  <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
                 </View>
-                <View style={styles.tokenBalance}>
-                  <Text style={styles.balanceText}>{token.balance}</Text>
-                  {token.price > 0 && (
-                    <Text style={styles.priceText}>
-                      ${token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)}
-                    </Text>
-                  )}
-                  {token.value && parseFloat(token.value) > 0 && (
-                    <Text style={styles.valueText}>≈ ${token.value}</Text>
-                  )}
+                <View style={styles.tokenRight}>
+                  <Text style={styles.tokenValue}>
+                    ${token.value && parseFloat(token.value) > 0 ? token.value : '0.00'}
+                  </Text>
+                  <Text style={styles.priceText}>
+                    ${token.price > 0 
+                      ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
+                      : '0.00'}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -455,6 +454,7 @@ const styles = StyleSheet.create({
   },
   tokenInfo: {
     flex: 1,
+    justifyContent: 'center',
   },
   tokenSymbol: {
     color: '#FFFFFF',
@@ -462,28 +462,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  tokenName: {
+  tokenBalanceAmount: {
     color: '#999',
-    fontSize: 12,
+    fontSize: 13,
   },
-  tokenBalance: {
+  tokenRight: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
   },
-  balanceText: {
+  tokenValue: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '500',
+    marginBottom: 4,
   },
   priceText: {
     color: '#999',
     fontSize: 12,
-    marginTop: 2,
-  },
-  valueText: {
-    color: '#43A047',
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 2,
   },
   manageButton: {
     marginTop: 20,

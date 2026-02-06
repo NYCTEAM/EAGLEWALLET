@@ -108,8 +108,18 @@ class PriceService {
         return {};
       }
 
+      // Map 'native' to wrapped token address and filter out empty addresses
+      const processedAddresses = tokenAddresses.map(addr => {
+        if (addr === 'native') {
+          // Return Wrapped Token address for native currency
+          if (chainId === 56) return '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // WBNB
+          if (chainId === 196) return '0xe538905cf8410324e03A5A23C1c177a474D59b2b'; // WOKB
+        }
+        return addr;
+      }).filter(Boolean);
+
       // GeckoTerminal supports comma-separated addresses
-      const addressList = tokenAddresses.join(',');
+      const addressList = processedAddresses.join(',');
       const url = `${GECKOTERMINAL_API}/simple/networks/${network}/token_price/${addressList}`;
       
       const response = await fetch(url);
@@ -127,6 +137,14 @@ class PriceService {
         const price = parseFloat(priceStr);
         prices[address.toLowerCase()] = price;
         
+        // If this address corresponds to a wrapped token, also cache it for 'native'
+        if (chainId === 56 && address.toLowerCase() === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
+          prices['native'] = price;
+        }
+        if (chainId === 196 && address.toLowerCase() === '0xe538905cf8410324e03a5a23c1c177a474d59b2b') {
+          prices['native'] = price;
+        }
+
         // Cache individual prices
         const cacheKey = `${chainId}-${address.toLowerCase()}`;
         this.priceCache.set(cacheKey, {
