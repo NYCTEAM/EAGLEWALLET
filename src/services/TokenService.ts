@@ -61,6 +61,9 @@ class TokenService {
       // Get ERC20 token balances from predefined token list
       const chainTokens = getChainTokens(chainId);
       for (const tokenInfo of chainTokens) {
+        let balance = 0n;
+        let balanceFormatted = '0.0';
+        
         try {
           const contract = new ethers.Contract(
             tokenInfo.address,
@@ -68,24 +71,24 @@ class TokenService {
             provider
           );
 
-          const balance = await contract.balanceOf(address);
-          const balanceFormatted = ethers.formatUnits(balance, tokenInfo.decimals);
-          
-          // Include all major tokens, even with 0 balance
-          tokens.push({
-            address: tokenInfo.address,
-            symbol: tokenInfo.symbol,
-            name: tokenInfo.name,
-            decimals: tokenInfo.decimals,
-            balance: balance.toString(),
-            balanceFormatted,
-            value: '0.00',
-            icon: tokenInfo.icon,
-            color: tokenInfo.color,
-          });
+          balance = await contract.balanceOf(address);
+          balanceFormatted = ethers.formatUnits(balance, tokenInfo.decimals);
         } catch (error) {
-          console.error(`Error fetching ${tokenInfo.symbol}:`, error);
+          console.warn(`Failed to fetch balance for ${tokenInfo.symbol}, using 0`);
         }
+        
+        // Always include major tokens
+        tokens.push({
+          address: tokenInfo.address,
+          symbol: tokenInfo.symbol,
+          name: tokenInfo.name,
+          decimals: tokenInfo.decimals,
+          balance: balance.toString(),
+          balanceFormatted,
+          value: '0.00',
+          icon: tokenInfo.icon,
+          color: tokenInfo.color,
+        });
       }
 
       // Fetch prices for all tokens

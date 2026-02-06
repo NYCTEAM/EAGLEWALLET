@@ -106,6 +106,26 @@ export const BSC_TOKENS: TokenConfig[] = [
     logo: 'cake',
     chainId: 56,
   },
+  {
+    address: '0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d',
+    symbol: 'USD1',
+    name: 'USD1 Token',
+    decimals: 18,
+    icon: '$',
+    color: '#00D395',
+    logo: 'usd1',
+    chainId: 56,
+  },
+  {
+    address: '0xce24439f2d9c6a2289f741120fe202248b666666',
+    symbol: 'USDS',
+    name: 'Sperax USD',
+    decimals: 18,
+    icon: '$',
+    color: '#FFFFFF',
+    logo: 'usds',
+    chainId: 56,
+  },
 ];
 
 // XLAYER Mainnet (196) - Mainstream Tokens
@@ -118,6 +138,16 @@ export const XLAYER_TOKENS: TokenConfig[] = [
     icon: '🦅',
     color: '#F3BA2F',
     logo: 'eagle',
+    chainId: 196,
+  },
+  {
+    address: '0x779ded0c9e1022225f8e0630b35a9b54be713736',
+    symbol: 'USDT0',
+    name: 'Tether USD (Old)',
+    decimals: 6,
+    icon: '₮',
+    color: '#26A17B',
+    logo: 'usdt0',
     chainId: 196,
   },
   {

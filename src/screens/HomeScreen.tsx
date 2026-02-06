@@ -44,11 +44,13 @@ export default function HomeScreen({ navigation }: any) {
         const bal = await WalletService.getBalance();
         setBalance(bal);
         const net = WalletService.getCurrentNetwork();
+        console.log('Current Network:', net.chainId, net.name);
         setNetwork(net);
         const txs = await WalletService.getTransactionHistory(10);
         setTransactions(txs);
         
         // Load mainstream tokens (always show)
+        console.log('Fetching tokens for chain:', net.chainId);
         const mainTokens = await TokenService.getUserTokens(net.chainId);
         console.log('Loaded mainstream tokens:', mainTokens.length);
         setTokens(mainTokens);
@@ -59,7 +61,7 @@ export default function HomeScreen({ navigation }: any) {
         console.log('Loaded custom tokens:', userCustomTokens.length);
         
         // Fetch balances for custom tokens
-        const customTokensWithBalance = [];
+        const customTokensWithBalance: any[] = [];
         for (const token of userCustomTokens) {
           try {
             const balance = await TokenService.getTokenBalance(
@@ -79,6 +81,12 @@ export default function HomeScreen({ navigation }: any) {
             console.error('Error loading custom token:', error);
           }
         }
+        
+        // Update prices for custom tokens
+        if (customTokensWithBalance.length > 0) {
+          await TokenService.updateTokenPrices(customTokensWithBalance, net.chainId);
+        }
+        
         setCustomTokens(customTokensWithBalance);
         
         // Calculate total portfolio value
