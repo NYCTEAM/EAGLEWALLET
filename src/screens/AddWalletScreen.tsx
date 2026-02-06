@@ -15,8 +15,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import MultiWalletService from '../services/MultiWalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function AddWalletScreen({ navigation }: any) {
+  const { t } = useLanguage();
   const [walletName, setWalletName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,22 +29,22 @@ export default function AddWalletScreen({ navigation }: any) {
 
   const handleCreateWallet = async () => {
     if (!walletName.trim()) {
-      Alert.alert('错误', '请输入钱包名称');
+      Alert.alert(t.common.error, t.errors.walletNameRequired);
       return;
     }
 
     if (!password) {
-      Alert.alert('错误', '请输入密码');
+      Alert.alert(t.common.error, t.errors.passwordRequired);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('错误', '两次输入的密码不一致');
+      Alert.alert(t.common.error, t.errors.passwordMismatch);
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('错误', '密码至少需要8个字符');
+      Alert.alert(t.common.error, t.errors.passwordTooShort);
       return;
     }
 
@@ -51,11 +53,11 @@ export default function AddWalletScreen({ navigation }: any) {
       const wallet = await MultiWalletService.createWallet(walletName.trim(), password);
       
       Alert.alert(
-        '成功',
-        `钱包 "${walletName}" 创建成功！\n\n请务必备份您的助记词和私钥。您可以在设置中查看和导出。`,
+        t.wallet.createSuccess,
+        t.wallet.createSuccessMessage.replace('{name}', walletName),
         [
           {
-            text: '确定',
+            text: t.common.ok,
             onPress: () => {
               navigation.reset({
                 index: 0,
@@ -66,7 +68,7 @@ export default function AddWalletScreen({ navigation }: any) {
         ]
       );
     } catch (error: any) {
-      Alert.alert('错误', error.message || '创建钱包失败');
+      Alert.alert(t.common.error, error.message || t.errors.createWalletFailed);
     } finally {
       setLoading(false);
     }
@@ -74,22 +76,22 @@ export default function AddWalletScreen({ navigation }: any) {
 
   const handleImportMnemonic = async () => {
     if (!walletName.trim()) {
-      Alert.alert('错误', '请输入钱包名称');
+      Alert.alert(t.common.error, t.errors.walletNameRequired);
       return;
     }
 
     if (!password) {
-      Alert.alert('错误', '请输入密码');
+      Alert.alert(t.common.error, t.errors.passwordRequired);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('错误', '两次输入的密码不一致');
+      Alert.alert(t.common.error, t.errors.passwordMismatch);
       return;
     }
 
     if (!mnemonic.trim()) {
-      Alert.alert('错误', '请输入助记词');
+      Alert.alert(t.common.error, t.errors.mnemonicRequired);
       return;
     }
 
@@ -97,9 +99,9 @@ export default function AddWalletScreen({ navigation }: any) {
       setLoading(true);
       await MultiWalletService.importFromMnemonic(walletName.trim(), mnemonic.trim(), password);
       
-      Alert.alert('成功', `钱包 "${walletName}" 导入成功！`, [
+      Alert.alert(t.wallet.importSuccess, t.wallet.importSuccessMessage.replace('{name}', walletName), [
         {
-          text: '确定',
+          text: t.common.ok,
           onPress: () => {
             navigation.reset({
               index: 0,
@@ -109,7 +111,7 @@ export default function AddWalletScreen({ navigation }: any) {
         },
       ]);
     } catch (error: any) {
-      Alert.alert('错误', error.message || '导入钱包失败');
+      Alert.alert(t.common.error, error.message || t.errors.importWalletFailed);
     } finally {
       setLoading(false);
     }
@@ -117,22 +119,22 @@ export default function AddWalletScreen({ navigation }: any) {
 
   const handleImportPrivateKey = async () => {
     if (!walletName.trim()) {
-      Alert.alert('错误', '请输入钱包名称');
+      Alert.alert(t.common.error, t.errors.walletNameRequired);
       return;
     }
 
     if (!password) {
-      Alert.alert('错误', '请输入密码');
+      Alert.alert(t.common.error, t.errors.passwordRequired);
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('错误', '两次输入的密码不一致');
+      Alert.alert(t.common.error, t.errors.passwordMismatch);
       return;
     }
 
     if (!privateKey.trim()) {
-      Alert.alert('错误', '请输入私钥');
+      Alert.alert(t.common.error, t.errors.privateKeyRequired);
       return;
     }
 
@@ -140,9 +142,9 @@ export default function AddWalletScreen({ navigation }: any) {
       setLoading(true);
       await MultiWalletService.importFromPrivateKey(walletName.trim(), privateKey.trim(), password);
       
-      Alert.alert('成功', `钱包 "${walletName}" 导入成功！`, [
+      Alert.alert(t.wallet.importSuccess, t.wallet.importSuccessMessage.replace('{name}', walletName), [
         {
-          text: '确定',
+          text: t.common.ok,
           onPress: () => {
             navigation.reset({
               index: 0,
@@ -152,7 +154,7 @@ export default function AddWalletScreen({ navigation }: any) {
         },
       ]);
     } catch (error: any) {
-      Alert.alert('错误', error.message || '导入钱包失败');
+      Alert.alert(t.common.error, error.message || t.errors.importWalletFailed);
     } finally {
       setLoading(false);
     }
@@ -173,10 +175,10 @@ export default function AddWalletScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← 返回</Text>
+          <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>
-          {mode === 'create' ? '创建钱包' : '导入钱包'}
+          {mode === 'create' ? t.wallet.createWallet : t.wallet.importWallet}
         </Text>
         <View style={{ width: 60 }} />
       </View>
@@ -189,7 +191,7 @@ export default function AddWalletScreen({ navigation }: any) {
             onPress={() => setMode('create')}
           >
             <Text style={[styles.modeButtonText, mode === 'create' && styles.modeButtonTextActive]}>
-              创建新钱包
+              {t.wallet.createNewWallet}
             </Text>
           </TouchableOpacity>
           
@@ -198,7 +200,7 @@ export default function AddWalletScreen({ navigation }: any) {
             onPress={() => setMode('import-mnemonic')}
           >
             <Text style={[styles.modeButtonText, mode === 'import-mnemonic' && styles.modeButtonTextActive]}>
-              导入助记词
+              {t.wallet.importMnemonic}
             </Text>
           </TouchableOpacity>
           
@@ -207,32 +209,32 @@ export default function AddWalletScreen({ navigation }: any) {
             onPress={() => setMode('import-key')}
           >
             <Text style={[styles.modeButtonText, mode === 'import-key' && styles.modeButtonTextActive]}>
-              导入私钥
+              {t.wallet.importPrivateKey}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Wallet Name Input */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>钱包名称 *</Text>
+          <Text style={styles.label}>{t.wallet.walletName} *</Text>
           <TextInput
             style={styles.input}
-            placeholder="例如：我的主钱包"
+            placeholder={t.wallet.walletNamePlaceholder}
             value={walletName}
             onChangeText={setWalletName}
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <Text style={styles.hint}>给您的钱包起一个容易识别的名字</Text>
+          <Text style={styles.hint}>{t.wallet.walletNameHint}</Text>
         </View>
 
         {/* Import Mnemonic */}
         {mode === 'import-mnemonic' && (
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>助记词 *</Text>
+            <Text style={styles.label}>{t.wallet.mnemonic} *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="请输入12或24个助记词，用空格分隔"
+              placeholder={t.wallet.mnemonicPlaceholder}
               value={mnemonic}
               onChangeText={setMnemonic}
               multiline
@@ -246,10 +248,10 @@ export default function AddWalletScreen({ navigation }: any) {
         {/* Import Private Key */}
         {mode === 'import-key' && (
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>私钥 *</Text>
+            <Text style={styles.label}>{t.wallet.privateKey} *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="请输入私钥（以0x开头）"
+              placeholder={t.wallet.privateKeyPlaceholder}
               value={privateKey}
               onChangeText={setPrivateKey}
               multiline
@@ -263,10 +265,10 @@ export default function AddWalletScreen({ navigation }: any) {
 
         {/* Password Input */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>密码 *</Text>
+          <Text style={styles.label}>{t.wallet.password} *</Text>
           <TextInput
             style={styles.input}
-            placeholder="至少8个字符"
+            placeholder={t.wallet.passwordPlaceholder}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -277,10 +279,10 @@ export default function AddWalletScreen({ navigation }: any) {
 
         {/* Confirm Password Input */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>确认密码 *</Text>
+          <Text style={styles.label}>{t.wallet.confirmPassword} *</Text>
           <TextInput
             style={styles.input}
-            placeholder="再次输入密码"
+            placeholder={t.wallet.confirmPasswordPlaceholder}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -294,7 +296,7 @@ export default function AddWalletScreen({ navigation }: any) {
           <View style={styles.warningBox}>
             <Text style={styles.warningIcon}>⚠️</Text>
             <Text style={styles.warningText}>
-              请务必备份您的助记词！助记词是恢复钱包的唯一方式，丢失后将无法找回资产。
+              {t.wallet.backupWarning}
             </Text>
           </View>
         )}
@@ -309,7 +311,7 @@ export default function AddWalletScreen({ navigation }: any) {
             <ActivityIndicator color="#000" />
           ) : (
             <Text style={styles.submitButtonText}>
-              {mode === 'create' ? '创建钱包' : '导入钱包'}
+              {mode === 'create' ? t.wallet.createWallet : t.wallet.importWallet}
             </Text>
           )}
         </TouchableOpacity>

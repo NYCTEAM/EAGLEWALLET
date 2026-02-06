@@ -35,7 +35,9 @@ import SwapScreen from './src/screens/SwapScreen';
 import AdvancedSettingsScreen from './src/screens/AdvancedSettingsScreen';
 import PriceAlertScreen from './src/screens/PriceAlertScreen';
 import DAppWebViewScreen from './src/screens/DAppWebViewScreen';
+import LanguageSettingsScreen from './src/screens/LanguageSettingsScreen';
 import WalletService from './src/services/WalletService';
+import { LanguageProvider } from './src/i18n/LanguageContext';
 
 const Stack = createStackNavigator();
 
@@ -60,12 +62,13 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
+    <LanguageProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
         {!hasWallet ? (
           <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
         ) : (
@@ -95,9 +98,11 @@ export default function App() {
             <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
             <Stack.Screen name="PriceAlert" component={PriceAlertScreen} />
             <Stack.Screen name="DAppWebView" component={DAppWebViewScreen} />
+            <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
           </>
         )}
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </LanguageProvider>
   );
 }
