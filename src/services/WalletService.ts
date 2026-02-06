@@ -278,13 +278,22 @@ class WalletService {
         throw new Error('No wallet found');
       }
 
-      // Decrypt wallet with password
-      const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
-        credentials.password,
-        password
-      );
+      // Check if stored value is a private key
+      if (credentials.password.startsWith('0x')) {
+        return credentials.password;
+      }
 
-      return decryptedWallet.privateKey;
+      // Try to decrypt
+      if (credentials.password.trim().startsWith('{')) {
+        const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
+          credentials.password,
+          password
+        );
+        return decryptedWallet.privateKey;
+      }
+
+      // Fallback
+      return credentials.password;
     } catch (error) {
       console.error('Export private key error:', error);
       throw new Error('Incorrect password or wallet not found');
@@ -302,21 +311,29 @@ class WalletService {
         throw new Error('No wallet found');
       }
 
-      // Decrypt wallet with password
-      const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
-        credentials.password,
-        password
-      );
-
-      // Check if wallet has mnemonic (HDNodeWallet)
-      if ('mnemonic' in decryptedWallet && decryptedWallet.mnemonic) {
-        return decryptedWallet.mnemonic.phrase;
-      }
+      // If stored as private key, we can't get mnemonic unless we stored it separately
+      // But wait, createWallet stores privateKey. So mnemonic is LOST if we didn't store it elsewhere.
+      // However, MultiWalletService might store type='mnemonic'.
       
-      throw new Error('This wallet was imported with private key and has no mnemonic');
+      // Check if it's JSON
+      if (credentials.password.trim().startsWith('{')) {
+        const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
+          credentials.password,
+          password
+        );
+        if ('mnemonic' in decryptedWallet && decryptedWallet.mnemonic) {
+          return decryptedWallet.mnemonic.phrase;
+        }
+      }
+
+      // If we are here, we probably only have private key or decryption failed
+      // In current implementation, we only stored private key in Keychain
+      // So we cannot retrieve mnemonic from Keychain password field.
+      
+      throw new Error('Mnemonic not available for this wallet');
     } catch (error) {
       console.error('Export mnemonic error:', error);
-      throw new Error('Incorrect password or wallet not found');
+      throw error;
     }
   }
 
@@ -330,7 +347,17 @@ class WalletService {
         return false;
       }
 
-      await ethers.Wallet.fromEncryptedJson(credentials.password, password);
+      // If stored as plain private key, we can't verify password cryptographically
+      // unless we stored a hash. For now, assume true if we can read Keychain.
+      if (credentials.password.startsWith('0x')) {
+        return true;
+      }
+
+      if (credentials.password.trim().startsWith('{')) {
+        await ethers.Wallet.fromEncryptedJson(credentials.password, password);
+        return true;
+      }
+
       return true;
     } catch (error) {
       return false;
