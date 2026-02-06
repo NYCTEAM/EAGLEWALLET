@@ -13,6 +13,7 @@ import {
   Alert,
   ScrollView,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import WalletService from '../services/WalletService';
 
@@ -166,9 +167,11 @@ export default function CreateWalletScreen({ navigation }: any) {
             onPress={handlePasswordSubmit}
             disabled={isCreating}
           >
-            <Text style={styles.primaryButtonText}>
-              {isCreating ? 'Creating...' : 'Continue'}
-            </Text>
+            {isCreating ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Continue</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       );
