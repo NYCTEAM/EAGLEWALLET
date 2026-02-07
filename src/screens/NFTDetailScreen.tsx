@@ -1,10 +1,10 @@
 /**
  * Eagle Wallet - NFT Detail Screen
- * View and transfer NFT
+ * Shows detailed NFT info, contract address, and transfer options
+ * Similar to OKX / AlphaWallet design
  */
 
-import React, { useState } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,162 +12,147 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Linking,
+  Clipboard,
   Alert,
-  Modal,
-  TextInput,
+  Dimensions,
 } from 'react-native';
-import { NFT } from '../services/NFTService';
+import { useLanguage } from '../i18n/LanguageContext';
+import WalletService from '../services/WalletService';
 
-export default function NFTDetailScreen({ navigation, route }: any) {
+const { width } = Dimensions.get('window');
+
+export default function NFTDetailScreen({ route, navigation }: any) {
+  const { nft } = route.params;
   const { t } = useLanguage();
-  const { nft }: { nft: NFT } = route.params;
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [recipientAddress, setRecipientAddress] = useState('');
-  const [transferring, setTransferring] = useState(false);
+  const network = WalletService.getCurrentNetwork();
 
-  const handleTransfer = async () => {
-    if (!recipientAddress || recipientAddress.length !== 42) {
-      Alert.alert(t.common.error, t.errors.invalidAddress);
-      return;
+  const handleCopy = (text: string) => {
+    Clipboard.setString(text);
+    Alert.alert(t.common.copied, t.receive.addressCopied);
+  };
+
+  const openMarketplace = () => {
+    // Determine marketplace URL based on chain
+    let url = '';
+    if (nft.chainId === 56) {
+      url = `https://element.market/assets/bsc/${nft.contractAddress}/${nft.tokenId}`;
+    } else if (nft.chainId === 1) {
+      url = `https://opensea.io/assets/ethereum/${nft.contractAddress}/${nft.tokenId}`;
+    } else {
+        // Fallback search
+        url = `https://opensea.io/assets?search[query]=${nft.contractAddress}`;
     }
-
-    Alert.alert(
-      t.nft.confirmSend,
-      `${t.nft.sendNFT} ${nft.name} ${t.send.to} ${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}?`,
-      [
-        { text: t.common.cancel, style: 'cancel' },
-        {
-          text: t.common.confirm,
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setTransferring(true);
-              // In a real app:
-              // const wallet = await WalletService.getWalletInstance();
-              // const txHash = await NFTService.transferNFT(...)
-
-              Alert.alert(t.common.success, t.nft.nftSent);
-              setShowTransferModal(false);
-              navigation.goBack();
-            } catch (error) {
-              Alert.alert(t.common.error, t.errors.transactionFailed);
-            } finally {
-              setTransferring(false);
-            }
-          },
-        },
-      ]
-    );
+    
+    if (url) {
+        Linking.openURL(url);
+    }
   };
 
   const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    if (!addr) return '';
+    return `${addr.substring(0, 8)}...${addr.substring(addr.length - 6)}`;
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.common.back}</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t.nft.details}</Text>
-        <View style={{ width: 60 }} />
+        <Text style={styles.headerTitle}>{t.wallet.nfts}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView>
-        {/* NFT Image */}
-        <Image
-          source={{ uri: nft.image || 'https://via.placeholder.com/400' }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-
-        {/* NFT Info */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.collection}>{nft.collection}</Text>
-          <Text style={styles.name}>{nft.name}</Text>
-          <Text style={styles.tokenId}>{t.nft.tokenId}: #{nft.tokenId}</Text>
-
-          {nft.description ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t.nft.description}</Text>
-              <Text style={styles.description}>{nft.description}</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Large NFT Image */}
+        <View style={styles.imageContainer}>
+            <Image 
+                source={{ uri: nft.image }} 
+                style={styles.nftImage} 
+                resizeMode="cover" 
+            />
+            {/* Network Badge */}
+            <View style={styles.networkBadge}>
+                <Text style={styles.networkBadgeText}>{network.name}</Text>
             </View>
-          ) : null}
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t.nft.details}</Text>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t.nft.contract}</Text>
-              <Text style={styles.detailValue}>
-                {formatAddress(nft.contractAddress)}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Standard</Text>
-              <Text style={styles.detailValue}>ERC-721</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>{t.network.network}</Text>
-              <Text style={styles.detailValue}>
-                {nft.chainId === 56 ? 'BSC' : 'XLAYER'}
-              </Text>
-            </View>
-          </View>
-
-          {/* Action Buttons */}
-          <TouchableOpacity
-            style={styles.transferButton}
-            onPress={() => setShowTransferModal(true)}
-          >
-            <Text style={styles.transferButtonText}>{t.nft.sendNFT}</Text>
-          </TouchableOpacity>
         </View>
+
+        {/* Title Section */}
+        <View style={styles.titleSection}>
+            <Text style={styles.collectionName}>{nft.collection || 'Unknown Collection'}</Text>
+            <Text style={styles.nftName}>{nft.name}</Text>
+        </View>
+
+        {/* Action List */}
+        <View style={styles.infoList}>
+            {/* View on Marketplace */}
+            <TouchableOpacity style={styles.infoRow} onPress={openMarketplace}>
+                <Text style={styles.infoLabel}>View on Marketplace</Text>
+                <Text style={styles.arrowIcon}>↗</Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
+            {/* Contract Address */}
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Contract Address</Text>
+                <TouchableOpacity 
+                    style={styles.copyRow}
+                    onPress={() => handleCopy(nft.contractAddress)}
+                >
+                    <Text style={styles.infoValue}>{formatAddress(nft.contractAddress)}</Text>
+                    <Text style={styles.copyIcon}>📋</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Token ID */}
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Token ID</Text>
+                <Text style={styles.infoValue}>#{nft.tokenId.length > 10 ? nft.tokenId.substring(0, 10) + '...' : nft.tokenId}</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Token Standard */}
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Token Standard</Text>
+                <View style={styles.standardBadge}>
+                    <Text style={styles.standardText}>{nft.type || 'ERC721'}</Text>
+                </View>
+            </View>
+
+             <View style={styles.divider} />
+
+             {/* Network */}
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Network</Text>
+                <Text style={styles.infoValue}>{network.name}</Text>
+            </View>
+        </View>
+
+        {/* Description (if exists) */}
+        {nft.description ? (
+            <View style={styles.descriptionSection}>
+                <Text style={styles.sectionTitle}>Description</Text>
+                <Text style={styles.descriptionText}>{nft.description}</Text>
+            </View>
+        ) : null}
+
       </ScrollView>
 
-      {/* Transfer Modal */}
-      <Modal
-        visible={showTransferModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowTransferModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t.nft.sendNFT}</Text>
-
-            <Text style={styles.modalLabel}>{t.send.recipientAddress}</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="0x..."
-              value={recipientAddress}
-              onChangeText={setRecipientAddress}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowTransferModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>{t.common.cancel}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleTransfer}
-                disabled={transferring}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {transferring ? t.transaction.confirming : t.common.confirm}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Bottom Action Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity 
+            style={styles.transferButton}
+            onPress={() => navigation.navigate('Send', { nft })}
+        >
+            <Text style={styles.transferButtonText}>{t.common.send}</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -175,147 +160,154 @@ export default function NFTDetailScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#121212',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#121212',
+    zIndex: 10,
   },
   backButton: {
-    fontSize: 16,
-    color: '#F3BA2F',
-    fontWeight: '600',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+  },
+  backIcon: {
+    color: '#FFF',
+    fontSize: 24,
   },
   headerTitle: {
+    color: '#FFF',
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
   },
-  image: {
+  content: {
+    paddingBottom: 100,
+  },
+  imageContainer: {
+    width: width,
+    height: width, // Square
+    position: 'relative',
+  },
+  nftImage: {
     width: '100%',
-    height: 400,
-    backgroundColor: '#E0E0E0',
+    height: '100%',
   },
-  infoContainer: {
+  networkBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  networkBadgeText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  titleSection: {
     padding: 20,
   },
-  collection: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-  },
-  tokenId: {
-    fontSize: 14,
-    color: '#999',
-    fontFamily: 'monospace',
-    marginBottom: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
+  collectionName: {
+    color: '#F3BA2F',
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
+    marginBottom: 4,
   },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
+  nftName: {
+    color: '#FFF',
+    fontSize: 24,
+    fontWeight: 'bold',
   },
-  detailRow: {
+  infoList: {
+    backgroundColor: '#1E1E1E',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 16,
+  },
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
-  detailLabel: {
-    fontSize: 14,
-    color: '#666',
+  infoLabel: {
+    color: '#999',
+    fontSize: 15,
   },
-  detailValue: {
+  infoValue: {
+    color: '#FFF',
+    fontSize: 15,
+    fontFamily: 'monospace', // Monospace for addresses
+  },
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyIcon: {
+    marginLeft: 8,
     fontSize: 14,
-    color: '#000',
+    color: '#F3BA2F',
+  },
+  arrowIcon: {
+    fontSize: 18,
+    color: '#FFF',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+  },
+  standardBadge: {
+    backgroundColor: '#333',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  standardText: {
+    color: '#FFF',
+    fontSize: 12,
     fontWeight: '500',
+  },
+  descriptionSection: {
+    padding: 20,
+  },
+  sectionTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  descriptionText: {
+    color: '#999',
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    backgroundColor: '#121212',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
   },
   transferButton: {
     backgroundColor: '#F3BA2F',
-    padding: 16,
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
   },
   transferButtonText: {
     color: '#000',
     fontSize: 16,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 20,
-  },
-  modalLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  modalInput: {
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 12,
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#E0E0E0',
-  },
-  confirmButton: {
-    backgroundColor: '#F3BA2F',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  confirmButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

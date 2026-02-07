@@ -345,7 +345,11 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
               {nfts.length > 0 ? (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                   {nfts.map((nft, index) => (
-                    <TouchableOpacity key={index} style={styles.nftCard}>
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.nftCard}
+                      onPress={() => navigation.navigate('NFTDetail', { nft })}
+                    >
                       <Image 
                         source={{ uri: nft.image }} 
                         style={styles.nftImage} 

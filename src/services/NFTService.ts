@@ -14,6 +14,24 @@ export interface NFT {
   image: string;
   collection: string;
   chainId: number;
+  type?: 'ERC721' | 'ERC1155';
+  amount?: number; // For ERC1155
+}
+
+// Placeholder for OpenSea Service (Parity with AlphaWallet architecture)
+class OpenSeaService {
+  async fetchAssets(address: string, chainId: number): Promise<NFT[]> {
+    // Integration with OpenSea API would go here
+    return [];
+  }
+}
+
+// Placeholder for Asset Definition Service (Metadata parsing)
+class AssetDefinitionService {
+  async parseMetadata(uri: string): Promise<any> {
+    // TokenScript or Metadata parsing logic
+    return {};
+  }
 }
 
 // ERC-721 ABI for NFT operations
@@ -86,19 +104,22 @@ class NFTService {
           contractAddress: '0x0a8901b0e25deb55a87524f0cc164e9644020e16',
           tokenId: '8888',
           name: 'Pancake Squad #8888',
-          description: 'Pancake Squad NFT on BSC',
-          image: 'https://pancakeswap.finance/images/nfts/squad-8888.png',
+          description: 'Pancake Squad NFT on BSC. Generated automatically.',
+          image: 'https://raw.githubusercontent.com/pancakeswap/pancake-frontend/master/public/images/nfts/squad-placeholder.png',
           collection: 'Pancake Squad',
-          chainId: 56
+          chainId: 56,
+          type: 'ERC721'
         });
         nfts.push({
           contractAddress: '0x57a204aa1042f6e66dd7730813f4024114d74f37',
           tokenId: '123',
           name: 'CyberEagle #123',
-          description: 'Exclusive Eagle Wallet Access Pass',
+          description: 'Exclusive Eagle Wallet Access Pass (ERC1155)',
           image: 'https://img.freepik.com/premium-vector/eagle-mascot-logo-design_142909-173.jpg',
           collection: 'Eagle Genesis',
-          chainId: 56
+          chainId: 56,
+          type: 'ERC1155',
+          amount: 5
         });
       }
 
