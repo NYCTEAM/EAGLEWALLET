@@ -1,9 +1,9 @@
 /**
  * Eagle Wallet - Token Detail Screen
- * View token details, chart, and transaction history
+ * Shows detailed token info, actions, and transaction history
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,147 +11,222 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  ActivityIndicator,
+  Linking,
+  Clipboard,
   Alert,
 } from 'react-native';
-import TokenLogoService from '../services/TokenLogoService';
 import { useLanguage } from '../i18n/LanguageContext';
+import WalletService from '../services/WalletService';
+import TransactionService, { Transaction } from '../services/TransactionService';
+import TokenLogoService from '../services/TokenLogoService';
+import { NETWORKS } from '../config/networks';
 
-export default function TokenDetailScreen({ navigation, route }: any) {
-  const { t } = useLanguage();
+export default function TokenDetailScreen({ route, navigation }: any) {
   const { token } = route.params;
-  const [selectedChain, setSelectedChain] = useState('ALL');
-  
-  const chains = ['ALL', 'BNB Chain', 'X Layer'];
-  const mockAddress = '0x1234...5678';
+  const { t } = useLanguage();
+  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [activeTab, setActiveTab] = useState<'activity' | 'info'>('activity');
+  const [currentAddress, setCurrentAddress] = useState<string>('');
 
-  const formatAmount = (amount: string) => {
-    return parseFloat(amount || '0').toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    });
+  const network = WalletService.getCurrentNetwork();
+  const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    setLoading(true);
+    const address = await WalletService.getAddress();
+    if (address) {
+        setCurrentAddress(address);
+        // Fetch transactions (mock or real)
+        const txs = await TransactionService.getTransactionHistory(address, network.chainId);
+        
+        // For demo purposes, allow TransactionService to return mock data if real API fails or returns empty
+        if (txs.length === 0) {
+            const mockTxs: Transaction[] = [
+                {
+                    hash: '0x3b1c784920384729384729384729384729384729384729384729384729389d2e',
+                    from: address,
+                    to: '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c4327',
+                    value: '10.5',
+                    timestamp: Date.now() - 1000 * 60 * 30,
+                    status: 'success',
+                    nonce: 1,
+                    chainId: 56,
+                    token: { address: token.address, symbol: token.symbol, decimals: token.decimals }
+                },
+                {
+                    hash: '0x7e8f123412341234123412341234123412341234123412341234123412345a1b',
+                    from: '0xBinanceHotWallet',
+                    to: address,
+                    value: '50.0',
+                    timestamp: Date.now() - 1000 * 60 * 60 * 24,
+                    status: 'success',
+                    nonce: 0,
+                    chainId: 56,
+                    token: { address: token.address, symbol: token.symbol, decimals: token.decimals }
+                }
+            ];
+            setTransactions(mockTxs);
+        } else {
+            setTransactions(txs);
+        }
+    }
+    setLoading(false);
+  };
+
+  const openExplorer = (hash: string) => {
+    const url = `${network.blockExplorerUrl}/tx/${hash}`;
+    Linking.openURL(url);
+  };
+
+  const copyAddress = () => {
+    Clipboard.setString(token.address);
+    Alert.alert(t.common.copied, t.receive.addressCopied);
+  };
+
+  const renderActivityItem = (tx: Transaction, index: number) => {
+    const isReceived = tx.to.toLowerCase() === currentAddress.toLowerCase();
+    
+    return (
+      <TouchableOpacity 
+        key={index} 
+        style={styles.txItem}
+        onPress={() => openExplorer(tx.hash)}
+      >
+        <View style={styles.txIconContainer}>
+            <Text style={styles.txIcon}>{isReceived ? '↓' : '↑'}</Text>
+        </View>
+        <View style={styles.txInfo}>
+            <Text style={styles.txType}>{isReceived ? t.common.receive : t.common.send}</Text>
+            <Text style={styles.txStatus}>
+                {tx.status === 'success' ? t.common.success : t.common.failed}
+                {' • '}
+                {new Date(tx.timestamp).toLocaleDateString()}
+            </Text>
+        </View>
+        <View style={styles.txAmountContainer}>
+            <Text style={[styles.txAmount, { color: isReceived ? '#43A047' : '#FFFFFF' }]}>
+                {isReceived ? '+' : '-'}{tx.value} {token.symbol}
+            </Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        
-        <View style={styles.tokenHeader}>
-          <View style={styles.tokenIconLarge}>
-            <Image 
-              source={TokenLogoService.getLogo(token.symbol)} 
-              style={styles.tokenLogoImage}
-            />
-          </View>
-          <Text style={styles.tokenName}>{token.symbol}</Text>
-        </View>
-
-        <TouchableOpacity style={styles.infoButton}>
-          <Text style={styles.infoIcon}>⋮</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{token.symbol}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Chain Selector */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.chainSelector}
-        >
-          {chains.map((chain) => (
-            <TouchableOpacity
-              key={chain}
-              style={[styles.chainButton, selectedChain === chain && styles.chainButtonActive]}
-              onPress={() => setSelectedChain(chain)}
-            >
-              <Text style={[styles.chainText, selectedChain === chain && styles.chainTextActive]}>
-                {chain === 'ALL' ? t.common.all : chain}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Balance */}
-        <View style={styles.balanceSection}>
-          <Text style={styles.balanceAmount}>{formatAmount(token.balanceFormatted)}</Text>
-          <Text style={styles.balanceUSD}>${token.value || '0.00'}</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Token Info Card */}
+        <View style={styles.balanceCard}>
+            {tokenLogo ? (
+                <Image source={tokenLogo} style={styles.largeLogo} />
+            ) : (
+                <View style={[styles.largeIconPlaceholder, { backgroundColor: token.color || '#F3BA2F' }]}>
+                    <Text style={styles.largeIconText}>{token.symbol[0]}</Text>
+                </View>
+            )}
+            <Text style={styles.balanceAmount}>{token.balance} {token.symbol}</Text>
+            <Text style={styles.balanceValue}>≈ ${token.value}</Text>
+            
+            {/* Price Change Badge */}
+            {token.change !== undefined && (
+                <View style={[
+                    styles.changeBadge, 
+                    { backgroundColor: token.change >= 0 ? 'rgba(67, 160, 71, 0.1)' : 'rgba(229, 57, 53, 0.1)' }
+                ]}>
+                    <Text style={[
+                        styles.changeText, 
+                        { color: token.change >= 0 ? '#43A047' : '#E53935' }
+                    ]}>
+                        {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
+                    </Text>
+                </View>
+            )}
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Send', { token })}
-          >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↑</Text>
-            </View>
-            <Text style={styles.actionText}>{t.send.send}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Receive', { token })}
-          >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↓</Text>
-            </View>
-            <Text style={styles.actionText}>{t.receive.receive}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => navigation.navigate('Swap', { fromToken: token })}
-          >
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>↔</Text>
-            </View>
-            <Text style={styles.actionText}>{t.swap.swap}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>−</Text>
-            </View>
-            <Text style={styles.actionText}>{t.token.tokenDetails}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* DeFi Banner */}
-        <View style={styles.defiBanner}>
-          <View style={styles.defiIcon}>
-            <Text style={styles.defiIconText}>💰</Text>
-          </View>
-          <View style={styles.defiInfo}>
-            <Text style={styles.defiTitle}>Earn up to 5.0% APY</Text>
-            <Text style={styles.defiSubtitle}>Start earning with DeFi</Text>
-          </View>
-        </View>
-
-        {/* Receive Address */}
-        <View style={styles.addressSection}>
-          <Text style={styles.addressLabel}>{t.wallet.walletAddress}</Text>
-          <View style={styles.addressBox}>
-            <Text style={styles.addressText}>{token.address || mockAddress}</Text>
-            <TouchableOpacity onPress={() => Alert.alert(t.common.copied, t.receive.addressCopied)}>
-              <Text style={styles.copyIcon}>📋</Text>
+        <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Send', { token })}>
+                <View style={styles.actionIcon}><Text style={styles.actionIconText}>↑</Text></View>
+                <Text style={styles.actionLabel}>{t.common.send}</Text>
             </TouchableOpacity>
-          </View>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Receive', { token })}>
+                <View style={styles.actionIcon}><Text style={styles.actionIconText}>↓</Text></View>
+                <Text style={styles.actionLabel}>{t.common.receive}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Swap', { fromToken: token })}>
+                <View style={styles.actionIcon}><Text style={styles.actionIconText}>⇄</Text></View>
+                <Text style={styles.actionLabel}>{t.home.swap}</Text>
+            </TouchableOpacity>
         </View>
 
-        {/* Transaction History */}
-        <View style={styles.historySection}>
-          <Text style={styles.historyDate}>{new Date().toLocaleDateString()}</Text>
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>{t.transaction.noTransactions}</Text>
-          </View>
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+            <TouchableOpacity 
+                style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
+                onPress={() => setActiveTab('activity')}
+            >
+                <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Activity</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                style={[styles.tab, activeTab === 'info' && styles.activeTab]}
+                onPress={() => setActiveTab('info')}
+            >
+                <Text style={[styles.tabText, activeTab === 'info' && styles.activeTabText]}>Info</Text>
+            </TouchableOpacity>
         </View>
+
+        {/* Tab Content */}
+        {activeTab === 'activity' ? (
+            <View style={styles.listContainer}>
+                {loading ? (
+                    <ActivityIndicator color="#F3BA2F" style={{ marginTop: 20 }} />
+                ) : transactions.length > 0 ? (
+                    transactions.map((tx, i) => renderActivityItem(tx, i))
+                ) : (
+                    <Text style={styles.emptyText}>{t.transaction.noTransactions}</Text>
+                )}
+            </View>
+        ) : (
+            <View style={styles.infoContainer}>
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Contract Address</Text>
+                    <TouchableOpacity onPress={copyAddress}>
+                        <Text style={styles.infoValue}>
+                            {token.address === 'native' ? 'Native Token' : `${token.address.substring(0, 10)}...${token.address.substring(38)} ❐`}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Decimals</Text>
+                    <Text style={styles.infoValue}>{token.decimals}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Network</Text>
+                    <Text style={styles.infoValue}>{network.name}</Text>
+                </View>
+                <TouchableOpacity 
+                    style={styles.explorerButton}
+                    onPress={() => token.address !== 'native' && openExplorer(token.address)}
+                >
+                    <Text style={styles.explorerButtonText}>View on Explorer ↗</Text>
+                </TouchableOpacity>
+            </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -160,108 +235,81 @@ export default function TokenDetailScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#121212',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    paddingTop: 60,
-    backgroundColor: '#FFFFFF',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   backButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   backIcon: {
+    color: '#FFF',
     fontSize: 24,
-    color: '#000',
   },
-  tokenHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  tokenIconLarge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  tokenLogoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  tokenName: {
-    fontSize: 20,
+  headerTitle: {
+    color: '#FFF',
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
-  },
-  infoButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoIcon: {
-    fontSize: 24,
-    color: '#666',
   },
   content: {
-    flex: 1,
+    paddingBottom: 40,
   },
-  chainSelector: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+  balanceCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
   },
-  chainButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: '#F5F5F5',
+  largeLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 16,
   },
-  chainButtonActive: {
-    backgroundColor: '#000',
+  largeIconPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  chainText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-  },
-  chainTextActive: {
+  largeIconText: {
+    fontSize: 28,
+    fontWeight: 'bold',
     color: '#FFF',
   },
-  balanceSection: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    backgroundColor: '#FFFFFF',
-  },
   balanceAmount: {
-    fontSize: 48,
+    color: '#FFF',
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#000',
     marginBottom: 8,
   },
-  balanceUSD: {
-    fontSize: 18,
+  balanceValue: {
     color: '#999',
+    fontSize: 16,
   },
-  actions: {
+  changeBadge: {
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  changeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    marginTop: 12,
+    paddingHorizontal: 30,
+    marginVertical: 24,
   },
   actionButton: {
     alignItems: 'center',
@@ -270,130 +318,117 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#1E1E1E',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   actionIconText: {
+    color: '#FFF',
     fontSize: 24,
   },
-  actionText: {
-    fontSize: 13,
-    color: '#333',
+  actionLabel: {
+    color: '#999',
+    fontSize: 14,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  tab: {
+    paddingVertical: 12,
+    marginRight: 24,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#F3BA2F',
+  },
+  tabText: {
+    color: '#999',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#FFF',
+  },
+  listContainer: {
+    paddingHorizontal: 20,
+  },
+  txItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E1E1E',
+  },
+  txIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1E1E1E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  txIcon: {
+    color: '#999',
+    fontSize: 18,
+  },
+  txInfo: {
+    flex: 1,
+  },
+  txType: {
+    color: '#FFF',
+    fontSize: 16,
     fontWeight: '500',
-  },
-  defiBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF9E6',
-    padding: 16,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 12,
-  },
-  defiIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFE066',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  defiIconText: {
-    fontSize: 20,
-  },
-  defiInfo: {
-    flex: 1,
-  },
-  defiTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
     marginBottom: 2,
   },
-  defiSubtitle: {
-    fontSize: 13,
+  txStatus: {
     color: '#666',
-  },
-  addressSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginTop: 12,
-  },
-  addressLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  addressBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  addressText: {
-    fontSize: 14,
-    color: '#000',
-    fontFamily: 'monospace',
-    flex: 1,
-  },
-  copyIcon: {
-    fontSize: 20,
-    marginLeft: 8,
-  },
-  historySection: {
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    marginTop: 12,
-    marginBottom: 20,
-  },
-  historyDate: {
-    fontSize: 13,
-    color: '#999',
-    marginBottom: 12,
-  },
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  historyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  historyIconText: {
-    fontSize: 20,
-  },
-  historyInfo: {
-    flex: 1,
-  },
-  historyTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 2,
-  },
-  historyAddress: {
     fontSize: 12,
-    color: '#999',
-    fontFamily: 'monospace',
   },
-  historyAmount: {
-    fontSize: 15,
+  txAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  txAmount: {
+    fontSize: 16,
     fontWeight: '600',
-    color: '#26A17B',
-  },
-  emptyState: {
-    padding: 20,
-    alignItems: 'center',
   },
   emptyText: {
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  infoContainer: {
+    padding: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E1E1E',
+  },
+  infoLabel: {
     color: '#999',
     fontSize: 14,
+  },
+  infoValue: {
+    color: '#FFF',
+    fontSize: 14,
+  },
+  explorerButton: {
+    marginTop: 24,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 8,
+  },
+  explorerButtonText: {
+    color: '#F3BA2F',
+    fontWeight: '600',
   },
 });

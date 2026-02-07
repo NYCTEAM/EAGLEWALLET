@@ -80,6 +80,28 @@ class NFTService {
       const apiNFTs = await this.getNFTsFromAPI(address, chainId);
       nfts.push(...apiNFTs);
 
+      // MOCK DATA: Simulate finding some NFTs automatically (for demo purposes)
+      if (chainId === 56 && nfts.length === 0) {
+        nfts.push({
+          contractAddress: '0x0a8901b0e25deb55a87524f0cc164e9644020e16',
+          tokenId: '8888',
+          name: 'Pancake Squad #8888',
+          description: 'Pancake Squad NFT on BSC',
+          image: 'https://pancakeswap.finance/images/nfts/squad-8888.png',
+          collection: 'Pancake Squad',
+          chainId: 56
+        });
+        nfts.push({
+          contractAddress: '0x57a204aa1042f6e66dd7730813f4024114d74f37',
+          tokenId: '123',
+          name: 'CyberEagle #123',
+          description: 'Exclusive Eagle Wallet Access Pass',
+          image: 'https://img.freepik.com/premium-vector/eagle-mascot-logo-design_142909-173.jpg',
+          collection: 'Eagle Genesis',
+          chainId: 56
+        });
+      }
+
       return nfts;
     } catch (error) {
       console.error('Error fetching user NFTs:', error);

@@ -24,6 +24,7 @@ import PriceService from '../services/PriceService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { NETWORKS } from '../config/networks';
 import { getChainTokens, TokenConfig } from '../config/tokenConfig';
+import NFTService, { NFT } from '../services/NFTService';
 import { ethers } from 'ethers';
 
 const { width } = Dimensions.get('window');
@@ -36,6 +37,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [walletName, setWalletName] = useState('Main Wallet');
   const [tokens, setTokens] = useState<any[]>([]);
+  const [nfts, setNfts] = useState<NFT[]>([]);
+  const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
   const [network, setNetwork] = useState(NETWORKS[56]); // Default BSC
 
   const loadData = async () => {
@@ -63,6 +66,14 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       // Get current network
       const currentNet = WalletService.getCurrentNetwork();
       setNetwork(currentNet);
+
+      // Load NFTs
+      console.log('🖼️ Loading NFTs...');
+      if (addr) {
+        const userNFTs = await NFTService.getUserNFTs(addr, currentNet.chainId);
+        setNfts(userNFTs);
+        console.log(`✅ Loaded ${userNFTs.length} NFTs`);
+      }
 
       // Load predefined mainstream tokens for current chain
       const chainTokens = getChainTokens(currentNet.chainId);
@@ -249,67 +260,112 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* Tokens List */}
+        {/* Tokens / NFT List */}
         <View style={styles.tokensContainer}>
-          <View style={styles.tokensHeader}>
-            <Text style={styles.tokensTitle}>{t.home.tokens}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('AddToken')}>
-              <Text style={styles.addTokenText}>+ {t.common.add}</Text>
-            </TouchableOpacity>
+          <View style={styles.tabsHeader}>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity 
+                style={[styles.tabButton, activeTab === 'crypto' && styles.activeTabButton]}
+                onPress={() => setActiveTab('crypto')}
+              >
+                <Text style={[styles.tabText, activeTab === 'crypto' && styles.activeTabText]}>{t.home.tokens}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tabButton, activeTab === 'nft' && styles.activeTabButton]}
+                onPress={() => setActiveTab('nft')}
+              >
+                <Text style={[styles.tabText, activeTab === 'nft' && styles.activeTabText]}>NFTs</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {activeTab === 'crypto' && (
+              <TouchableOpacity onPress={() => navigation.navigate('AddToken')}>
+                <Text style={styles.addTokenText}>+ {t.common.add}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {tokens.map((token, index) => {
-            const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
-            
-            return (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.tokenItem}
-                onPress={() => navigation.navigate('TokenDetail', { token })}
-              >
-                {/* Token Logo */}
-                {tokenLogo ? (
-                  <Image source={tokenLogo} style={styles.tokenLogoImage} />
-                ) : (
-                  <View style={[styles.tokenIcon, { backgroundColor: token.color || '#333' }]}>
-                    <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
-                  </View>
-                )}
+          {activeTab === 'crypto' ? (
+            <>
+              {tokens.map((token, index) => {
+                const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
                 
-                <View style={styles.tokenInfo}>
-                  <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                  <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
-                </View>
-                <View style={styles.tokenRight}>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.tokenPrice}>
-                      ${token.price > 0 
-                        ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
-                        : '0.00'}
-                    </Text>
-                    {token.change !== 0 && (
-                      <Text style={[
-                        styles.tokenChange,
-                        { color: token.change >= 0 ? '#43A047' : '#E53935' }
-                      ]}>
-                        {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
-                      </Text>
+                return (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.tokenItem}
+                    onPress={() => navigation.navigate('TokenDetail', { token })}
+                  >
+                    {/* Token Logo */}
+                    {tokenLogo ? (
+                      <Image source={tokenLogo} style={styles.tokenLogoImage} />
+                    ) : (
+                      <View style={[styles.tokenIcon, { backgroundColor: token.color || '#333' }]}>
+                        <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
+                      </View>
                     )}
-                  </View>
-                  <Text style={styles.tokenValueSmall}>
-                    ${token.value && parseFloat(token.value) > 0 ? token.value : '0.00'}
-                  </Text>
-                </View>
+                    
+                    <View style={styles.tokenInfo}>
+                      <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                      <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
+                    </View>
+                    <View style={styles.tokenRight}>
+                      <View style={styles.priceContainer}>
+                        <Text style={styles.tokenPrice}>
+                          ${token.price > 0 
+                            ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
+                            : '0.00'}
+                        </Text>
+                        {token.change !== 0 && (
+                          <Text style={[
+                            styles.tokenChange,
+                            { color: token.change >= 0 ? '#43A047' : '#E53935' }
+                          ]}>
+                            {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={styles.tokenValueSmall}>
+                        ${token.value && parseFloat(token.value) > 0 ? token.value : '0.00'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              
+              <TouchableOpacity 
+                style={styles.manageButton}
+                onPress={() => navigation.navigate('AddToken')}
+              >
+                 <Text style={styles.manageButtonText}>{t.home.manageAddWallets}</Text>
               </TouchableOpacity>
-            );
-          })}
-          
-          <TouchableOpacity 
-            style={styles.manageButton}
-            onPress={() => navigation.navigate('AddToken')}
-          >
-             <Text style={styles.manageButtonText}>{t.home.manageAddWallets}</Text>
-          </TouchableOpacity>
+            </>
+          ) : (
+            <View style={styles.nftGrid}>
+              {nfts.length > 0 ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                  {nfts.map((nft, index) => (
+                    <TouchableOpacity key={index} style={styles.nftCard}>
+                      <Image 
+                        source={{ uri: nft.image }} 
+                        style={styles.nftImage} 
+                        resizeMode="cover"
+                      />
+                      <View style={styles.nftInfo}>
+                        <Text style={styles.nftName} numberOfLines={1}>{nft.name}</Text>
+                        <Text style={styles.nftId}>#{nft.tokenId}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptyNftState}>
+                  <Text style={styles.emptyNftIcon}>🖼️</Text>
+                  <Text style={styles.emptyNftText}>No NFTs found</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -435,6 +491,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  tabsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  tabButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 10,
+    backgroundColor: 'transparent',
+  },
+  activeTabButton: {
+    backgroundColor: '#333',
+  },
+  tabText: {
+    color: '#999',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: '#FFF',
+  },
   tokensTitle: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -442,6 +522,46 @@ const styles = StyleSheet.create({
   },
   addTokenText: {
     color: '#F3BA2F',
+    fontSize: 14,
+  },
+  nftGrid: {
+    paddingBottom: 20,
+  },
+  nftCard: {
+    width: (width - 60) / 2,
+    backgroundColor: '#2C2C2C',
+    borderRadius: 12,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  nftImage: {
+    width: '100%',
+    height: (width - 60) / 2,
+    backgroundColor: '#333',
+  },
+  nftInfo: {
+    padding: 10,
+  },
+  nftName: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  nftId: {
+    color: '#999',
+    fontSize: 12,
+  },
+  emptyNftState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyNftIcon: {
+    fontSize: 40,
+    marginBottom: 10,
+  },
+  emptyNftText: {
+    color: '#999',
     fontSize: 14,
   },
   tokenItem: {
