@@ -83,7 +83,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       const provider = await WalletService.getProvider();
       
       // Build token list with native token first
-      const tokenList: any[] = [
+      const initialTokenList: any[] = [
         { 
           symbol: currentNet.symbol, 
           name: currentNet.name, 
@@ -93,47 +93,56 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           address: 'native',
           logo: currentNet.symbol.toLowerCase(),
         },
-      ];
-      
-      // Load balances for predefined tokens
-      for (const token of chainTokens) {
-        let balance = '0.0000';
-        
-        try {
-          // ERC20 ABI for balanceOf
-          const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
-          const contract = new ethers.Contract(token.address, erc20Abi, provider);
-          
-          const tokenBalance = await contract.balanceOf(addr);
-          balance = ethers.formatUnits(tokenBalance, token.decimals);
-        } catch (error) {
-          console.warn(`Failed to load balance for ${token.symbol}, showing as 0:`, error);
-        }
-
-        // Add token regardless of balance or error
-        tokenList.push({
+        ...chainTokens.map(token => ({
           symbol: token.symbol,
           name: token.name,
-          balance: parseFloat(balance).toFixed(4),
+          balance: '0.0000',
           price: 0,
           change: 0,
           address: token.address,
           logo: token.logo || token.symbol.toLowerCase(),
           color: token.color,
           decimals: token.decimals,
-        });
-      }
+        }))
+      ];
       
-      setTokens(tokenList);
-      console.log(`✅ Loaded ${tokenList.length} tokens (including native)`);
+      // Render immediately with initial list
+      setTokens(initialTokenList);
+      
+      // Load balances for predefined tokens in background
+      const updatedListWithBalances = [...initialTokenList];
+      
+      // We can fetch balances in parallel to speed up
+      const balancePromises = chainTokens.map(async (token, index) => {
+        let balance = '0.0000';
+        try {
+          // ERC20 ABI for balanceOf
+          const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
+          const contract = new ethers.Contract(token.address, erc20Abi, provider);
+          const tokenBalance = await contract.balanceOf(addr);
+          balance = ethers.formatUnits(tokenBalance, token.decimals);
+        } catch (error) {
+          // console.warn(`Failed to load balance for ${token.symbol}, showing as 0`);
+        }
+        
+        // Update the item in the list (index + 1 because of native token at 0)
+        updatedListWithBalances[index + 1] = {
+           ...updatedListWithBalances[index + 1],
+           balance: parseFloat(balance).toFixed(4)
+        };
+      });
+      
+      await Promise.all(balancePromises);
+      setTokens([...updatedListWithBalances]);
+      console.log(`✅ Loaded balances for ${chainTokens.length} tokens`);
       
       // Fetch prices for all tokens using contract addresses
       console.log('💰 Fetching token prices...');
-      const tokenAddresses = tokenList.map(t => t.address);
+      const tokenAddresses = updatedListWithBalances.map(t => t.address);
       const priceData = await PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId);
       
       // Update token list with prices
-      const tokensWithPrices = tokenList.map(token => {
+      const tokensWithPrices = updatedListWithBalances.map(token => {
         const data = priceData[token.address.toLowerCase()] || { price: 0, change24h: 0 };
         const value = parseFloat(token.balance) * data.price;
         
@@ -310,17 +319,11 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                       <View style={styles.priceRow}>
                         <Text style={[
                           styles.tokenPrice,
-                          { color: token.change === 0 ? '#999' : (token.change >= 0 ? '#21D185' : '#F6465D') }
+                          { color: token.price > 0 ? '#21D185' : '#999' }
                         ]}>
                           ${token.price > 0 
                             ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
                             : '0.00'}
-                        </Text>
-                        <Text style={[
-                          styles.tokenChange,
-                          { color: token.change === 0 ? '#999' : (token.change >= 0 ? '#21D185' : '#F6465D') }
-                        ]}>
-                          {token.change > 0 ? '+' : ''}{token.change.toFixed(2)}%
                         </Text>
                       </View>
                     </View>
