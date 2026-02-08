@@ -11,11 +11,14 @@ const FACTORY_ABI = [
   'function getPair(address tokenA, address tokenB) external view returns (address pair)',
 ];
 
-// Pair ABI
-const PAIR_ABI = [
-  'function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
-  'function token0() external view returns (address)',
-  'function token1() external view returns (address)',
+// Router V2 ABI
+const ROUTER_V2_ABI = [
+  'function getAmountsOut(uint amountIn, address[] memory path) public view returns (uint[] memory amounts)',
+];
+
+// Quoter V3 ABI
+const QUOTER_V3_ABI = [
+  'function quoteExactInputSingle(tuple(address tokenIn, address tokenOut, uint256 amountIn, uint24 fee, uint160 sqrtPriceLimitX96) params) external returns (uint256 amountOut, uint160 sqrtPriceX96After, uint32 initializedTicksCrossed, uint256 gasEstimate)',
 ];
 
 // Aggregator Contract ABI (Eagle Swap V11)
@@ -31,7 +34,8 @@ const AGGREGATOR_ABI = [
 ];
 
 // Constants
-const PANCAKESWAP_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6076E6F1403C6';
+const PANCAKESWAP_V2_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+const PANCAKESWAP_V3_QUOTER = '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997'; // QuoterV2
 const WBNB_ADDRESS = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
 
 // ERC20 ABI for approval
@@ -243,13 +247,34 @@ class SwapService {
     // Check if Direct V2 failed (fallback to RPC)
     if (!bestQuote) {
         try {
-            const rpcQuote = await this.getV2QuoteRPC(queryTokenIn, queryTokenOut, amountIn, decimalsOut);
-            if (rpcQuote) {
+            // Try both V2 and V3 RPC in parallel
+            const [v2Quote, v3Quote] = await Promise.all([
+                this.getV2QuoteRouter(queryTokenIn, queryTokenOut, amountIn),
+                this.getV3QuoteQuoter(queryTokenIn, queryTokenOut, amountIn)
+            ]);
+
+            // Determine best RPC quote
+            let bestRpcAmount = 0n;
+            let bestRpcType = '';
+            let bestRpcFee = 0;
+
+            if (v2Quote && v2Quote > bestRpcAmount) {
+                bestRpcAmount = v2Quote;
+                bestRpcType = 'V2';
+            }
+            
+            if (v3Quote && v3Quote.amount > bestRpcAmount) {
+                bestRpcAmount = v3Quote.amount;
+                bestRpcType = 'V3';
+                bestRpcFee = v3Quote.fee;
+            }
+
+            if (bestRpcAmount > 0n) {
                  bestQuote = {
-                    quoteType: 'V2',
-                    amountOut: ethers.formatUnits(rpcQuote, decimalsOut),
+                    quoteType: bestRpcType as 'V2' | 'V3',
+                    amountOut: ethers.formatUnits(bestRpcAmount, decimalsOut),
                     path: [tokenIn, tokenOut],
-                    fees: 2500,
+                    fees: bestRpcType === 'V3' ? bestRpcFee : 2500,
                     priceImpact: '0.00'
                 };
             }
@@ -269,10 +294,6 @@ class SwapService {
             const hop2 = await this.getBestQuote(WBNB_ADDRESS, tokenOut, hop1.amountOut, 18, decimalsOut);
             if (hop2 && parseFloat(hop2.amountOut) > 0) {
                  return {
-                    // Let's assume if both are V2, we use V2 routing.
-                    // If any is V3, we use V3 multihop (if compatible) or fail for now.
-                    // The ABI has `eagleSwapV2Router` which takes `address[] path`.
-                    
                     quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
                     amountOut: hop2.amountOut,
                     path: [tokenIn, WBNB_ADDRESS, tokenOut], // Contract handles WBNB in path
@@ -287,29 +308,66 @@ class SwapService {
   }
 
   /**
-   * Get V2 Quote directly from RPC (Fallback)
+   * Get V2 Quote from Router
    */
-  async getV2QuoteRPC(tokenIn: string, tokenOut: string, amountIn: bigint, decimalsOut: number): Promise<bigint | null> {
+  async getV2QuoteRouter(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<bigint | null> {
     try {
         const provider = await WalletService.getProvider();
-        const factory = new ethers.Contract(PANCAKESWAP_V2_FACTORY, FACTORY_ABI, provider);
+        const router = new ethers.Contract(PANCAKESWAP_V2_ROUTER, ROUTER_V2_ABI, provider);
         
-        const pairAddress = await factory.getPair(tokenIn, tokenOut);
-        if (pairAddress === ethers.ZeroAddress) return null;
-
-        const pair = new ethers.Contract(pairAddress, PAIR_ABI, provider);
-        const [reserve0, reserve1] = await pair.getReserves();
-        const token0 = await pair.token0();
+        const path = [tokenIn, tokenOut];
+        const amounts = await router.getAmountsOut(amountIn, path);
         
-        const isToken0In = token0.toLowerCase() === tokenIn.toLowerCase();
-        const reserveIn = isToken0In ? reserve0 : reserve1;
-        const reserveOut = isToken0In ? reserve1 : reserve0;
-
-        return this.calculateV2AmountOut(amountIn, BigInt(reserveIn), BigInt(reserveOut));
+        return amounts && amounts.length > 1 ? amounts[1] : null;
     } catch (error) {
-        console.error('Error getting RPC quote:', error);
+        // Pair might not exist
         return null;
     }
+  }
+
+  /**
+   * Get V3 Quote from Quoter
+   */
+  async getV3QuoteQuoter(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<{ amount: bigint, fee: number } | null> {
+      try {
+          const provider = await WalletService.getProvider();
+          const quoter = new ethers.Contract(PANCAKESWAP_V3_QUOTER, QUOTER_V3_ABI, provider);
+          
+          // Check standard fees: 0.01%, 0.05%, 0.25%, 1%
+          const fees = [100, 500, 2500, 10000];
+          let bestOut = 0n;
+          let bestFee = 0;
+
+          for (const fee of fees) {
+              try {
+                  const params = {
+                      tokenIn,
+                      tokenOut,
+                      amountIn,
+                      fee,
+                      sqrtPriceLimitX96: 0
+                  };
+                  
+                  // quoteExactInputSingle returns (amountOut, sqrtPriceX96After, initializedTicksCrossed, gasEstimate)
+                  // Note: It's a non-view function but we can staticCall it
+                  const result = await quoter.quoteExactInputSingle.staticCall(params);
+                  const amountOut = result[0]; // First return value
+                  
+                  if (amountOut > bestOut) {
+                      bestOut = amountOut;
+                      bestFee = fee;
+                  }
+              } catch (e) {
+                  // Pool with this fee might not exist
+                  continue;
+              }
+          }
+
+          return bestOut > 0n ? { amount: bestOut, fee: bestFee } : null;
+      } catch (error) {
+          console.error('V3 Quoter error:', error);
+          return null;
+      }
   }
 
   /**
