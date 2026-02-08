@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   actionIconText: {
-    color: '#FFF',
+    color: '#000000',
     fontSize: 24,
   },
   actionLabel: {

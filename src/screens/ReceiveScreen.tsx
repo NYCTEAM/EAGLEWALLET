@@ -1,6 +1,7 @@
 /**
  * Eagle Wallet - Receive Screen
  * Display QR code and address for receiving tokens
+ * Refined UI based on user feedback (White theme, large QR, Clean layout)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -13,14 +14,22 @@ import {
   Alert,
   Share,
   Clipboard,
+  Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import WalletService from '../services/WalletService';
 
-export default function ReceiveScreen({ navigation }: any) {
+const { width } = Dimensions.get('window');
+
+export default function ReceiveScreen({ route, navigation }: any) {
   const { t } = useLanguage();
+  const token = route.params?.token;
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState(WalletService.getCurrentNetwork());
+  
+  // Use token symbol if available, otherwise network symbol
+  const displaySymbol = token?.symbol || network.symbol;
 
   useEffect(() => {
     loadAddress();
@@ -38,257 +47,155 @@ export default function ReceiveScreen({ navigation }: any) {
     Alert.alert(t.common.copied, t.receive.addressCopied);
   };
 
-  const shareAddress = async () => {
-    try {
-      await Share.share({
-        message: `${t.receive.myAddress} (${network.name}):\n${address}`,
-      });
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
-  };
-
-  const formatAddress = (addr: string) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  const handleSetAmount = () => {
+    Alert.alert(t.common.comingSoon, "Set amount feature coming soon");
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.common.back}</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <Text style={styles.closeIcon}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{t.receive.receive} {network.symbol}</Text>
-        <View style={{ width: 60 }} />
       </View>
 
       <View style={styles.content}>
-        {/* Network Badge */}
-        <View style={styles.networkBadge}>
-          <Text style={styles.networkText}>{network.name}</Text>
+        {/* QR Code Section */}
+        <View style={styles.qrSection}>
+          <View style={styles.qrWrapper}>
+             {address ? (
+                <QRCode
+                  value={address}
+                  size={220}
+                  backgroundColor="white"
+                  color="black"
+                  // logo={require('../assets/logo.png')} // Uncomment if logo exists
+                  // logoSize={40}
+                  // logoBackgroundColor='white'
+                />
+              ) : (
+                <View style={[styles.qrPlaceholder, { width: 220, height: 220 }]} />
+              )}
+          </View>
+          
+          <Text style={styles.networkWarning}>
+            {t.receive.onlyReceive.replace('{symbol}', `${network.name} (${network.symbol})`)}
+          </Text>
         </View>
 
-        {/* QR Code */}
-        <View style={styles.qrContainer}>
-          {address ? (
-            <QRCode
-              value={address}
-              size={250}
-              backgroundColor="white"
-              color="black"
-            />
-          ) : (
-            <View style={styles.qrPlaceholder}>
-              <Text>{t.common.loading}</Text>
+        {/* Address Info Section */}
+        <View style={styles.addressSection}>
+            <View style={styles.addressInfoLeft}>
+                <Text style={styles.tokenSymbol}>{displaySymbol}</Text>
+                <Text style={styles.addressText}>{address}</Text>
             </View>
-          )}
+            <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
+                <Text style={styles.copyButtonText}>{t.common.copy}</Text>
+            </TouchableOpacity>
         </View>
 
-        {/* Address */}
-        <View style={styles.addressContainer}>
-          <Text style={styles.addressLabel}>{t.receive.myAddress}</Text>
-          <Text style={styles.addressText}>{address}</Text>
-          <Text style={styles.addressShort}>{formatAddress(address)}</Text>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionButton} onPress={copyAddress}>
-            <Text style={styles.actionIcon}>📋</Text>
-            <Text style={styles.actionText}>{t.receive.copyAddress}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton} onPress={shareAddress}>
-            <Text style={styles.actionIcon}>📤</Text>
-            <Text style={styles.actionText}>{t.common.share}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Warning */}
-        <View style={styles.warningBox}>
-          <Text style={styles.warningTitle}>⚠️ {t.common.warning}</Text>
-          <Text style={styles.warningText}>
-            • {t.receive.onlyReceive.replace('{symbol}', network.symbol)}
-          </Text>
-          <Text style={styles.warningText}>
-            • {t.receive.warningMessage}
-          </Text>
-        </View>
-
-        {/* Network Info */}
-        <View style={styles.infoBox}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.network.network}</Text>
-            <Text style={styles.infoValue}>{network.name}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.network.chainId}</Text>
-            <Text style={styles.infoValue}>{network.chainId}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{t.network.symbol}</Text>
-            <Text style={styles.infoValue}>{network.symbol}</Text>
-          </View>
+        {/* Bottom Actions */}
+        <View style={styles.bottomActions}>
+            <TouchableOpacity style={styles.setAmountButton} onPress={handleSetAmount}>
+                <Text style={styles.setAmountText}>{t.receive.setAmount || 'Set Amount'}</Text>
+            </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  backButton: {
-    fontSize: 16,
-    color: '#F3BA2F',
-    fontWeight: '600',
+  closeButton: {
+    padding: 10,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  closeIcon: {
+    fontSize: 24,
     color: '#000',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
-    padding: 20,
     alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingTop: 40,
   },
-  networkBadge: {
-    backgroundColor: '#F3BA2F',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 24,
+  qrSection: {
+    alignItems: 'center',
+    marginBottom: 60,
   },
-  networkText: {
-    color: '#000',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  qrContainer: {
-    backgroundColor: '#FFFFFF',
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  qrWrapper: {
+    padding: 10,
+    backgroundColor: '#FFF',
+    marginBottom: 20,
   },
   qrPlaceholder: {
-    width: 250,
-    height: 250,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F0F0F0',
   },
-  addressContainer: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  addressLabel: {
-    fontSize: 12,
+  networkWarning: {
+    fontSize: 14,
     color: '#666',
+    textAlign: 'center',
+  },
+  addressSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 'auto', // Push bottom actions down
+  },
+  addressInfoLeft: {
+    flex: 1,
+    paddingRight: 20,
+  },
+  tokenSymbol: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
     marginBottom: 8,
   },
   addressText: {
-    fontSize: 11,
-    color: '#000',
-    fontFamily: 'monospace',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  addressShort: {
-    fontSize: 16,
-    color: '#000',
-    fontWeight: '600',
-    fontFamily: 'monospace',
-  },
-  actions: {
-    flexDirection: 'row',
-    width: '100%',
-    gap: 12,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  actionIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  warningBox: {
-    width: '100%',
-    backgroundColor: '#FFF3CD',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  warningTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#856404',
-    marginBottom: 8,
-  },
-  warningText: {
     fontSize: 13,
-    color: '#856404',
-    marginBottom: 4,
-    lineHeight: 20,
+    color: '#999',
+    lineHeight: 18,
   },
-  infoBox: {
+  copyButton: {
+    backgroundColor: '#000',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+  },
+  copyButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bottomActions: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    paddingBottom: 40,
   },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
+  setAmountButton: {
+    backgroundColor: '#1E1E1E',
+    width: '100%',
+    paddingVertical: 18,
+    borderRadius: 30,
+    alignItems: 'center',
   },
-  infoLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '500',
+  setAmountText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

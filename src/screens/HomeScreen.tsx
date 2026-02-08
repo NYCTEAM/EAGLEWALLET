@@ -308,19 +308,20 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                     <View style={styles.tokenInfo}>
                       <Text style={styles.tokenSymbol}>{token.symbol}</Text>
                       <View style={styles.priceRow}>
-                        <Text style={styles.tokenPrice}>
+                        <Text style={[
+                          styles.tokenPrice,
+                          { color: token.change === 0 ? '#999' : (token.change >= 0 ? '#21D185' : '#F6465D') }
+                        ]}>
                           ${token.price > 0 
                             ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
                             : '0.00'}
                         </Text>
-                        {token.change !== 0 && (
-                          <Text style={[
-                            styles.tokenChange,
-                            { color: token.change >= 0 ? '#43A047' : '#E53935' }
-                          ]}>
-                            {token.change >= 0 ? '+' : ''}{token.change.toFixed(2)}%
-                          </Text>
-                        )}
+                        <Text style={[
+                          styles.tokenChange,
+                          { color: token.change === 0 ? '#999' : (token.change >= 0 ? '#21D185' : '#F6465D') }
+                        ]}>
+                          {token.change > 0 ? '+' : ''}{token.change.toFixed(2)}%
+                        </Text>
                       </View>
                     </View>
                     <View style={styles.tokenRight}>
