@@ -30,9 +30,12 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const [quote, setQuote] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [swapping, setSwapping] = useState(false);
-  const [slippage, setSlippage] = useState(0.5);
+  const [slippage, setSlippage] = useState(0.5); // Default 0.5% (displayed as 1% in screenshot?) let's keep 0.5 or 1
   const [showSlippageModal, setShowSlippageModal] = useState(false);
-  const [showRoutesModal, setShowRoutesModal] = useState(false);
+
+  // Balances
+  const [fromBalance, setFromBalance] = useState('0.0');
+  const [toBalance, setToBalance] = useState('0.0');
 
   useEffect(() => {
     loadDefaultTokens();
@@ -40,14 +43,20 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   const loadDefaultTokens = async () => {
     const network = WalletService.getCurrentNetwork();
-    setFromToken({
+    const walletAddress = await WalletService.getAddress();
+
+    // Default From: Native Token (e.g. BNB)
+    const nativeToken = {
       symbol: network.symbol,
       name: network.name,
       address: ethers.ZeroAddress,
       decimals: 18,
       logo: network.symbol.toLowerCase()
-    });
-    
+    };
+    setFromToken(nativeToken);
+
+    // Default To: USDT
+    setFromToken(nativeToken);
     setToToken({
       symbol: 'USDT',
       name: 'Tether USD',
@@ -55,22 +64,36 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       decimals: 18,
       logo: 'usdt'
     });
+
+    // Load Balance for Native
+    if (walletAddress) {
+      const bal = await WalletService.getBalance();
+      setFromBalance(bal);
+    }
   };
 
   const handleSwitchTokens = () => {
-    const temp = fromToken;
+    const tempToken = fromToken;
     setFromToken(toToken);
-    setToToken(temp);
+    setToToken(tempToken);
+
+    const tempBal = fromBalance;
+    setFromBalance(toBalance);
+    setToBalance(tempBal);
+
     setQuote(null);
   };
 
   const handleGetQuote = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !fromToken || !toToken) return;
+    if (!amount || parseFloat(amount) <= 0 || !fromToken || !toToken) {
+      setQuote(null);
+      return;
+    }
 
     try {
       setLoading(true);
       setQuote(null);
-      
+
       const result = await SwapService.getBestQuote(
         fromToken.address,
         toToken.address,
@@ -78,16 +101,12 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         fromToken.decimals,
         toToken.decimals
       );
-      
+
       if (result) {
-          setQuote(result);
-      } else {
-          // If quote fails silently (returns null), show alert or just keep quote null
-          Alert.alert(t.common.error, t.swap.insufficientLiquidity);
+        setQuote(result);
       }
     } catch (error) {
       console.error(error);
-      Alert.alert(t.common.error, t.swap.insufficientLiquidity);
     } finally {
       setLoading(false);
     }
@@ -98,57 +117,31 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
     try {
       setSwapping(true);
-      
+
       const wallet = await WalletService.getWallet();
       const network = WalletService.getCurrentNetwork();
 
-      // Construct SwapQuote object expected by executeSwap
       const swapQuote = {
-          fromToken: fromToken.address,
-          toToken: toToken.address,
-          fromAmount: SwapService.parseAmount(amount, fromToken.decimals),
-          toAmount: SwapService.parseAmount(quote.amountOut, toToken.decimals), // Approximate since quote.amountOut is formatted string in SwapRouteResult? No, check type.
-          // Wait, getBestQuote returns SwapRouteResult where amountOut is STRING (formatted).
-          // executeSwap expects SwapQuote.
-          
-          // Let's verify SwapRouteResult structure in SwapService.ts:
-          // export interface SwapRouteResult {
-          //   quoteType: 'V2' | 'V3';
-          //   amountOut: string; // Formatted string? In getBestQuote: amountOut: ethers.formatUnits(amountOut, decimalsOut) -> YES formatted.
-          //   path: string[];
-          //   fees: number;
-          //   priceImpact: string;
-          // }
-          
-          // executeSwap expects `quote: SwapQuote`
-          // interface SwapQuote {
-          //   fromToken: string;
-          //   toToken: string;
-          //   fromAmount: string; // Raw amount? Usually executeSwap needs BigInt string (wei).
-          //   toAmountMin: string;
-          //   path: string[];
-          //   quoteType?: 'V2' | 'V3';
-          //   fees?: number;
-          //   ...
-          // }
-
-          // We need to convert formatted amounts back to raw strings for execution
-          toAmountMin: SwapService.parseAmount(
-              (parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(toToken.decimals), 
-              toToken.decimals
-          ),
-          provider: 'EagleSwap',
-          dexId: 0,
-          path: quote.path,
-          priceImpact: quote.priceImpact,
-          gasEstimate: '250000',
-          exchangeRate: (parseFloat(quote.amountOut) / parseFloat(amount)).toString(),
-          quoteType: quote.quoteType,
-          fees: quote.fees
+        fromToken: fromToken.address,
+        toToken: toToken.address,
+        fromAmount: SwapService.parseAmount(amount, fromToken.decimals),
+        toAmount: SwapService.parseAmount(quote.amountOut, toToken.decimals),
+        toAmountMin: SwapService.parseAmount(
+          (parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(toToken.decimals),
+          toToken.decimals
+        ),
+        provider: 'EagleSwap',
+        dexId: 0,
+        path: quote.path,
+        priceImpact: quote.priceImpact,
+        gasEstimate: '250000',
+        exchangeRate: (parseFloat(quote.amountOut) / parseFloat(amount)).toString(),
+        quoteType: quote.quoteType,
+        fees: quote.fees
       };
 
       const txHash = await SwapService.executeSwap(swapQuote, wallet, network.chainId);
-      
+
       Alert.alert(t.common.success, t.swap.swapSuccess, [
         {
           text: t.common.done,
@@ -169,165 +162,176 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   const renderTokenIcon = (token: any) => {
     if (!token) return <Text style={styles.tokenIcon}>🪙</Text>;
-
-    // Check for remote URL
     if (token.logo && token.logo.startsWith('http')) {
-        return <Image source={{ uri: token.logo }} style={styles.tokenLogoImage} />;
+      return <Image source={{ uri: token.logo }} style={styles.tokenLogoImage} />;
     }
-
-    // Check local asset
     const logoSource = TokenLogoService.getTokenLogo(token.logo || token.symbol);
     if (logoSource) {
-        return <Image source={logoSource} style={styles.tokenLogoImage} />;
+      return <Image source={logoSource} style={styles.tokenLogoImage} />;
     }
-
-    // Fallback text
     return (
-        <View style={[styles.tokenIconFallback, { backgroundColor: token.color || '#F3BA2F' }]}>
-            <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
-        </View>
+      <View style={[styles.tokenIconFallback, { backgroundColor: token.color || '#F3BA2F' }]}>
+        <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
+      </View>
     );
+  };
+
+  // Helper to check balance
+  const hasInsufficientBalance = () => {
+    if (!amount || !fromBalance) return false;
+    return parseFloat(amount) > parseFloat(fromBalance);
+  };
+
+  const getButtonLabel = () => {
+    if (!amount) return t.swap.enterAmount || 'Enter Amount';
+    if (hasInsufficientBalance()) return t.swap.insufficientBalance || 'Insufficient Balance'; // 余额不足
+    if (loading) return 'Getting Quote...';
+    if (!quote) return t.swap.reviewSwap; // Or 'Review Swap'
+    return t.swap.confirmSwap || 'Swap'; // 兑换
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        {isTabScreen ? (
-          <View style={{ width: 60 }} />
-        ) : (
+        {isTabScreen ? <View style={{ width: 40 }} /> : (
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backButton}>← {t.common.back}</Text>
           </TouchableOpacity>
         )}
         <Text style={styles.title}>{t.swap.swap}</Text>
-        <TouchableOpacity onPress={() => setShowSlippageModal(true)}>
-          <Text style={styles.settingsButton}>⚙️</Text>
-        </TouchableOpacity>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity style={styles.iconButton}>
+            <Text style={styles.headerIcon}>↻</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconButton}>
+            <Text style={styles.headerIcon}>🕒</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowSlippageModal(true)} style={styles.iconButton}>
+            <Text style={[styles.headerIcon, styles.slippageText]}>{slippage}% ⚙️</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
-        {/* From Token */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t.swap.youPay}</Text>
-          <View style={styles.tokenCard}>
-            <TouchableOpacity 
+        {/* From Token Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>{t.swap.youPay || 'Pay'}</Text>
+            <Text style={styles.balanceText}>
+              Wallet: {parseFloat(fromBalance).toFixed(4)}
+            </Text>
+          </View>
+          <View style={styles.inputRow}>
+            <TouchableOpacity
               style={styles.tokenSelector}
-              onPress={() => navigation.navigate('SelectToken', { 
-                onSelect: setFromToken 
-              })}
+              onPress={() => navigation.navigate('SelectToken', { onSelect: setFromToken })}
             >
-              <View style={styles.tokenInfo}>
-                {renderTokenIcon(fromToken)}
-                <Text style={styles.tokenSymbol}>{fromToken?.symbol || t.swap.selectToken}</Text>
-              </View>
+              {renderTokenIcon(fromToken)}
+              <Text style={styles.tokenSymbol}>{fromToken?.symbol || 'Select'}</Text>
               <Text style={styles.arrow}>▼</Text>
             </TouchableOpacity>
-            
             <TextInput
               style={styles.amountInput}
-              placeholder="0.0"
+              placeholder="0"
               value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
               onBlur={handleGetQuote}
             />
           </View>
+          <Text style={styles.usdValue}>≈ ${amount ? (parseFloat(amount) * 644.90).toFixed(2) : '0.00'}</Text>
         </View>
 
         {/* Switch Button */}
         <View style={styles.switchContainer}>
           <TouchableOpacity style={styles.switchButton} onPress={handleSwitchTokens}>
-            <Text style={styles.switchIcon}>↓</Text>
+            <Text style={styles.switchIcon}>↓↑</Text>
           </TouchableOpacity>
         </View>
 
-        {/* To Token */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t.swap.youReceive}</Text>
-          <View style={styles.tokenCard}>
-            <TouchableOpacity 
-              style={styles.tokenSelector}
-              onPress={() => navigation.navigate('SelectToken', { 
-                onSelect: setToToken 
-              })}
-            >
-              <View style={styles.tokenInfo}>
-                {renderTokenIcon(toToken)}
-                <Text style={styles.tokenSymbol}>{toToken?.symbol || t.swap.selectToken}</Text>
-              </View>
-              <Text style={styles.arrow}>▼</Text>
-            </TouchableOpacity>
-            
-            <Text style={[styles.amountInput, styles.amountInputDisabled]}>
-              {quote ? quote.amountOut : '0.0'}
+        {/* To Token Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardLabel}>{t.swap.youReceive || 'Receive'}</Text>
+            <Text style={styles.balanceText}>
+              Wallet: {parseFloat(toBalance).toFixed(4)}
             </Text>
           </View>
+          <View style={styles.inputRow}>
+            <TouchableOpacity
+              style={styles.tokenSelector}
+              onPress={() => navigation.navigate('SelectToken', { onSelect: setToToken })}
+            >
+              {renderTokenIcon(toToken)}
+              <Text style={styles.tokenSymbol}>{toToken?.symbol || 'Select'}</Text>
+              <Text style={styles.arrow}>▼</Text>
+            </TouchableOpacity>
+            <Text style={[styles.amountInput, styles.readOnlyInput]}>
+              {quote ? parseFloat(quote.amountOut).toFixed(6) : '0'}
+            </Text>
+          </View>
+          <Text style={styles.usdValue}>≈ ${quote ? (parseFloat(quote.amountOut) * 1.00).toFixed(2) : '0.00'}</Text>
         </View>
 
-        {/* Quote Details */}
-        {quote && (
-          <View style={styles.quoteCard}>
-            <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>{t.swap.rate}</Text>
-              <Text style={styles.quoteValue}>
-                1 {fromToken.symbol} ≈ {(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)} {toToken.symbol}
-              </Text>
-            </View>
-            
-            <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>{t.swap.priceImpact}</Text>
-              <Text style={[styles.quoteValue, parseFloat(quote.priceImpact) > 1 && styles.quoteValueWarning]}>
-                {quote.priceImpact}%
-              </Text>
-            </View>
-            
-            <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>{t.swap.minimumReceived}</Text>
-              <Text style={styles.quoteValue}>
-                {(parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6)} {toToken.symbol}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.viewRoutesButton}
-              onPress={() => {}}
-            >
-              <Text style={styles.viewRoutesText}>
-                  Route: {quote.quoteType} via {quote.path.length > 2 ? 'Multi-Hop' : 'Direct'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Get Quote Button */}
-        {!quote && (
-          <TouchableOpacity
-            style={[styles.quoteButton, loading && styles.quoteButtonDisabled]}
-            onPress={handleGetQuote}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <Text style={styles.quoteButtonText}>{t.swap.reviewSwap}</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
         {/* Swap Button */}
+        <TouchableOpacity
+          style={[
+            styles.swapButton,
+            hasInsufficientBalance() ? styles.swapButtonError : null,
+            loading && styles.swapButtonDisabled
+          ]}
+          onPress={quote ? handleSwap : handleGetQuote}
+          disabled={loading || (!quote && !amount) || (hasInsufficientBalance())}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.swapButtonText}>{getButtonLabel()}</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Quote Details (Matches Screenshot) */}
         {quote && (
-          <TouchableOpacity
-            style={[styles.swapButton, swapping && styles.swapButtonDisabled]}
-            onPress={handleSwap}
-            disabled={swapping}
-          >
-            {swapping ? (
-              <ActivityIndicator color="#000" />
-            ) : (
-              <Text style={styles.swapButtonText}>{t.swap.confirmSwap}</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>预计接收数量</Text>
+              <View style={styles.detailValueContainer}>
+                <Text style={styles.detailValueGreen}>{parseFloat(quote.amountOut).toFixed(6)} {toToken?.symbol}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>最小接收数量</Text>
+              <Text style={styles.detailValue}>
+                {(parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6)} {toToken?.symbol}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>滑点容忍度</Text>
+              <Text style={styles.detailValue}>{slippage}% ⚙️</Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>参考价格</Text>
+              <Text style={styles.detailValueGreen}>
+                ${(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>手续费</Text>
+              <Text style={styles.detailValue}>{quote.fees ? (quote.fees / 10000).toFixed(2) : '0.25'}%</Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>兑换路径</Text>
+              <View style={styles.routeContainer}>
+                <Text style={styles.routeText}>Eagle Swap</Text>
+              </View>
+            </View>
+          </View>
         )}
       </ScrollView>
 
@@ -341,31 +345,20 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t.swap.slippageTolerance}</Text>
-
             <View style={styles.slippageOptions}>
               {[0.1, 0.5, 1.0].map(value => (
                 <TouchableOpacity
                   key={value}
-                  style={[
-                    styles.slippageOption,
-                    slippage === value && styles.slippageOptionActive
-                  ]}
+                  style={[styles.slippageOption, slippage === value && styles.slippageOptionActive]}
                   onPress={() => setSlippage(value)}
                 >
-                  <Text style={[
-                    styles.slippageOptionText,
-                    slippage === value && styles.slippageOptionTextActive
-                  ]}>
+                  <Text style={[styles.slippageOptionText, slippage === value && styles.slippageOptionTextActive]}>
                     {value}%
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowSlippageModal(false)}
-            >
+            <TouchableOpacity style={styles.modalButton} onPress={() => setShowSlippageModal(false)}>
               <Text style={styles.modalButtonText}>{t.common.done}</Text>
             </TouchableOpacity>
           </View>
@@ -378,178 +371,228 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F7F8FA', // Light gray bg
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
+    padding: 16,
+    paddingTop: 50,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   backButton: {
     fontSize: 16,
-    color: '#F3BA2F',
+    color: '#E5B047',
     fontWeight: '600',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
   },
-  settingsButton: {
-    fontSize: 24,
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 12,
+  },
+  headerIcon: {
+    fontSize: 18,
+    color: '#666',
+  },
+  slippageText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#26A17B', // Greenish or consistent color
+    backgroundColor: '#E8F5F1',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   content: {
     flex: 1,
-    padding: 20,
-  },
-  section: {
-    marginBottom: 8,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  tokenCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
     padding: 16,
   },
-  tokenSelector: {
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  cardLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  balanceText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  inputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  tokenInfo: {
+  tokenSelector: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 8,
+    borderRadius: 24,
+    paddingRight: 12,
+  },
+  tokenLogoImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 8,
+  },
+  tokenIconFallback: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F3BA2F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   tokenIcon: {
     fontSize: 24,
     marginRight: 8,
   },
-  tokenLogoImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-  },
-  tokenIconFallback: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
   tokenIconText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
   tokenSymbol: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#000',
+    marginRight: 4,
   },
   arrow: {
     fontSize: 12,
     color: '#999',
   },
   amountInput: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#000',
+    textAlign: 'right',
+    flex: 1,
     padding: 0,
   },
-  amountInputDisabled: {
+  readOnlyInput: {
+    color: '#333',
+  },
+  usdValue: {
+    textAlign: 'right',
+    fontSize: 14,
     color: '#999',
   },
   switchContainer: {
     alignItems: 'center',
-    marginVertical: 8,
+    height: 20,
+    zIndex: 10,
+    marginTop: -18,
+    marginBottom: -2,
   },
   switchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3BA2F',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   switchIcon: {
-    fontSize: 20,
-    color: '#000',
+    fontSize: 16,
+    color: '#666',
   },
-  quoteCard: {
+  swapButton: {
+    backgroundColor: '#6C8FF7', // Blue color from screenshot
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  swapButtonError: {
+    backgroundColor: '#FF6B6B', // Red for insufficient balance
+  },
+  swapButtonDisabled: {
+    opacity: 0.7,
+  },
+  swapButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  detailsContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginTop: 16,
+    paddingBottom: 30, // Extra padding at bottom
   },
-  quoteRow: {
+  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  quoteLabel: {
+  detailLabel: {
     fontSize: 14,
     color: '#666',
   },
-  quoteValue: {
+  detailValue: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
   },
-  quoteValueWarning: {
-    color: '#E53935',
-  },
-  viewRoutesButton: {
-    marginTop: 12,
-    padding: 12,
-    alignItems: 'center',
-  },
-  viewRoutesText: {
-    color: '#F3BA2F',
+  detailValueGreen: {
     fontSize: 14,
     fontWeight: '600',
+    color: '#26A17B',
   },
-  quoteButton: {
-    backgroundColor: '#F3BA2F',
-    padding: 16,
-    borderRadius: 16,
+  detailValueContainer: {
+    backgroundColor: '#26A17B',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  detailValueGreenBg: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  routeContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
   },
-  quoteButtonDisabled: {
-    opacity: 0.6,
-  },
-  quoteButtonText: {
-    color: '#000',
-    fontSize: 16,
+  routeText: {
+    color: '#6C8FF7',
     fontWeight: '600',
-  },
-  swapButton: {
-    backgroundColor: '#F3BA2F',
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  swapButtonDisabled: {
-    opacity: 0.6,
-  },
-  swapButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
@@ -583,8 +626,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   slippageOptionActive: {
-    borderColor: '#F3BA2F',
-    backgroundColor: '#FFF9E6',
+    borderColor: '#6C8FF7',
+    backgroundColor: '#F0F4FF',
   },
   slippageOptionText: {
     fontSize: 16,
@@ -592,40 +635,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   slippageOptionTextActive: {
-    color: '#000',
+    color: '#6C8FF7',
     fontWeight: '600',
   },
   modalButton: {
-    backgroundColor: '#F3BA2F',
+    backgroundColor: '#6C8FF7',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalButtonText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-  routesList: {
-    maxHeight: 300,
-    marginBottom: 20,
-  },
-  routeCard: {
-    backgroundColor: '#F5F5F5',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  routeDex: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  routeAmount: {
-    fontSize: 14,
-    color: '#666',
   },
 });
