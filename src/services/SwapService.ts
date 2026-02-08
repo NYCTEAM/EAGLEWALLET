@@ -6,6 +6,18 @@
 import { ethers } from 'ethers';
 import WalletService from './WalletService';
 
+// Factory ABI
+const FACTORY_ABI = [
+  'function getPair(address tokenA, address tokenB) external view returns (address pair)',
+];
+
+// Pair ABI
+const PAIR_ABI = [
+  'function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)',
+  'function token0() external view returns (address)',
+  'function token1() external view returns (address)',
+];
+
 // Aggregator Contract ABI (Eagle Swap V11)
 const AGGREGATOR_ABI = [
   // V2
@@ -17,6 +29,10 @@ const AGGREGATOR_ABI = [
   'function eagleSwapV3Router(address router, address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
   'function eagleSwapV3RouterMultiHop(address router, bytes calldata path, address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
 ];
+
+// Constants
+const PANCAKESWAP_V2_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6076E6F1403C6';
+const WBNB_ADDRESS = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
 
 // ERC20 ABI for approval
 const ERC20_ABI = [
@@ -222,29 +238,44 @@ class SwapService {
 
     // 2. Multi-hop via WBNB (Intermediate)
     // If input/output is already WBNB/Native, we don't need to hop via WBNB again.
-    const isNativeOrWrapped = (addr: string) => addr === WBNB.toLowerCase() || addr === ethers.ZeroAddress.toLowerCase();
+    const isNativeOrWrapped = (addr: string) => addr === WBNB_ADDRESS.toLowerCase() || addr === ethers.ZeroAddress.toLowerCase();
     
+    // Check if Direct V2 failed (fallback to RPC)
+    if (!bestQuote) {
+        try {
+            const rpcQuote = await this.getV2QuoteRPC(queryTokenIn, queryTokenOut, amountIn, decimalsOut);
+            if (rpcQuote) {
+                 bestQuote = {
+                    quoteType: 'V2',
+                    amountOut: ethers.formatUnits(rpcQuote, decimalsOut),
+                    path: [tokenIn, tokenOut],
+                    fees: 2500,
+                    priceImpact: '0.00'
+                };
+            }
+        } catch (err) {
+            console.warn('RPC Quote failed:', err);
+        }
+    }
+
+    if (bestQuote) return bestQuote;
+
     if (!isNativeOrWrapped(tokenIn.toLowerCase()) && !isNativeOrWrapped(tokenOut.toLowerCase())) {
         // Find TokenIn -> WBNB
         // Note: We use original tokenIn for recursive call, but target WBNB address
-        const hop1 = await this.getBestQuote(tokenIn, WBNB, amountInStr, decimalsIn, 18);
+        const hop1 = await this.getBestQuote(tokenIn, WBNB_ADDRESS, amountInStr, decimalsIn, 18);
         if (hop1 && parseFloat(hop1.amountOut) > 0) {
             // Find WBNB -> TokenOut
-            const hop2 = await this.getBestQuote(WBNB, tokenOut, hop1.amountOut, 18, decimalsOut);
+            const hop2 = await this.getBestQuote(WBNB_ADDRESS, tokenOut, hop1.amountOut, 18, decimalsOut);
             if (hop2 && parseFloat(hop2.amountOut) > 0) {
                  return {
-                    // Actually aggregator V3 Router MultiHop supports mixed pools if encoded right, but usually we stick to one protocol if possible or V3 multihop.
-                    // For simplicity, if we mix, we might default to V3 multihop logic if supported, or just chain two swaps (but that requires 2 txs).
-                    // The aggregator likely supports multi-hop V2 via `eagleSwapV2Router` if path is [A, WBNB, B].
-                    // And V3 via `eagleSwapV3RouterMultiHop`.
-                    
                     // Let's assume if both are V2, we use V2 routing.
                     // If any is V3, we use V3 multihop (if compatible) or fail for now.
                     // The ABI has `eagleSwapV2Router` which takes `address[] path`.
                     
                     quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
                     amountOut: hop2.amountOut,
-                    path: [tokenIn, WBNB, tokenOut], // Contract handles WBNB in path
+                    path: [tokenIn, WBNB_ADDRESS, tokenOut], // Contract handles WBNB in path
                     fees: hop1.fees + hop2.fees,
                     priceImpact: '0.00'
                  };
@@ -253,6 +284,32 @@ class SwapService {
     }
 
     return null;
+  }
+
+  /**
+   * Get V2 Quote directly from RPC (Fallback)
+   */
+  async getV2QuoteRPC(tokenIn: string, tokenOut: string, amountIn: bigint, decimalsOut: number): Promise<bigint | null> {
+    try {
+        const provider = await WalletService.getProvider();
+        const factory = new ethers.Contract(PANCAKESWAP_V2_FACTORY, FACTORY_ABI, provider);
+        
+        const pairAddress = await factory.getPair(tokenIn, tokenOut);
+        if (pairAddress === ethers.ZeroAddress) return null;
+
+        const pair = new ethers.Contract(pairAddress, PAIR_ABI, provider);
+        const [reserve0, reserve1] = await pair.getReserves();
+        const token0 = await pair.token0();
+        
+        const isToken0In = token0.toLowerCase() === tokenIn.toLowerCase();
+        const reserveIn = isToken0In ? reserve0 : reserve1;
+        const reserveOut = isToken0In ? reserve1 : reserve0;
+
+        return this.calculateV2AmountOut(amountIn, BigInt(reserveIn), BigInt(reserveOut));
+    } catch (error) {
+        console.error('Error getting RPC quote:', error);
+        return null;
+    }
   }
 
   /**
