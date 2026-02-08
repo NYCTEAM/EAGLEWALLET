@@ -186,6 +186,22 @@ class WalletService {
   }
 
   /**
+   * Get wallet instance
+   */
+  async getWallet(): Promise<ethers.Wallet> {
+    if (!this.wallet) {
+      await this.init();
+    }
+    
+    if (!this.wallet) {
+      throw new Error('Wallet not initialized');
+    }
+
+    // Ensure it's an ethers.Wallet (it could be HDNodeWallet which is compatible but let's be safe)
+    return this.wallet as ethers.Wallet;
+  }
+
+  /**
    * Get current provider
    */
   async getProvider(): Promise<ethers.Provider> {

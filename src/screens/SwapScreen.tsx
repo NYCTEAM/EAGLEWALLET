@@ -14,10 +14,13 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  Image,
 } from 'react-native';
 import WalletService from '../services/WalletService';
 import SwapService from '../services/SwapService';
+import TokenLogoService from '../services/TokenLogoService';
 import { useLanguage } from '../i18n/LanguageContext';
+import { ethers } from 'ethers';
 
 export default function SwapScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -29,7 +32,6 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const [swapping, setSwapping] = useState(false);
   const [slippage, setSlippage] = useState(0.5);
   const [showSlippageModal, setShowSlippageModal] = useState(false);
-  const [allRoutes, setAllRoutes] = useState<any[]>([]);
   const [showRoutesModal, setShowRoutesModal] = useState(false);
 
   useEffect(() => {
@@ -38,19 +40,20 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   const loadDefaultTokens = async () => {
     const network = WalletService.getCurrentNetwork();
-    // In a real app, fetch tokens from TokenService
     setFromToken({
       symbol: network.symbol,
-      address: '0x0000000000000000000000000000000000000000',
+      name: network.name,
+      address: ethers.ZeroAddress,
       decimals: 18,
-      logo: 'bnb.png'
+      logo: network.symbol.toLowerCase()
     });
     
     setToToken({
       symbol: 'USDT',
+      name: 'Tether USD',
       address: '0x55d398326f99059fF775485246999027B3197955',
       decimals: 18,
-      logo: 'usdt.png'
+      logo: 'usdt'
     });
   };
 
@@ -62,21 +65,28 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   };
 
   const handleGetQuote = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
+    if (!amount || parseFloat(amount) <= 0 || !fromToken || !toToken) return;
 
     try {
       setLoading(true);
-      // Simulate getting quote
-      const routes = await SwapService.getRoutes(
-        fromToken,
-        toToken,
+      setQuote(null);
+      
+      const result = await SwapService.getBestQuote(
+        fromToken.address,
+        toToken.address,
         amount,
-        slippage
+        fromToken.decimals,
+        toToken.decimals
       );
       
-      setAllRoutes(routes);
-      setQuote(routes[0]); // Best route
+      if (result) {
+          setQuote(result);
+      } else {
+          // If quote fails silently (returns null), show alert or just keep quote null
+          Alert.alert(t.common.error, t.swap.insufficientLiquidity);
+      }
     } catch (error) {
+      console.error(error);
       Alert.alert(t.common.error, t.swap.insufficientLiquidity);
     } finally {
       setLoading(false);
@@ -88,8 +98,56 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
     try {
       setSwapping(true);
-      // Simulate swap
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const wallet = await WalletService.getWallet();
+      const network = WalletService.getCurrentNetwork();
+
+      // Construct SwapQuote object expected by executeSwap
+      const swapQuote = {
+          fromToken: fromToken.address,
+          toToken: toToken.address,
+          fromAmount: SwapService.parseAmount(amount, fromToken.decimals),
+          toAmount: SwapService.parseAmount(quote.amountOut, toToken.decimals), // Approximate since quote.amountOut is formatted string in SwapRouteResult? No, check type.
+          // Wait, getBestQuote returns SwapRouteResult where amountOut is STRING (formatted).
+          // executeSwap expects SwapQuote.
+          
+          // Let's verify SwapRouteResult structure in SwapService.ts:
+          // export interface SwapRouteResult {
+          //   quoteType: 'V2' | 'V3';
+          //   amountOut: string; // Formatted string? In getBestQuote: amountOut: ethers.formatUnits(amountOut, decimalsOut) -> YES formatted.
+          //   path: string[];
+          //   fees: number;
+          //   priceImpact: string;
+          // }
+          
+          // executeSwap expects `quote: SwapQuote`
+          // interface SwapQuote {
+          //   fromToken: string;
+          //   toToken: string;
+          //   fromAmount: string; // Raw amount? Usually executeSwap needs BigInt string (wei).
+          //   toAmountMin: string;
+          //   path: string[];
+          //   quoteType?: 'V2' | 'V3';
+          //   fees?: number;
+          //   ...
+          // }
+
+          // We need to convert formatted amounts back to raw strings for execution
+          toAmountMin: SwapService.parseAmount(
+              (parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(toToken.decimals), 
+              toToken.decimals
+          ),
+          provider: 'EagleSwap',
+          dexId: 0,
+          path: quote.path,
+          priceImpact: quote.priceImpact,
+          gasEstimate: '250000',
+          exchangeRate: (parseFloat(quote.amountOut) / parseFloat(amount)).toString(),
+          quoteType: quote.quoteType,
+          fees: quote.fees
+      };
+
+      const txHash = await SwapService.executeSwap(swapQuote, wallet, network.chainId);
       
       Alert.alert(t.common.success, t.swap.swapSuccess, [
         {
@@ -102,14 +160,33 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         },
       ]);
     } catch (error) {
+      console.error(error);
       Alert.alert(t.common.error, t.swap.swapFailed);
     } finally {
       setSwapping(false);
     }
   };
 
-  const handleViewAllRoutes = () => {
-    setShowRoutesModal(true);
+  const renderTokenIcon = (token: any) => {
+    if (!token) return <Text style={styles.tokenIcon}>🪙</Text>;
+
+    // Check for remote URL
+    if (token.logo && token.logo.startsWith('http')) {
+        return <Image source={{ uri: token.logo }} style={styles.tokenLogoImage} />;
+    }
+
+    // Check local asset
+    const logoSource = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+    if (logoSource) {
+        return <Image source={logoSource} style={styles.tokenLogoImage} />;
+    }
+
+    // Fallback text
+    return (
+        <View style={[styles.tokenIconFallback, { backgroundColor: token.color || '#F3BA2F' }]}>
+            <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
+        </View>
+    );
   };
 
   return (
@@ -141,7 +218,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
               })}
             >
               <View style={styles.tokenInfo}>
-                <Text style={styles.tokenIcon}>🪙</Text>
+                {renderTokenIcon(fromToken)}
                 <Text style={styles.tokenSymbol}>{fromToken?.symbol || t.swap.selectToken}</Text>
               </View>
               <Text style={styles.arrow}>▼</Text>
@@ -176,14 +253,14 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
               })}
             >
               <View style={styles.tokenInfo}>
-                <Text style={styles.tokenIcon}>🪙</Text>
+                {renderTokenIcon(toToken)}
                 <Text style={styles.tokenSymbol}>{toToken?.symbol || t.swap.selectToken}</Text>
               </View>
               <Text style={styles.arrow}>▼</Text>
             </TouchableOpacity>
             
             <Text style={[styles.amountInput, styles.amountInputDisabled]}>
-              {quote ? SwapService.formatAmount(quote.amountOut, toToken?.decimals) : '0.0'}
+              {quote ? quote.amountOut : '0.0'}
             </Text>
           </View>
         </View>
@@ -194,7 +271,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
             <View style={styles.quoteRow}>
               <Text style={styles.quoteLabel}>{t.swap.rate}</Text>
               <Text style={styles.quoteValue}>
-                1 {fromToken.symbol} ≈ {SwapService.calculateRate(amount, quote.amountOut, fromToken.decimals, toToken.decimals)} {toToken.symbol}
+                1 {fromToken.symbol} ≈ {(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)} {toToken.symbol}
               </Text>
             </View>
             
@@ -208,15 +285,17 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
             <View style={styles.quoteRow}>
               <Text style={styles.quoteLabel}>{t.swap.minimumReceived}</Text>
               <Text style={styles.quoteValue}>
-                {SwapService.formatAmount(quote.minAmountOut, toToken.decimals)} {toToken.symbol}
+                {(parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6)} {toToken.symbol}
               </Text>
             </View>
 
             <TouchableOpacity
               style={styles.viewRoutesButton}
-              onPress={handleViewAllRoutes}
+              onPress={() => {}}
             >
-              <Text style={styles.viewRoutesText}>{t.swap.route}</Text>
+              <Text style={styles.viewRoutesText}>
+                  Route: {quote.quoteType} via {quote.path.length > 2 ? 'Multi-Hop' : 'Direct'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -292,38 +371,6 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           </View>
         </View>
       </Modal>
-
-      {/* Routes Modal */}
-      <Modal
-        visible={showRoutesModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowRoutesModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t.swap.route}</Text>
-
-            <ScrollView style={styles.routesList}>
-              {allRoutes.map((route, index) => (
-                <View key={index} style={styles.routeCard}>
-                  <Text style={styles.routeDex}>{route.dexName}</Text>
-                  <Text style={styles.routeAmount}>
-                    {SwapService.formatAmount(route.amountOut, toToken.decimals)} {toToken.symbol}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => setShowRoutesModal(false)}
-            >
-              <Text style={styles.modalButtonText}>{t.common.close}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -387,6 +434,25 @@ const styles = StyleSheet.create({
   tokenIcon: {
     fontSize: 24,
     marginRight: 8,
+  },
+  tokenLogoImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+  },
+  tokenIconFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  tokenIconText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   tokenSymbol: {
     fontSize: 18,
