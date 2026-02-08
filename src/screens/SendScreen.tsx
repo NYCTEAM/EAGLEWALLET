@@ -13,10 +13,15 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Image,
+  Modal,
+  FlatList,
 } from 'react-native';
 import WalletService from '../services/WalletService';
+import MultiWalletService from '../services/MultiWalletService';
 import { NETWORKS } from '../config/networks';
 import { useLanguage } from '../i18n/LanguageContext';
+import { NFT } from '../services/NFTService';
 
 export default function SendScreen({ navigation, route }: any) {
   const { t } = useLanguage();
@@ -25,20 +30,29 @@ export default function SendScreen({ navigation, route }: any) {
   const [gasPrice, setGasPrice] = useState('5');
   const [sending, setSending] = useState(false);
   const [balance, setBalance] = useState('0');
+  const [myWallets, setMyWallets] = useState<any[]>([]);
+  const [showWalletSelector, setShowWalletSelector] = useState(false);
   
-  // Get initial params if any (e.g. from scan)
+  // Get initial params if any (e.g. from scan or NFT detail)
   const initialAddress = route.params?.address || '';
+  const nft: NFT | undefined = route.params?.nft;
   
   useEffect(() => {
     if (initialAddress) {
       setRecipientAddress(initialAddress);
     }
     loadBalance();
+    loadWallets();
   }, [initialAddress]);
 
   const loadBalance = async () => {
     const bal = await WalletService.getBalance();
     setBalance(bal);
+  };
+
+  const loadWallets = async () => {
+    const wallets = await MultiWalletService.getAllWallets();
+    setMyWallets(wallets);
   };
 
   const network = WalletService.getCurrentNetwork();
@@ -49,19 +63,23 @@ export default function SendScreen({ navigation, route }: any) {
       return;
     }
 
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!nft && (!amount || parseFloat(amount) <= 0)) {
       Alert.alert(t.common.error, t.errors.invalidAmount);
       return;
     }
 
-    if (parseFloat(amount) > parseFloat(balance)) {
+    if (!nft && parseFloat(amount) > parseFloat(balance)) {
       Alert.alert(t.common.error, t.errors.insufficientBalance);
       return;
     }
 
+    const message = nft 
+      ? `Send NFT ${nft.name} (#${nft.tokenId}) to ${formatAddress(recipientAddress)}?`
+      : `${t.send.to}: ${formatAddress(recipientAddress)}\n${t.send.amount}: ${amount} ${network.symbol}\n${t.send.gasFee}: ~0.0001 ${network.symbol}`;
+
     Alert.alert(
       t.send.confirmTransaction,
-      `${t.send.to}: ${formatAddress(recipientAddress)}\n${t.send.amount}: ${amount} ${network.symbol}\n${t.send.gasFee}: ~0.0001 ${network.symbol}`,
+      message,
       [
         {
           text: t.common.cancel,
@@ -108,6 +126,11 @@ export default function SendScreen({ navigation, route }: any) {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  const selectWallet = (wallet: any) => {
+    setRecipientAddress(wallet.address);
+    setShowWalletSelector(false);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -115,23 +138,36 @@ export default function SendScreen({ navigation, route }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>← {t.common.cancel}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{t.send.send} {network.symbol}</Text>
+        <Text style={styles.title}>{nft ? 'Send NFT' : `${t.send.send} ${network.symbol}`}</Text>
         <View style={{ width: 60 }} />
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Balance Card */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>{t.send.available}</Text>
-          <Text style={styles.balanceAmount}>
-            {parseFloat(balance).toFixed(6)} {network.symbol}
-          </Text>
-          <Text style={styles.balanceNetwork}>{network.name}</Text>
-        </View>
+        {/* Asset Card */}
+        {nft ? (
+          <View style={styles.nftCard}>
+             <Image source={{uri: nft.image}} style={styles.nftThumb} />
+             <View style={styles.nftInfo}>
+                <Text style={styles.nftName}>{nft.name}</Text>
+                <Text style={styles.nftId}>#{nft.tokenId}</Text>
+                <Text style={styles.nftStandard}>{nft.type || 'ERC721'}</Text>
+             </View>
+          </View>
+        ) : (
+          <View style={styles.balanceCard}>
+            <Text style={styles.balanceLabel}>{t.send.available}</Text>
+            <Text style={styles.balanceAmount}>
+              {parseFloat(balance).toFixed(6)} {network.symbol}
+            </Text>
+            <Text style={styles.balanceNetwork}>{network.name}</Text>
+          </View>
+        )}
 
         {/* Recipient Address */}
         <View style={styles.inputSection}>
-          <Text style={styles.label}>{t.send.recipientAddress}</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>{t.send.recipientAddress}</Text>
+          </View>
           <TextInput
             style={styles.input}
             placeholder="0x..."
@@ -143,27 +179,54 @@ export default function SendScreen({ navigation, route }: any) {
           <TouchableOpacity style={styles.scanButton}>
             <Text style={styles.scanButtonText}>📷 {t.send.scanQRCode}</Text>
           </TouchableOpacity>
+
+          {/* My Wallets Selector (Below Input) */}
+          <View style={styles.myWalletSection}>
+            <TouchableOpacity onPress={() => setShowWalletSelector(!showWalletSelector)} style={styles.myWalletTrigger}>
+              <Text style={styles.myWalletLink}>📂 {showWalletSelector ? t.common.cancel : 'Select from My Wallets'}</Text>
+            </TouchableOpacity>
+
+            {showWalletSelector && (
+              <View style={styles.walletDropdown}>
+                {myWallets.map((wallet) => (
+                  <TouchableOpacity 
+                    key={wallet.address} 
+                    style={styles.dropdownItem} 
+                    onPress={() => selectWallet(wallet)}
+                  >
+                    <View style={styles.dropdownIcon} />
+                    <View>
+                        <Text style={styles.dropdownName}>{wallet.name}</Text>
+                        <Text style={styles.dropdownAddress}>{formatAddress(wallet.address)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* Amount */}
-        <View style={styles.inputSection}>
-          <View style={styles.labelRow}>
-            <Text style={styles.label}>{t.send.amount}</Text>
-            <TouchableOpacity onPress={setMaxAmount}>
-              <Text style={styles.maxButton}>{t.send.max}</Text>
-            </TouchableOpacity>
+        {/* Amount (Only for Tokens) */}
+        {!nft && (
+          <View style={styles.inputSection}>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>{t.send.amount}</Text>
+              <TouchableOpacity onPress={setMaxAmount}>
+                <Text style={styles.maxButton}>{t.send.max}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.amountInputContainer}>
+              <TextInput
+                style={styles.amountInput}
+                placeholder="0.0"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="decimal-pad"
+              />
+              <Text style={styles.amountSymbol}>{network.symbol}</Text>
+            </View>
           </View>
-          <View style={styles.amountInputContainer}>
-            <TextInput
-              style={styles.amountInput}
-              placeholder="0.0"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-            />
-            <Text style={styles.amountSymbol}>{network.symbol}</Text>
-          </View>
-        </View>
+        )}
 
         {/* Gas Price */}
         <View style={styles.inputSection}>
@@ -182,22 +245,26 @@ export default function SendScreen({ navigation, route }: any) {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>{t.send.transactionDetails}</Text>
 
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t.send.amount}</Text>
-            <Text style={styles.summaryValue}>{amount || '0'} {network.symbol}</Text>
-          </View>
+          {!nft && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>{t.send.amount}</Text>
+              <Text style={styles.summaryValue}>{amount || '0'} {network.symbol}</Text>
+            </View>
+          )}
 
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>{t.send.gasFee} (est.)</Text>
             <Text style={styles.summaryValue}>~0.0001 {network.symbol}</Text>
           </View>
 
-          <View style={[styles.summaryRow, styles.summaryTotal]}>
-            <Text style={styles.summaryLabelBold}>{t.send.total}</Text>
-            <Text style={styles.summaryValueBold}>
-              {(parseFloat(amount || '0') + 0.0001).toFixed(6)} {network.symbol}
-            </Text>
-          </View>
+          {!nft && (
+            <View style={[styles.summaryRow, styles.summaryTotal]}>
+              <Text style={styles.summaryLabelBold}>{t.send.total}</Text>
+              <Text style={styles.summaryValueBold}>
+                {(parseFloat(amount || '0') + 0.0001).toFixed(6)} {network.symbol}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Send Button */}
@@ -259,6 +326,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 24,
+  },
+  nftCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  nftThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 16,
+    backgroundColor: '#eee',
+  },
+  nftInfo: {
+    flex: 1,
+  },
+  nftName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 4,
+  },
+  nftId: {
+    fontSize: 14,
+    color: '#666',
+  },
+  nftStandard: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
   balanceLabel: {
     fontSize: 14,
@@ -405,5 +506,47 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#856404',
     lineHeight: 20,
+  },
+  walletDropdown: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  dropdownIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F3BA2F',
+    marginRight: 12,
+  },
+  dropdownName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  dropdownAddress: {
+    fontSize: 12,
+    color: '#666',
+  },
+  myWalletSection: {
+    marginTop: 8,
+  },
+  myWalletTrigger: {
+    paddingVertical: 8,
+  },
+  myWalletLink: {
+    color: '#F3BA2F',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

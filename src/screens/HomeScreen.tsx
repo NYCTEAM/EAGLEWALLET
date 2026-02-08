@@ -307,10 +307,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                     
                     <View style={styles.tokenInfo}>
                       <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                      <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
-                    </View>
-                    <View style={styles.tokenRight}>
-                      <View style={styles.priceContainer}>
+                      <View style={styles.priceRow}>
                         <Text style={styles.tokenPrice}>
                           ${token.price > 0 
                             ? (token.price < 0.01 ? token.price.toFixed(6) : token.price.toFixed(2)) 
@@ -325,6 +322,9 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                           </Text>
                         )}
                       </View>
+                    </View>
+                    <View style={styles.tokenRight}>
+                      <Text style={styles.tokenBalanceAmount}>{token.balance}</Text>
                       <Text style={styles.tokenValueSmall}>
                         ${token.value && parseFloat(token.value) > 0 ? token.value : '0.00'}
                       </Text>
@@ -605,28 +605,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
   },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   tokenBalanceAmount: {
-    color: '#999',
-    fontSize: 13,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
   tokenRight: {
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
   tokenPrice: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 6,
   },
   tokenChange: {
     fontSize: 12,
     fontWeight: '500',
-    marginLeft: 6,
   },
   tokenValueSmall: {
     color: '#999',

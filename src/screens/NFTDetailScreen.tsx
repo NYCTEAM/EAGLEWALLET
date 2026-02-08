@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import { useLanguage } from '../i18n/LanguageContext';
 import WalletService from '../services/WalletService';
-import OpenSeaService, { NFTMarketData } from '../services/OpenSeaService';
 
 const { width } = Dimensions.get('window');
 
@@ -27,16 +26,6 @@ export default function NFTDetailScreen({ route, navigation }: any) {
   const { nft } = route.params;
   const { t } = useLanguage();
   const network = WalletService.getCurrentNetwork();
-  const [marketData, setMarketData] = useState<NFTMarketData | null>(null);
-
-  useEffect(() => {
-    loadMarketData();
-  }, []);
-
-  const loadMarketData = async () => {
-    const data = await OpenSeaService.getAssetPrice(nft.contractAddress, nft.tokenId, nft.chainId);
-    setMarketData(data);
-  };
 
   const handleCopy = (text: string) => {
     Clipboard.setString(text);
@@ -103,33 +92,6 @@ export default function NFTDetailScreen({ route, navigation }: any) {
                 <Text style={styles.infoLabel}>View on Marketplace</Text>
                 <Text style={styles.arrowIcon}>↗</Text>
             </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* NFT Price */}
-            <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>NFT Price</Text>
-                <Text style={styles.infoValue}>
-                   {marketData ? `${marketData.lastSale} ${marketData.currency}` : '--'}
-                </Text>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Floor Price */}
-            <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Floor Price</Text>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    {marketData && (
-                        <View style={styles.floorBadge}>
-                            <Text style={styles.floorBadgeText}>💎</Text>
-                        </View>
-                    )}
-                    <Text style={styles.infoValue}>
-                       {marketData ? `${marketData.floorPrice} ${marketData.currency}` : '--'}
-                    </Text>
-                </View>
-            </View>
 
             <View style={styles.divider} />
 
@@ -347,18 +309,5 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  floorBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#F3BA2F',
-    marginRight: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  floorBadgeText: {
-    fontSize: 10,
-    color: '#000',
   },
 });
