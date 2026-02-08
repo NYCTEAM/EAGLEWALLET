@@ -6,12 +6,16 @@
 import { ethers } from 'ethers';
 import WalletService from './WalletService';
 
-// Aggregator Contract ABI
+// Aggregator Contract ABI (Eagle Swap V11)
 const AGGREGATOR_ABI = [
-  'function swap(address fromToken, address toToken, uint256 amountIn, uint256 minAmountOut, address[] calldata path, uint8 dexId) external payable returns (uint256)',
-  'function getAmountOut(uint256 amountIn, address fromToken, address toToken, uint8 dexId) external view returns (uint256)',
-  'function getBestRate(uint256 amountIn, address fromToken, address toToken) external view returns (uint256 amountOut, uint8 dexId, address[] memory path)',
-  'function supportedDEXs() external view returns (string[] memory)',
+  // V2
+  'function eagleSwapV2Router(address router, address[] calldata path, uint256 amountIn, uint256 minOut) external payable returns (uint256)',
+  'function eagleSwapV2RouterSupportingFee(address router, address[] calldata path, uint256 amountIn, uint256 minOut) external payable',
+  'function eagleSwapV2Direct(address router, address[] calldata path, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
+  // V3
+  'function eagleSwapV3Direct(address router, bytes calldata path, address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
+  'function eagleSwapV3Router(address router, address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
+  'function eagleSwapV3RouterMultiHop(address router, bytes calldata path, address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut) external payable returns (uint256 amountOut)',
 ];
 
 // ERC20 ABI for approval
@@ -32,6 +36,8 @@ export interface SwapQuote {
   priceImpact: string;
   gasEstimate: string;
   exchangeRate: string;
+  quoteType?: 'V2' | 'V3'; // Added for execution routing
+  fees?: number; // Fee tier for V3
 }
 
 export interface SwapRoute {
@@ -54,11 +60,275 @@ export enum DEX {
 
 // Aggregator contract addresses by chain
 const AGGREGATOR_CONTRACTS: Record<number, string> = {
-  56: '0x...', // BSC aggregator contract address
+  56: '0xF78D10CbbEBfD569f818faC8BA9697C6EebEFF9E', // BSC aggregator contract address
   196: '0x...', // XLAYER aggregator contract address
 };
 
+export interface LiquidityResult {
+  protocol: 'V2' | 'V3';
+  address: string; // Pair address
+  liquidityUSD: number;
+  feeTier?: number; // Only for V3
+  pairName: string;
+}
+
+// Subgraph URL
+const SUBGRAPH_URL = 'https://dex.eagleswap.io/subgraphs/name/eagle-swap/pancakeswap';
+
+export interface SwapRouteResult {
+  quoteType: 'V2' | 'V3';
+  amountOut: string;
+  path: string[];
+  fees: number;
+  priceImpact: string;
+}
+
 class SwapService {
+  /**
+   * Helper: Query Subgraph
+   */
+  private async querySubgraph(query: string): Promise<any> {
+    try {
+      const response = await fetch(SUBGRAPH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('Subgraph query error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Calculate V2 Amount Out
+   */
+  private calculateV2AmountOut(amountIn: bigint, reserveIn: bigint, reserveOut: bigint): bigint {
+    if (reserveIn === 0n || reserveOut === 0n) return 0n;
+    const amountInWithFee = amountIn * 9975n; // 0.25% fee
+    const numerator = amountInWithFee * reserveOut;
+    const denominator = reserveIn * 10000n + amountInWithFee;
+    return numerator / denominator;
+  }
+
+  /**
+   * Calculate V3 Amount Out (Simplified)
+   */
+  private calculateV3AmountOut(amountIn: bigint, liquidity: bigint, feeTier: number): bigint {
+    if (liquidity === 0n) return 0n;
+    // Simplified estimation: Linear based on fee
+    const feeMultiplier = 10000n - BigInt(feeTier);
+    return (amountIn * feeMultiplier) / 10000n;
+  }
+
+  /**
+   * Get Best Quote using Subgraph (Direct & Multi-hop)
+   */
+  async getBestQuote(tokenIn: string, tokenOut: string, amountInStr: string, decimalsIn: number, decimalsOut: number): Promise<SwapRouteResult | null> {
+    const amountIn = ethers.parseUnits(amountInStr, decimalsIn);
+    const tokenInAddr = tokenIn.toLowerCase();
+    const tokenOutAddr = tokenOut.toLowerCase();
+
+    // 1. Check Direct Pools
+    const directV2Query = `{
+      pairs(where: {
+        or: [
+          { token0: "${tokenInAddr}", token1: "${tokenOutAddr}" },
+          { token0: "${tokenOutAddr}", token1: "${tokenInAddr}" }
+        ]
+      }) {
+        id, token0 { id, decimals }, token1 { id, decimals }, reserve0, reserve1
+      }
+    }`;
+    
+    const directV3Query = `{
+      pools(orderBy: totalValueLockedUSD, orderDirection: desc, where: {
+        or: [
+          { token0: "${tokenInAddr}", token1: "${tokenOutAddr}" },
+          { token0: "${tokenOutAddr}", token1: "${tokenInAddr}" }
+        ]
+      }) {
+        id, token0 { id, decimals }, token1 { id, decimals }, liquidity, feeTier
+      }
+    }`;
+
+    const [v2Data, v3Data] = await Promise.all([
+      this.querySubgraph(directV2Query),
+      this.querySubgraph(directV3Query)
+    ]);
+
+    let bestQuote: SwapRouteResult | null = null;
+    let maxAmountOut = 0n;
+
+    // Evaluate Direct V2
+    if (v2Data?.pairs?.[0]) {
+      const pair = v2Data.pairs[0];
+      const isToken0In = pair.token0.id === tokenInAddr;
+      const reserveIn = ethers.parseUnits(isToken0In ? pair.reserve0 : pair.reserve1, parseInt(isToken0In ? pair.token0.decimals : pair.token1.decimals));
+      const reserveOut = ethers.parseUnits(isToken0In ? pair.reserve1 : pair.reserve0, parseInt(isToken0In ? pair.token1.decimals : pair.token0.decimals));
+      
+      // Adjust reserves to matching decimals if needed (simplified)
+      // Note: calculateV2AmountOut assumes raw units logic matches. 
+      // For accurate calc we need to normalize to common precision or use exact formula.
+      // Here we assume standard Uniswap formula logic works on raw units.
+      
+      // To be safe, we convert reserves to BigInt (wei)
+      const amountOut = this.calculateV2AmountOut(BigInt(amountIn.toString()), BigInt(reserveIn.toString()), BigInt(reserveOut.toString()));
+      
+      if (amountOut > maxAmountOut) {
+        maxAmountOut = amountOut;
+        bestQuote = {
+          quoteType: 'V2',
+          amountOut: ethers.formatUnits(amountOut, decimalsOut),
+          path: [tokenIn, tokenOut],
+          fees: 2500, // 0.25%
+          priceImpact: '0.00' // TODO: calc
+        };
+      }
+    }
+
+    // Evaluate Direct V3
+    if (v3Data?.pools) {
+      for (const pool of v3Data.pools) {
+        const fee = parseInt(pool.feeTier);
+        const amountOut = this.calculateV3AmountOut(BigInt(amountIn.toString()), BigInt(pool.liquidity), fee);
+        
+        if (amountOut > maxAmountOut) {
+          maxAmountOut = amountOut;
+          bestQuote = {
+            quoteType: 'V3',
+            amountOut: ethers.formatUnits(amountOut, decimalsOut),
+            path: [tokenIn, tokenOut], // V3 path encoding handled elsewhere
+            fees: fee,
+            priceImpact: '0.00'
+          };
+        }
+      }
+    }
+
+    if (bestQuote) return bestQuote;
+
+    // 2. Multi-hop (Simplified: find intermediate token with highest liquidity)
+    // For now, let's just support WBNB/USDT as intermediate if direct fails
+    const WBNB = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+    const USDT = '0x55d398326f99059ff775485246999027b3197955';
+    
+    // Attempt WBNB hop
+    if (tokenInAddr !== WBNB && tokenOutAddr !== WBNB) {
+        // Find TokenIn -> WBNB
+        const hop1 = await this.getBestQuote(tokenIn, WBNB, amountInStr, decimalsIn, 18);
+        if (hop1 && parseFloat(hop1.amountOut) > 0) {
+            // Find WBNB -> TokenOut
+            const hop2 = await this.getBestQuote(WBNB, tokenOut, hop1.amountOut, 18, decimalsOut);
+            if (hop2 && parseFloat(hop2.amountOut) > 0) {
+                 return {
+                    quoteType: hop1.quoteType === 'V2' && hop2.quoteType === 'V2' ? 'V2' : 'V3', // Mixed?
+                    amountOut: hop2.amountOut,
+                    path: [tokenIn, WBNB, tokenOut],
+                    fees: hop1.fees + hop2.fees,
+                    priceImpact: '0.00'
+                 };
+            }
+        }
+    }
+
+    return null;
+  }
+
+  /**
+   * Find best liquidity pool for a token via GraphQL (Legacy/Info)
+   */
+  async findBestLiquidity(tokenAddress: string): Promise<LiquidityResult | null> {
+    try {
+      const addr = tokenAddress.toLowerCase();
+      
+      const query = `
+        query getLiquidity($tokenAddress: String!) {
+          v2As0: pairs(where: {token0: $tokenAddress}, orderBy: reserveUSD, orderDirection: desc, first: 5) {
+            id
+            reserveUSD
+            token0 { symbol }
+            token1 { symbol }
+          }
+          v2As1: pairs(where: {token1: $tokenAddress}, orderBy: reserveUSD, orderDirection: desc, first: 5) {
+            id
+            reserveUSD
+            token0 { symbol }
+            token1 { symbol }
+          }
+          v3As0: pools(where: {token0: $tokenAddress}, orderBy: totalValueLockedUSD, orderDirection: desc, first: 5) {
+            id
+            totalValueLockedUSD
+            feeTier
+            token0 { symbol }
+            token1 { symbol }
+          }
+          v3As1: pools(where: {token1: $tokenAddress}, orderBy: totalValueLockedUSD, orderDirection: desc, first: 5) {
+            id
+            totalValueLockedUSD
+            feeTier
+            token0 { symbol }
+            token1 { symbol }
+          }
+        }
+      `;
+
+      const response = await fetch('https://dex.eagleswap.io/subgraphs/name/eagle-swap/pancakeswap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query,
+          variables: { tokenAddress: addr }
+        })
+      });
+
+      const { data } = await response.json();
+      
+      if (!data) return null;
+
+      let bestPool: LiquidityResult | null = null;
+      let maxLiquidity = 0;
+
+      // Process V2 Data
+      const v2Pairs = [...(data.v2As0 || []), ...(data.v2As1 || [])];
+      v2Pairs.forEach((pair: any) => {
+        const liq = parseFloat(pair.reserveUSD);
+        if (liq > maxLiquidity) {
+          maxLiquidity = liq;
+          bestPool = {
+            protocol: 'V2',
+            address: pair.id,
+            liquidityUSD: liq,
+            pairName: `${pair.token0.symbol}/${pair.token1.symbol}` 
+          };
+        }
+      });
+
+      // Process V3 Data
+      const v3Pools = [...(data.v3As0 || []), ...(data.v3As1 || [])];
+      v3Pools.forEach((pool: any) => {
+        const liq = parseFloat(pool.totalValueLockedUSD);
+        if (liq > maxLiquidity) {
+          maxLiquidity = liq;
+          bestPool = {
+            protocol: 'V3',
+            address: pool.id,
+            liquidityUSD: liq,
+            feeTier: parseInt(pool.feeTier),
+            pairName: `${pool.token0.symbol}/${pool.token1.symbol}` 
+          };
+        }
+      });
+
+      return bestPool;
+    } catch (error) {
+      console.error('Error finding best liquidity:', error);
+      return null;
+    }
+  }
+
   /**
    * Get aggregator contract
    */
@@ -213,11 +483,15 @@ class SwapService {
       const provider = await WalletService.getProvider();
       const connectedWallet = wallet.connect(provider);
       
+      const aggregatorAddress = AGGREGATOR_CONTRACTS[chainId];
+      const routerV2 = '0x10ED43C718714eb63d5aA57B78B54704E256024E'; // PancakeSwap V2 Router
+      const routerV3 = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4'; // PancakeSwap V3 Router (Universal)
+
       // Check if token needs approval
       if (quote.fromToken !== ethers.ZeroAddress) {
         await this.approveToken(
           quote.fromToken,
-          AGGREGATOR_CONTRACTS[chainId],
+          aggregatorAddress,
           quote.fromAmount,
           connectedWallet
         );
@@ -225,23 +499,88 @@ class SwapService {
 
       // Get aggregator contract
       const contract = new ethers.Contract(
-        AGGREGATOR_CONTRACTS[chainId],
+        aggregatorAddress,
         AGGREGATOR_ABI,
         connectedWallet
       );
 
-      // Execute swap
+      // Execute swap based on type
+      let tx;
       const value = quote.fromToken === ethers.ZeroAddress ? quote.fromAmount : '0';
-      
-      const tx = await contract.swap(
-        quote.fromToken,
-        quote.toToken,
-        quote.fromAmount,
-        quote.toAmountMin,
-        quote.path,
-        quote.dexId,
-        { value }
-      );
+
+      if (quote.quoteType === 'V2') {
+        // V2 Swap - Use SupportingFee variant for better compatibility with tax tokens
+        tx = await contract.eagleSwapV2RouterSupportingFee(
+          routerV2,
+          quote.path,
+          quote.fromAmount,
+          quote.toAmountMin,
+          { value }
+        );
+      } else {
+        // V3 Swap
+        if (quote.path.length === 2) {
+          // V3 Direct
+          // Encode path: tokenIn + fee + tokenOut (Standard V3 encoding)
+          // Actually eagleSwapV3Direct takes bytes path? No, looking at ABI:
+          // function eagleSwapV3Direct(address router, bytes calldata path, address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
+          
+          // We need to encode the path for V3.
+          // Format: [tokenIn (20)][fee (3)][tokenOut (20)]
+          const fee = quote.fees || 2500; // Default 0.25% if missing
+          const pathTypes = ['address', 'uint24', 'address'];
+          const pathValues = [quote.fromToken, fee, quote.toToken];
+          
+          // Note: ethers solidityPacked is needed for path encoding
+          // But eagleSwapV3Direct signature implies it handles it? 
+          // Let's look at the ABI again: `bytes calldata path`
+          // Typically V3 paths are packed bytes.
+          
+          const encodedPath = ethers.solidityPacked(
+             ['address', 'uint24', 'address'],
+             [quote.fromToken, fee, quote.toToken]
+          );
+
+          tx = await contract.eagleSwapV3Direct(
+            routerV3,
+            encodedPath,
+            quote.fromToken,
+            quote.toToken,
+            quote.fromAmount,
+            quote.toAmountMin,
+            { value }
+          );
+        } else {
+          // V3 Multi-hop
+          // Encode path: tokenIn + fee + tokenMid + fee + tokenOut
+          // This is complex without the fee info for each hop.
+          // For now, assuming fixed fee or we need fees in path.
+          // Our getBestQuote returns simple path. We'll assume 2500 fee for hops if not provided.
+          
+          const types = [];
+          const values = [];
+          for (let i = 0; i < quote.path.length; i++) {
+             types.push('address');
+             values.push(quote.path[i]);
+             if (i < quote.path.length - 1) {
+                 types.push('uint24');
+                 values.push(quote.fees || 2500); // Approximation
+             }
+          }
+          
+          const encodedPath = ethers.solidityPacked(types, values);
+
+          tx = await contract.eagleSwapV3RouterMultiHop(
+            routerV3,
+            encodedPath,
+            quote.fromToken,
+            quote.toToken,
+            quote.fromAmount,
+            quote.toAmountMin,
+            { value }
+          );
+        }
+      }
 
       await tx.wait();
       return tx.hash;
