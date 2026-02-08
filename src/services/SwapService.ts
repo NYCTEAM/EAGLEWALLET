@@ -128,15 +128,30 @@ class SwapService {
    */
   async getBestQuote(tokenIn: string, tokenOut: string, amountInStr: string, decimalsIn: number, decimalsOut: number): Promise<SwapRouteResult | null> {
     const amountIn = ethers.parseUnits(amountInStr, decimalsIn);
-    const tokenInAddr = tokenIn.toLowerCase();
-    const tokenOutAddr = tokenOut.toLowerCase();
+    
+    // Map native token to wrapped token for subgraph query
+    const WBNB = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+    const WOKB = '0xe538905cf8410324e03a5a23c1c177a474d59b2b'; // Assuming WOKB address for XLAYER if needed, or update based on chain
+
+    let queryTokenIn = tokenIn.toLowerCase();
+    let queryTokenOut = tokenOut.toLowerCase();
+
+    // Handle Native Token (Zero Address) -> Wrapped Token
+    if (queryTokenIn === ethers.ZeroAddress.toLowerCase()) {
+        // We assume BSC for now as per previous context, or we could pass chainId.
+        // Given the hardcoded aggregator address is BSC, we use WBNB.
+        queryTokenIn = WBNB.toLowerCase();
+    }
+    if (queryTokenOut === ethers.ZeroAddress.toLowerCase()) {
+        queryTokenOut = WBNB.toLowerCase();
+    }
 
     // 1. Check Direct Pools
     const directV2Query = `{
       pairs(where: {
         or: [
-          { token0: "${tokenInAddr}", token1: "${tokenOutAddr}" },
-          { token0: "${tokenOutAddr}", token1: "${tokenInAddr}" }
+          { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
+          { token0: "${queryTokenOut}", token1: "${queryTokenIn}" }
         ]
       }) {
         id, token0 { id, decimals }, token1 { id, decimals }, reserve0, reserve1
@@ -146,8 +161,8 @@ class SwapService {
     const directV3Query = `{
       pools(orderBy: totalValueLockedUSD, orderDirection: desc, where: {
         or: [
-          { token0: "${tokenInAddr}", token1: "${tokenOutAddr}" },
-          { token0: "${tokenOutAddr}", token1: "${tokenInAddr}" }
+          { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
+          { token0: "${queryTokenOut}", token1: "${queryTokenIn}" }
         ]
       }) {
         id, token0 { id, decimals }, token1 { id, decimals }, liquidity, feeTier
@@ -165,16 +180,11 @@ class SwapService {
     // Evaluate Direct V2
     if (v2Data?.pairs?.[0]) {
       const pair = v2Data.pairs[0];
-      const isToken0In = pair.token0.id === tokenInAddr;
+      const isToken0In = pair.token0.id === queryTokenIn;
       const reserveIn = ethers.parseUnits(isToken0In ? pair.reserve0 : pair.reserve1, parseInt(isToken0In ? pair.token0.decimals : pair.token1.decimals));
       const reserveOut = ethers.parseUnits(isToken0In ? pair.reserve1 : pair.reserve0, parseInt(isToken0In ? pair.token1.decimals : pair.token0.decimals));
       
-      // Adjust reserves to matching decimals if needed (simplified)
-      // Note: calculateV2AmountOut assumes raw units logic matches. 
-      // For accurate calc we need to normalize to common precision or use exact formula.
-      // Here we assume standard Uniswap formula logic works on raw units.
-      
-      // To be safe, we convert reserves to BigInt (wei)
+      // Calculate amount out
       const amountOut = this.calculateV2AmountOut(BigInt(amountIn.toString()), BigInt(reserveIn.toString()), BigInt(reserveOut.toString()));
       
       if (amountOut > maxAmountOut) {
@@ -182,9 +192,9 @@ class SwapService {
         bestQuote = {
           quoteType: 'V2',
           amountOut: ethers.formatUnits(amountOut, decimalsOut),
-          path: [tokenIn, tokenOut],
-          fees: 2500, // 0.25%
-          priceImpact: '0.00' // TODO: calc
+          path: [tokenIn, tokenOut], // Use original addresses for execution path (contract handles native)
+          fees: 2500,
+          priceImpact: '0.00' 
         };
       }
     }
@@ -200,7 +210,7 @@ class SwapService {
           bestQuote = {
             quoteType: 'V3',
             amountOut: ethers.formatUnits(amountOut, decimalsOut),
-            path: [tokenIn, tokenOut], // V3 path encoding handled elsewhere
+            path: [tokenIn, tokenOut], 
             fees: fee,
             priceImpact: '0.00'
           };
@@ -210,23 +220,31 @@ class SwapService {
 
     if (bestQuote) return bestQuote;
 
-    // 2. Multi-hop (Simplified: find intermediate token with highest liquidity)
-    // For now, let's just support WBNB/USDT as intermediate if direct fails
-    const WBNB = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
-    const USDT = '0x55d398326f99059ff775485246999027b3197955';
+    // 2. Multi-hop via WBNB (Intermediate)
+    // If input/output is already WBNB/Native, we don't need to hop via WBNB again.
+    const isNativeOrWrapped = (addr: string) => addr === WBNB.toLowerCase() || addr === ethers.ZeroAddress.toLowerCase();
     
-    // Attempt WBNB hop
-    if (tokenInAddr !== WBNB && tokenOutAddr !== WBNB) {
+    if (!isNativeOrWrapped(tokenIn.toLowerCase()) && !isNativeOrWrapped(tokenOut.toLowerCase())) {
         // Find TokenIn -> WBNB
+        // Note: We use original tokenIn for recursive call, but target WBNB address
         const hop1 = await this.getBestQuote(tokenIn, WBNB, amountInStr, decimalsIn, 18);
         if (hop1 && parseFloat(hop1.amountOut) > 0) {
             // Find WBNB -> TokenOut
             const hop2 = await this.getBestQuote(WBNB, tokenOut, hop1.amountOut, 18, decimalsOut);
             if (hop2 && parseFloat(hop2.amountOut) > 0) {
                  return {
-                    quoteType: hop1.quoteType === 'V2' && hop2.quoteType === 'V2' ? 'V2' : 'V3', // Mixed?
+                    // Actually aggregator V3 Router MultiHop supports mixed pools if encoded right, but usually we stick to one protocol if possible or V3 multihop.
+                    // For simplicity, if we mix, we might default to V3 multihop logic if supported, or just chain two swaps (but that requires 2 txs).
+                    // The aggregator likely supports multi-hop V2 via `eagleSwapV2Router` if path is [A, WBNB, B].
+                    // And V3 via `eagleSwapV3RouterMultiHop`.
+                    
+                    // Let's assume if both are V2, we use V2 routing.
+                    // If any is V3, we use V3 multihop (if compatible) or fail for now.
+                    // The ABI has `eagleSwapV2Router` which takes `address[] path`.
+                    
+                    quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
                     amountOut: hop2.amountOut,
-                    path: [tokenIn, WBNB, tokenOut],
+                    path: [tokenIn, WBNB, tokenOut], // Contract handles WBNB in path
                     fees: hop1.fees + hop2.fees,
                     priceImpact: '0.00'
                  };

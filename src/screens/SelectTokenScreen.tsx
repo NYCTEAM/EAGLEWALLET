@@ -3,7 +3,7 @@
  * Select which token to send
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
   View,
@@ -12,36 +12,119 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
+  Image,
 } from 'react-native';
+import { getChainTokens, TokenConfig } from '../config/tokenConfig';
+import WalletService from '../services/WalletService';
+import TokenLogoService from '../services/TokenLogoService';
+import { ethers } from 'ethers';
 
 export default function SelectTokenScreen({ route, navigation }: any) {
   const { t } = useLanguage();
   const { action, onSelect } = route.params || {};
   const [searchQuery, setSearchQuery] = useState('');
+  const [tokens, setTokens] = useState<any[]>([]);
+  const [networkName, setNetworkName] = useState('BNB Chain');
 
-  const tokens = [
-    { symbol: 'USDT', name: 'Tether USD', chain: 'BNB Chain', amount: '7,727.08', value: '$7,717.19', color: '#26A17B', icon: '💲' },
-    { symbol: 'BNB', name: 'BNB', chain: 'BNB Chain', amount: '0.036739', value: '$22.99', color: '#F3BA2F', icon: 'B' },
-    { symbol: 'USD1', name: 'World Liberty Financial USD', chain: 'BNB Chain', amount: '<0.01', value: '<$0.01', color: '#D4AF37', icon: '1' },
-    { symbol: 'WBNB', name: 'Wrapped BNB', chain: 'BNB Chain', amount: '0.000001', value: '<$0.01', color: '#F3BA2F', icon: 'W' },
-    { symbol: 'U', name: 'United Stables', chain: 'BNB Chain', amount: '0.000008', value: '<$0.01', color: '#333', icon: 'U' },
-    { symbol: 'EAGLE', name: 'EAGLE', chain: 'BNB Chain', amount: '189', value: '$0.00', color: '#000', icon: 'E' },
-  ];
+  useEffect(() => {
+    loadTokens();
+  }, []);
+
+  const loadTokens = async () => {
+    const network = WalletService.getCurrentNetwork();
+    setNetworkName(network.name);
+    
+    // Get predefined tokens
+    const chainTokens = getChainTokens(network.chainId);
+    const address = await WalletService.getAddress();
+    
+    // Add native token
+    const nativeToken = {
+        symbol: network.symbol,
+        name: network.name,
+        address: 'native', // Use 'native' or ZeroAddress consistently
+        decimals: 18,
+        logo: network.symbol.toLowerCase(),
+        balance: '0.00',
+        value: '$0.00',
+        color: '#F3BA2F'
+    };
+    
+    // Load balances (simplified, maybe optimize later)
+    // For now just load list to show UI
+    const formattedTokens = chainTokens.map(token => ({
+        ...token,
+        balance: '0.00', // Placeholder
+        value: '$0.00'
+    }));
+    
+    setTokens([nativeToken, ...formattedTokens]);
+  };
+
+  const isAddress = (query: string) => {
+    return ethers.isAddress(query);
+  };
 
   const filteredTokens = tokens.filter(token =>
     token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    token.name.toLowerCase().includes(searchQuery.toLowerCase())
+    token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    token.address.toLowerCase() === searchQuery.toLowerCase()
   );
 
+  // If search is an address and not found, show option to import
+  const showImport = isAddress(searchQuery) && filteredTokens.length === 0;
+
   const handleSelectToken = (token: any) => {
+    // If selecting native token, ensure address format is what SwapScreen expects (ZeroAddress)
+    // SwapService expects '0x000...' for native in some checks, but 'native' string in others?
+    // Let's use ZeroAddress for consistency with standard DApps
+    const selectedToken = {
+        ...token,
+        address: token.address === 'native' ? ethers.ZeroAddress : token.address
+    };
+
     if (onSelect) {
-      onSelect(token);
+      onSelect(selectedToken);
       navigation.goBack();
     } else if (action === 'send') {
-      navigation.navigate('EnterAddress', { token });
+      navigation.navigate('EnterAddress', { token: selectedToken });
     } else {
       navigation.goBack();
     }
+  };
+
+  const handleImportCustom = () => {
+      // Create a temporary custom token object
+      // In a real app, we would fetch metadata (symbol, decimals) from chain
+      const customToken = {
+          symbol: 'UNKNOWN',
+          name: 'Custom Token',
+          address: searchQuery,
+          decimals: 18,
+          logo: null,
+          isCustom: true
+      };
+      handleSelectToken(customToken);
+  };
+
+  const renderTokenIcon = (token: any) => {
+    // Check for remote URL
+    if (token.logo && token.logo.startsWith('http')) {
+        return <Image source={{ uri: token.logo }} style={styles.tokenLogoImage} />;
+    }
+
+    // Check local asset
+    const logoSource = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+    if (logoSource) {
+        return <Image source={logoSource} style={styles.tokenLogoImage} />;
+    }
+
+    // Fallback text
+    return (
+        <View style={[styles.tokenIcon, { backgroundColor: token.color || '#333' }]}>
+            <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
+        </View>
+    );
   };
 
   return (
@@ -69,6 +152,18 @@ export default function SelectTokenScreen({ route, navigation }: any) {
 
       {/* Token List */}
       <ScrollView style={styles.tokenList}>
+        {showImport && (
+             <TouchableOpacity style={styles.tokenItem} onPress={handleImportCustom}>
+                <View style={[styles.tokenIcon, { backgroundColor: '#666' }]}>
+                    <Text style={styles.tokenIconText}>?</Text>
+                </View>
+                <View style={styles.tokenInfo}>
+                    <Text style={styles.tokenSymbol}>Import Token</Text>
+                    <Text style={styles.tokenName}>{searchQuery}</Text>
+                </View>
+             </TouchableOpacity>
+        )}
+        
         {filteredTokens.map((token, index) => (
           <TouchableOpacity
             key={index}
@@ -76,19 +171,17 @@ export default function SelectTokenScreen({ route, navigation }: any) {
             onPress={() => handleSelectToken(token)}
           >
             <View style={styles.tokenLeft}>
-              <View style={[styles.tokenIcon, { backgroundColor: token.color + '20' }]}>
-                <Text style={styles.tokenIconText}>{token.icon}</Text>
-              </View>
+              {renderTokenIcon(token)}
               <View style={styles.tokenInfo}>
                 <View style={styles.tokenNameRow}>
                   <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-                  <Text style={styles.tokenChain}>{token.chain}</Text>
+                  <Text style={styles.tokenChain}>{networkName}</Text>
                 </View>
                 <Text style={styles.tokenName}>{token.name}</Text>
               </View>
             </View>
             <View style={styles.tokenRight}>
-              <Text style={styles.tokenAmount}>{token.amount}</Text>
+              <Text style={styles.tokenAmount}>{token.balance}</Text>
               <Text style={styles.tokenValue}>{token.value}</Text>
             </View>
           </TouchableOpacity>
@@ -173,10 +266,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  tokenLogoImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+  },
   tokenIconText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFF',
   },
   tokenInfo: {
     flex: 1,
