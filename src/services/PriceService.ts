@@ -166,7 +166,7 @@ class PriceService {
   async getTokenPricesWithChange(
     tokenAddresses: string[],
     chainId: number
-  ): Promise<Record<string, { price: number; change24h: number }>> {
+  ): Promise<Record<string, { price: number; change24h: number; imageUrl?: string }>> {
     try {
       const network = NETWORK_NAMES[chainId];
       if (!network) {
@@ -194,7 +194,7 @@ class PriceService {
       }
 
       const data = await response.json();
-      const results: Record<string, { price: number; change24h: number }> = {};
+      const results: Record<string, { price: number; change24h: number; imageUrl?: string }> = {};
       const tokensData = data?.data || [];
 
       for (const tokenData of tokensData) {
@@ -202,15 +202,16 @@ class PriceService {
         const address = attrs.address.toLowerCase();
         const price = parseFloat(attrs.price_usd || '0');
         const change24h = parseFloat(attrs.price_change_percentage_24h || '0');
+        const imageUrl = attrs.image_url;
 
-        results[address] = { price, change24h };
+        results[address] = { price, change24h, imageUrl };
 
         // Handle wrapped token mapping for native
         if (chainId === 56 && address === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
-          results['native'] = { price, change24h };
+          results['native'] = { price, change24h, imageUrl };
         }
         if (chainId === 196 && address === '0xe538905cf8410324e03a5a23c1c177a474d59b2b') {
-          results['native'] = { price, change24h };
+          results['native'] = { price, change24h, imageUrl };
         }
 
         // Update cache (only price for now to keep compatibility)

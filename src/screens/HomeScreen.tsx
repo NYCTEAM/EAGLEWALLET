@@ -33,6 +33,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   console.log('🏠 HomeScreen: Component rendering');
   const { t } = useLanguage();
   const [balance, setBalance] = useState('0.0000');
+  const [totalValue, setTotalValue] = useState('0.00');
   const [address, setAddress] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [walletName, setWalletName] = useState('Main Wallet');
@@ -142,19 +143,32 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       const priceData = await PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId);
       
       // Update token list with prices
+      let totalPortfolioValue = 0;
       const tokensWithPrices = updatedListWithBalances.map(token => {
         const data = priceData[token.address.toLowerCase()] || { price: 0, change24h: 0 };
         const value = parseFloat(token.balance) * data.price;
         
+        totalPortfolioValue += value;
+
+        // Use API logo if available, otherwise keep existing
+        let logo = token.logo;
+        // @ts-ignore
+        if (data.imageUrl) {
+            // @ts-ignore
+            logo = data.imageUrl;
+        }
+
         return {
           ...token,
           price: data.price,
           change: data.change24h,
           value: value.toFixed(2),
+          logo: logo
         };
       });
       
       setTokens(tokensWithPrices);
+      setTotalValue(totalPortfolioValue.toFixed(2));
       console.log(`💰 Prices loaded for ${Object.keys(priceData).length} tokens`);
 
     } catch (error) {
@@ -225,7 +239,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         {/* Balance Card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>{t.home.totalBalance}</Text>
-          <Text style={styles.balanceValue}>{balance} {network.symbol}</Text>
+          <Text style={styles.balanceValue}>≈ ${totalValue}</Text>
           <TouchableOpacity 
             style={styles.addressContainer}
             onPress={() => {
@@ -297,7 +311,13 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           {activeTab === 'crypto' ? (
             <>
               {tokens.map((token, index) => {
-                const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+                // Determine logo source: URL or Local Asset
+                let logoSource = null;
+                if (token.logo && token.logo.startsWith('http')) {
+                    logoSource = { uri: token.logo };
+                } else {
+                    logoSource = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+                }
                 
                 return (
                   <TouchableOpacity 
@@ -306,8 +326,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                     onPress={() => navigation.navigate('TokenDetail', { token })}
                   >
                     {/* Token Logo */}
-                    {tokenLogo ? (
-                      <Image source={tokenLogo} style={styles.tokenLogoImage} />
+                    {logoSource ? (
+                      <Image source={logoSource} style={styles.tokenLogoImage} />
                     ) : (
                       <View style={[styles.tokenIcon, { backgroundColor: token.color || '#333' }]}>
                         <Text style={styles.tokenIconText}>{token.symbol[0]}</Text>
