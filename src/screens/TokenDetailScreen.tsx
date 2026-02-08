@@ -79,8 +79,9 @@ export default function TokenDetailScreen({ route, navigation }: any) {
     setLoading(false);
   };
 
-  const openExplorer = (hash: string) => {
-    const url = `${network.blockExplorerUrl}/tx/${hash}`;
+  const openExplorer = (value: string, type: 'tx' | 'token' = 'tx') => {
+    const path = type === 'token' ? 'token' : 'tx';
+    const url = `${network.blockExplorerUrl}/${path}/${value}`;
     Linking.openURL(url);
   };
 
@@ -96,7 +97,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
       <TouchableOpacity 
         key={index} 
         style={styles.txItem}
-        onPress={() => openExplorer(tx.hash)}
+        onPress={() => openExplorer(tx.hash, 'tx')}
       >
         <View style={styles.txIconContainer}>
             <Text style={styles.txIcon}>{isReceived ? '↓' : '↑'}</Text>
@@ -221,7 +222,7 @@ export default function TokenDetailScreen({ route, navigation }: any) {
                 </View>
                 <TouchableOpacity 
                     style={styles.explorerButton}
-                    onPress={() => token.address !== 'native' && openExplorer(token.address)}
+                    onPress={() => token.address !== 'native' && openExplorer(token.address, 'token')}
                 >
                     <Text style={styles.explorerButtonText}>View on Explorer ↗</Text>
                 </TouchableOpacity>
