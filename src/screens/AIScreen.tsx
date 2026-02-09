@@ -151,9 +151,10 @@ export default function AIScreen({ navigation }: any) {
     const newUsage = tokensUsed + cost;
     updateUsage(newUsage);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responseText = getSimulatedResponse(userMessage.text);
+    // Generate AI response (Real-time or Simulated)
+    try {
+      const responseText = await generateSmartResponse(userMessage.text);
+      
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,
@@ -161,12 +162,76 @@ export default function AIScreen({ navigation }: any) {
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, aiResponse]);
-      setIsLoading(false);
       
       // Update usage again
       const finalUsage = newUsage + responseText.length;
       updateUsage(finalUsage);
-    }, 1500);
+    } catch (error) {
+      console.error(error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: t.ai.error,
+        sender: 'ai',
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCryptoData = async (symbol: string) => {
+    try {
+      const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const generateSmartResponse = async (query: string) => {
+    const q = query.toLowerCase();
+    const isChinese = /[\u4e00-\u9fa5]/.test(query);
+    
+    // Detect Token
+    let token = '';
+    if (q.includes('btc') || q.includes('bitcoin') || q.includes('比特币')) token = 'BTC';
+    else if (q.includes('eth') || q.includes('ethereum') || q.includes('以太坊')) token = 'ETH';
+    else if (q.includes('bnb')) token = 'BNB';
+    else if (q.includes('sol')) token = 'SOL';
+
+    // If token found, fetch real data
+    if (token) {
+        const data = await fetchCryptoData(token);
+        if (data) {
+            const current = parseFloat(data.lastPrice);
+            const high = parseFloat(data.highPrice);
+            const low = parseFloat(data.lowPrice);
+            const change = parseFloat(data.priceChangePercent);
+            
+            // Quantitative Calculation (Simple Pivot Logic) - REMOVED to avoid misleading advice
+            // Only show objective market data
+            const trendIcon = change > 0 ? '📈' : '📉';
+
+            if (isChinese) {
+                return `${token} 实时行情数据 ${trendIcon}\n\n` +
+                       `💰 当前价格: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
+                       `📊 24H 最高: $${high.toFixed(2)}\n` +
+                       `📉 24H 最低: $${low.toFixed(2)}\n\n` +
+                       `(注：数据源自 Binance，仅供参考)`;
+            } else {
+                return `${token} Real-time Market Data ${trendIcon}\n\n` +
+                       `💰 Price: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
+                       `📊 24H High: $${high.toFixed(2)}\n` +
+                       `📉 24H Low: $${low.toFixed(2)}\n\n` +
+                       `(Source: Binance, for reference only)`;
+            }
+        }
+    }
+
+    // Fallback to simulated responses for non-market queries
+    return getSimulatedResponse(query);
   };
 
   const getSimulatedResponse = (query: string) => {
@@ -177,7 +242,7 @@ export default function AIScreen({ navigation }: any) {
 
     if (isChinese) {
         if (q.includes('你好') || q.includes('hello')) {
-            return '你好！我是 Eagle AI，你的智能加密助手。有什么我可以帮你的吗？你可以问我关于比特币价格、钱包安全或者市场分析的问题。';
+            return '你好！我是 Eagle AI。有什么我可以帮你的吗？';
         }
         if (q.includes('btc') || q.includes('比特币')) {
             return '比特币 (BTC) 目前表现强劲，支撑位在 $42,000 左右。近期 ETF 的资金流入带来了积极的市场情绪。不过 RSI 指标显示短期内可能略有超买。';
@@ -191,11 +256,11 @@ export default function AIScreen({ navigation }: any) {
         if (q.includes('价格') || q.includes('涨') || q.includes('跌')) {
             return '作为一个 AI 助手，我无法准确预测未来的具体价格。目前的市场趋势显示出一定的盘整迹象。投资加密货币有风险，请务必做好自己的研究 (DYOR)。';
         }
-        return '这是一个很好的问题。但我目前的知识库还在更新中。你可以试着问我："比特币现在的行情如何？" 或者 "如何保护我的钱包？"';
+        return '这是一个很好的问题。但我目前的知识库还在更新中。你可以问我任何问题，我会尽力回答。';
     } else {
         // English Responses
         if (q.includes('hello') || q.includes('hi')) {
-            return 'Hello! I am Eagle AI, your smart crypto assistant. How can I help you? You can ask me about BTC prices, wallet security, or market analysis.';
+            return 'Hello! I am Eagle AI. How can I help you today?';
         }
         if (q.includes('btc') || q.includes('bitcoin')) {
             return 'Bitcoin (BTC) is showing strong support at $42,000. Market sentiment remains bullish due to recent ETF inflows. RSI indicates it might be slightly overbought in the short term.';
@@ -209,7 +274,7 @@ export default function AIScreen({ navigation }: any) {
         if (q.includes('price')) {
             return 'I cannot predict future prices with certainty, but current market trends suggest a period of consolidation. Always do your own research (DYOR).';
         }
-        return 'That is an interesting question. As an AI assistant, I am here to help with crypto insights, market analysis, and wallet security features. Could you please provide more details?';
+        return 'That is an interesting question. I am here to help you with any questions you may have. Could you please provide more details?';
     }
   };
 

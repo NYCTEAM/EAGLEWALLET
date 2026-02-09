@@ -435,7 +435,7 @@ export const zhTW: TranslationStrings = {
     send: '發送',
     thinking: '思考中...',
     error: '抱歉，我遇到了一些問題。',
-    welcomeMessage: '你好！我是 Eagle AI，你的智能加密助手。今天有什麼可以幫你？',
+    welcomeMessage: '你好！我是 Eagle AI。今天有什麼可以幫你？',
     suggestedQuestions: '建議問題',
     marketAnalysis: '市場分析',
     securityCheck: '安全檢查',

@@ -435,7 +435,7 @@ export const en: TranslationStrings = {
     send: 'Send',
     thinking: 'Thinking...',
     error: 'Sorry, I encountered an error.',
-    welcomeMessage: 'Hello! I am Eagle AI, your smart crypto assistant. How can I help you today?',
+    welcomeMessage: 'Hello! I am Eagle AI. How can I help you today?',
     suggestedQuestions: 'Suggested questions',
     marketAnalysis: 'Market Analysis',
     securityCheck: 'Security Check',
