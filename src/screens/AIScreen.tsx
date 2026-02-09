@@ -35,6 +35,8 @@ const TIER_LIMITS = {
 };
 
 const DEVICE_ID_KEY = 'EAGLE_DEVICE_ID';
+// Official EAGLE NFT Contract Address
+const EAGLE_NFT_CONTRACT = '0x3c117d186c5055071eff91d87f2600eaf88d591d'; 
 
 export default function AIScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -78,9 +80,17 @@ export default function AIScreen({ navigation }: any) {
       const address = await WalletService.getAddress();
       if (address) setWalletAddress(address);
 
-      // 3. Determine Tier (Mocked logic - normally would check API/Contract)
-      // In real app: await checkUserTier(address);
-      const tier: Tier = 'free'; 
+      // 3. Determine Tier
+      let tier: Tier = 'free';
+      
+      if (address) {
+        // Check for NFT VIP Status
+        const hasNFT = await WalletService.hasNFT(EAGLE_NFT_CONTRACT);
+        if (hasNFT) {
+            tier = 'vip';
+        }
+      }
+      
       setCurrentTier(tier);
 
       // 4. Load Usage

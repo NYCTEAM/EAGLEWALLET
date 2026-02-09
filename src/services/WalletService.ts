@@ -448,6 +448,34 @@ class WalletService {
   }
 
   /**
+   * Check if wallet holds a specific NFT
+   */
+  async hasNFT(contractAddress: string): Promise<boolean> {
+    if (!this.wallet || !this.provider) {
+      await this.init();
+    }
+    
+    if (!this.wallet || !this.provider) {
+      return false;
+    }
+
+    try {
+      const abi = [
+        // ERC721 & ERC1155 balanceOf
+        "function balanceOf(address owner) view returns (uint256)"
+      ];
+      
+      const contract = new ethers.Contract(contractAddress, abi, this.provider);
+      const balance = await contract.balanceOf(this.wallet.address);
+      
+      return balance > 0n;
+    } catch (error) {
+      console.error('Check NFT balance error:', error);
+      return false;
+    }
+  }
+
+  /**
    * Delete wallet
    */
   async deleteWallet(): Promise<void> {
