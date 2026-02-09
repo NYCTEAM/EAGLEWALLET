@@ -13,8 +13,10 @@ import {
   Modal,
   Alert
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useLanguage } from '../i18n/LanguageContext';
+import WalletService from '../services/WalletService';
 
 interface Message {
   id: string;
@@ -29,8 +31,10 @@ const TIER_LIMITS = {
   free: 5000,
   holder: 10000,
   vip: 50000,
-  pro: 100000, // Unlimited or high cap
+  pro: 100000,
 };
+
+const DEVICE_ID_KEY = 'EAGLE_DEVICE_ID';
 
 export default function AIScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -39,10 +43,12 @@ export default function AIScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   
-  // Tier State (Mocked for now)
+  // Tier State
   const [currentTier, setCurrentTier] = useState<Tier>('free');
   const [tokensUsed, setTokensUsed] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [deviceId, setDeviceId] = useState<string>('');
+  const [walletAddress, setWalletAddress] = useState<string>('');
 
   useEffect(() => {
     // Add welcome message
@@ -54,7 +60,64 @@ export default function AIScreen({ navigation }: any) {
         timestamp: Date.now(),
       },
     ]);
+    
+    initializeUser();
   }, [t]);
+
+  const initializeUser = async () => {
+    try {
+      // 1. Get or Create Device ID (for Free Tier lock)
+      let dId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+      if (!dId) {
+        dId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now();
+        await AsyncStorage.setItem(DEVICE_ID_KEY, dId);
+      }
+      setDeviceId(dId);
+
+      // 2. Get Wallet Address
+      const address = await WalletService.getAddress();
+      if (address) setWalletAddress(address);
+
+      // 3. Determine Tier (Mocked logic - normally would check API/Contract)
+      // In real app: await checkUserTier(address);
+      const tier: Tier = 'free'; 
+      setCurrentTier(tier);
+
+      // 4. Load Usage
+      await loadUsage(tier, dId, address || '');
+    } catch (error) {
+      console.error('Failed to init AI user:', error);
+    }
+  };
+
+  const loadUsage = async (tier: Tier, dId: string, address: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    let usageKey = '';
+
+    // Logic: Free users track by DEVICE_ID, Paid users track by WALLET_ADDRESS
+    if (tier === 'free') {
+      usageKey = `AI_USAGE_${today}_DEVICE_${dId}`;
+    } else {
+      usageKey = `AI_USAGE_${today}_WALLET_${address}`;
+    }
+
+    const savedUsage = await AsyncStorage.getItem(usageKey);
+    setTokensUsed(savedUsage ? parseInt(savedUsage) : 0);
+  };
+
+  const updateUsage = async (newAmount: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    let usageKey = '';
+
+    if (currentTier === 'free') {
+      usageKey = `AI_USAGE_${today}_DEVICE_${deviceId}`;
+    } else {
+      usageKey = `AI_USAGE_${today}_WALLET_${walletAddress}`;
+    }
+
+    setTokensUsed(newAmount);
+    await AsyncStorage.setItem(usageKey, newAmount.toString());
+  };
 
   const dailyLimit = TIER_LIMITS[currentTier];
   const tokensRemaining = Math.max(0, dailyLimit - tokensUsed);
@@ -83,8 +146,10 @@ export default function AIScreen({ navigation }: any) {
     setInputText('');
     setIsLoading(true);
     
-    // Simulate token usage (approx 1 token per char)
-    setTokensUsed(prev => prev + userMessage.text.length + 50); // +50 for base cost
+    // Update usage
+    const cost = userMessage.text.length + 50;
+    const newUsage = tokensUsed + cost;
+    updateUsage(newUsage);
 
     // Simulate AI response
     setTimeout(() => {
@@ -98,8 +163,9 @@ export default function AIScreen({ navigation }: any) {
       setMessages((prev) => [...prev, aiResponse]);
       setIsLoading(false);
       
-      // Add response tokens
-      setTokensUsed(prev => prev + responseText.length);
+      // Update usage again
+      const finalUsage = newUsage + responseText.length;
+      updateUsage(finalUsage);
     }, 1500);
   };
 
