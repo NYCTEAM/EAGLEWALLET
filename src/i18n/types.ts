@@ -3,7 +3,7 @@
  * Complete translation structure for all screens
  */
 
-export type Language = 'en' | 'zh' | 'zh-TW' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'ru' | 'ar' | 'pt' | 'it' | 'tr' | 'vi' | 'th' | 'id';
+export type Language = 'en' | 'zh' | 'zh-TW' | 'es' | 'fr' | 'de' | 'ja' | 'ko' | 'ru' | 'ar' | 'pt' | 'it' | 'tr' | 'vi' | 'th' | 'id' | 'hi' | 'uk';
 
 export interface TranslationStrings {
   // ===== COMMON =====

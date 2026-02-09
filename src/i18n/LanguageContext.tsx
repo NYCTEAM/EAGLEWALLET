@@ -40,6 +40,8 @@ export const availableLanguages = [
   { code: 'vi' as Language, name: 'Vietnamese', nativeName: 'Tiếng Việt', isRTL: false },
   { code: 'th' as Language, name: 'Thai', nativeName: 'ไทย', isRTL: false },
   { code: 'id' as Language, name: 'Indonesian', nativeName: 'Bahasa Indonesia', isRTL: false },
+  { code: 'hi' as Language, name: 'Hindi', nativeName: 'हिन्दी', isRTL: false },
+  { code: 'uk' as Language, name: 'Ukrainian', nativeName: 'Українська', isRTL: false },
 ];
 
 // Get device language
@@ -82,6 +84,8 @@ function getDeviceLanguage(): Language {
       vi: 'vi',
       th: 'th',
       id: 'id',
+      hi: 'hi',
+      uk: 'uk',
     };
 
     return languageMap[langCode] || 'en';
