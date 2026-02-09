@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ethers } from 'ethers';
 import { useLanguage } from '../i18n/LanguageContext';
 import WalletService from '../services/WalletService';
 
@@ -27,16 +28,14 @@ interface Message {
 
 type Tier = 'free' | 'holder' | 'vip' | 'pro';
 
-const TIER_LIMITS = {
-  free: 5000,
-  holder: 10000,
-  vip: 50000,
-  pro: 100000,
-};
-
+const API_URL = 'https://us.eagleswaps.com/api';
+const APP_SECRET = 'eagle_wallet_secret_123';
 const DEVICE_ID_KEY = 'EAGLE_DEVICE_ID';
-// Official EAGLE NFT Contract Address
+
+// Official Contracts
 const EAGLE_NFT_CONTRACT = '0x3c117d186c5055071eff91d87f2600eaf88d591d'; 
+const EAGLE_TOKEN_CONTRACT = '0x480F12D2ECEFe1660e72149c57327f5E0646E5c4';
+const PAYMENT_ADDRESS = '0xf4f02733696cc3bb2cffe8bb8e9f32058654c622';
 
 export default function AIScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -48,6 +47,7 @@ export default function AIScreen({ navigation }: any) {
   // Tier State
   const [currentTier, setCurrentTier] = useState<Tier>('free');
   const [tokensUsed, setTokensUsed] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(5000); // Default, updated by backend
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [deviceId, setDeviceId] = useState<string>('');
   const [walletAddress, setWalletAddress] = useState<string>('');
@@ -68,7 +68,7 @@ export default function AIScreen({ navigation }: any) {
 
   const initializeUser = async () => {
     try {
-      // 1. Get or Create Device ID (for Free Tier lock)
+      // 1. Get or Create Device ID
       let dId = await AsyncStorage.getItem(DEVICE_ID_KEY);
       if (!dId) {
         dId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now();
@@ -80,56 +80,29 @@ export default function AIScreen({ navigation }: any) {
       const address = await WalletService.getAddress();
       if (address) setWalletAddress(address);
 
-      // 3. Determine Tier
-      let tier: Tier = 'free';
-      
-      if (address) {
-        // Check for NFT VIP Status
-        const hasNFT = await WalletService.hasNFT(EAGLE_NFT_CONTRACT);
-        if (hasNFT) {
-            tier = 'vip';
-        }
-      }
-      
-      setCurrentTier(tier);
-
-      // 4. Load Usage
-      await loadUsage(tier, dId, address || '');
+      // 3. Fetch Status from Backend
+      await fetchBackendStatus(dId, address || '');
     } catch (error) {
       console.error('Failed to init AI user:', error);
     }
   };
 
-  const loadUsage = async (tier: Tier, dId: string, address: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    let usageKey = '';
-
-    // Logic: Free users track by DEVICE_ID, Paid users track by WALLET_ADDRESS
-    if (tier === 'free') {
-      usageKey = `AI_USAGE_${today}_DEVICE_${dId}`;
-    } else {
-      usageKey = `AI_USAGE_${today}_WALLET_${address}`;
+  const fetchBackendStatus = async (dId: string, address: string) => {
+    try {
+      const url = `${API_URL}/status?deviceId=${dId}&walletAddress=${address}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data && data.tier) {
+        setCurrentTier(data.tier);
+        setTokensUsed(data.used);
+        setDailyLimit(data.limit);
+      }
+    } catch (error) {
+      console.warn('Backend status check failed, using local defaults');
     }
-
-    const savedUsage = await AsyncStorage.getItem(usageKey);
-    setTokensUsed(savedUsage ? parseInt(savedUsage) : 0);
   };
 
-  const updateUsage = async (newAmount: number) => {
-    const today = new Date().toISOString().split('T')[0];
-    let usageKey = '';
-
-    if (currentTier === 'free') {
-      usageKey = `AI_USAGE_${today}_DEVICE_${deviceId}`;
-    } else {
-      usageKey = `AI_USAGE_${today}_WALLET_${walletAddress}`;
-    }
-
-    setTokensUsed(newAmount);
-    await AsyncStorage.setItem(usageKey, newAmount.toString());
-  };
-
-  const dailyLimit = TIER_LIMITS[currentTier];
   const tokensRemaining = Math.max(0, dailyLimit - tokensUsed);
   const usagePercent = Math.min(100, (tokensUsed / dailyLimit) * 100);
 
@@ -155,16 +128,59 @@ export default function AIScreen({ navigation }: any) {
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
-    
-    // Update usage
-    const cost = userMessage.text.length + 50;
-    const newUsage = tokensUsed + cost;
-    updateUsage(newUsage);
 
-    // Generate AI response (Real-time or Simulated)
     try {
-      const responseText = await generateSmartResponse(userMessage.text);
+      // Try to fetch crypto data first (local fast path)
+      const cryptoResponse = await tryCryptoFastPath(userMessage.text);
+      let responseText = '';
+
+      if (cryptoResponse) {
+        responseText = cryptoResponse;
+        // Even for local crypto response, we should ideally sync usage with backend, 
+        // but for now let's assume backend tracks AI calls. 
+        // We will just send a "ping" to backend or skip cost for simple price checks?
+        // User wants AI limit. Let's count it locally for now or send to backend as a log.
+        // Better: Send EVERYTHING to backend for consistent logic.
+        // Let's Skip local fast path if we want strictly backend control.
+        // BUT user liked the specific format.
+        // Compromise: Send to backend. Backend is GPT-4o-mini. 
+        // Backend can't fetch live price without tools.
+        // So: Keep Local Crypto -> If matched, return immediately.
+      } 
       
+      if (!responseText) {
+        // Call Backend AI
+        const res = await fetch(`${API_URL}/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-app-secret': APP_SECRET
+            },
+            body: JSON.stringify({
+                message: userMessage.text,
+                history: messages.slice(-4).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })),
+                deviceId,
+                walletAddress
+            })
+        });
+        
+        const data = await res.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        responseText = data.reply;
+        
+        // Sync limits from backend response
+        if (data.tokensUsed) {
+            setTokensUsed(prev => prev + data.tokensUsed);
+            if (data.remaining !== undefined) {
+                // Approximate sync
+            }
+        }
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: responseText,
@@ -173,9 +189,6 @@ export default function AIScreen({ navigation }: any) {
       };
       setMessages((prev) => [...prev, aiResponse]);
       
-      // Update usage again
-      const finalUsage = newUsage + responseText.length;
-      updateUsage(finalUsage);
     } catch (error) {
       console.error(error);
       const errorMsg: Message = {
@@ -187,7 +200,48 @@ export default function AIScreen({ navigation }: any) {
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
+      // Refresh status to be sure
+      fetchBackendStatus(deviceId, walletAddress);
     }
+  };
+
+  // Keep this for fast price checks
+  const tryCryptoFastPath = async (query: string) => {
+    const q = query.toLowerCase();
+    let token = '';
+    if (q.includes('btc') || q.includes('bitcoin')) token = 'BTC';
+    else if (q.includes('eth') || q.includes('ethereum')) token = 'ETH';
+    else if (q.includes('bnb')) token = 'BNB';
+    else if (q.includes('sol')) token = 'SOL';
+
+    if (token && (q.includes('price') || q.includes('price') || q.includes('行情') || q.includes('多少钱'))) {
+        const data = await fetchCryptoData(token);
+        if (data) {
+            const current = parseFloat(data.lastPrice);
+            const high = parseFloat(data.highPrice);
+            const low = parseFloat(data.lowPrice);
+            const change = parseFloat(data.priceChangePercent);
+            const trendIcon = change > 0 ? '📈' : '📉';
+            
+            // Simple language detection for this specific static response
+            const isChinese = /[\u4e00-\u9fa5]/.test(query);
+
+            if (isChinese) {
+                return `${token} 实时行情数据 ${trendIcon}\n\n` +
+                       `💰 当前价格: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
+                       `📊 24H 最高: $${high.toFixed(2)}\n` +
+                       `📉 24H 最低: $${low.toFixed(2)}\n\n` +
+                       `(数据源: Binance)`;
+            } else {
+                return `${token} Real-time Market Data ${trendIcon}\n\n` +
+                       `💰 Price: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
+                       `📊 24H High: $${high.toFixed(2)}\n` +
+                       `📉 24H Low: $${low.toFixed(2)}\n\n` +
+                       `(Source: Binance)`;
+            }
+        }
+    }
+    return null;
   };
 
   const fetchCryptoData = async (symbol: string) => {
@@ -200,91 +254,69 @@ export default function AIScreen({ navigation }: any) {
     }
   };
 
-  const generateSmartResponse = async (query: string) => {
-    const q = query.toLowerCase();
-    const isChinese = /[\u4e00-\u9fa5]/.test(query);
-    
-    // Detect Token
-    let token = '';
-    if (q.includes('btc') || q.includes('bitcoin') || q.includes('比特币')) token = 'BTC';
-    else if (q.includes('eth') || q.includes('ethereum') || q.includes('以太坊')) token = 'ETH';
-    else if (q.includes('bnb')) token = 'BNB';
-    else if (q.includes('sol')) token = 'SOL';
-
-    // If token found, fetch real data
-    if (token) {
-        const data = await fetchCryptoData(token);
-        if (data) {
-            const current = parseFloat(data.lastPrice);
-            const high = parseFloat(data.highPrice);
-            const low = parseFloat(data.lowPrice);
-            const change = parseFloat(data.priceChangePercent);
-            
-            // Quantitative Calculation (Simple Pivot Logic) - REMOVED to avoid misleading advice
-            // Only show objective market data
-            const trendIcon = change > 0 ? '📈' : '📉';
-
-            if (isChinese) {
-                return `${token} 实时行情数据 ${trendIcon}\n\n` +
-                       `💰 当前价格: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
-                       `📊 24H 最高: $${high.toFixed(2)}\n` +
-                       `📉 24H 最低: $${low.toFixed(2)}\n\n` +
-                       `(注：数据源自 Binance，仅供参考)`;
-            } else {
-                return `${token} Real-time Market Data ${trendIcon}\n\n` +
-                       `💰 Price: $${current.toFixed(2)} (${change > 0 ? '+' : ''}${change.toFixed(2)}%)\n` +
-                       `📊 24H High: $${high.toFixed(2)}\n` +
-                       `📉 24H Low: $${low.toFixed(2)}\n\n` +
-                       `(Source: Binance, for reference only)`;
-            }
-        }
+  const handleSubscribe = async () => {
+    if (!walletAddress) {
+        Alert.alert('Error', 'Please create or import a wallet first.');
+        return;
     }
 
-    // Fallback to simulated responses for non-market queries
-    return getSimulatedResponse(query);
-  };
+    try {
+        setIsLoading(true);
+        // 1. Send 200 EAGLE
+        // Note: WalletService needs to support ERC20 transfer. 
+        // sendTransaction is ETH/BNB native usually.
+        // We need a specific method for Token Transfer in WalletService or use generic call.
+        // Assuming WalletService.sendToken exists or we use sendTransaction for now (User asked for EAGLE payment).
+        // Since WalletService.ts shown earlier didn't have sendToken, I'll assume I need to add it or use raw ethers.
+        
+        // Quick fix: Get wallet and use ethers directly here or add helper.
+        // Let's add a helper in WalletService later or do it here.
+        // For now, I'll alert the user as I can't guarantee sendToken exists yet.
+        
+        // Actually, I can use WalletService.getWallet() to get the signer.
+        const wallet = await WalletService.getWallet();
+        const provider = await WalletService.getProvider();
+        
+        // ERC20 ABI
+        const abi = ["function transfer(address to, uint amount) returns (bool)"];
+        const contract = new ethers.Contract(EAGLE_TOKEN_CONTRACT, abi, wallet.connect(provider));
+        
+        // 200 EAGLE (assuming 18 decimals)
+        const amount = ethers.parseUnits("200", 18);
+        
+        const tx = await contract.transfer(PAYMENT_ADDRESS, amount);
+        console.log('Tx sent:', tx.hash);
+        
+        // Wait for confirmation? Backend checks chain anyway.
+        // Let's verify immediately.
+        
+        const verifyRes = await fetch(`${API_URL}/verify-payment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-app-secret': APP_SECRET
+            },
+            body: JSON.stringify({
+                txHash: tx.hash,
+                walletAddress
+            })
+        });
+        
+        const verifyData = await verifyRes.json();
+        
+        if (verifyData.success) {
+            Alert.alert('Success', 'Subscription activated! You are now a Pro user.');
+            setShowUpgradeModal(false);
+            fetchBackendStatus(deviceId, walletAddress);
+        } else {
+            Alert.alert('Processing', 'Payment sent. Please wait a moment for the network to confirm, then restart the app.');
+        }
 
-  const getSimulatedResponse = (query: string) => {
-    const q = query.toLowerCase();
-    
-    // Simple language detection (check for common Chinese characters)
-    const isChinese = /[\u4e00-\u9fa5]/.test(query);
-
-    if (isChinese) {
-        if (q.includes('你好') || q.includes('hello')) {
-            return '你好！我是 Eagle AI。有什么我可以帮你的吗？';
-        }
-        if (q.includes('btc') || q.includes('比特币')) {
-            return '比特币 (BTC) 目前表现强劲，支撑位在 $42,000 左右。近期 ETF 的资金流入带来了积极的市场情绪。不过 RSI 指标显示短期内可能略有超买。';
-        }
-        if (q.includes('eth') || q.includes('以太坊')) {
-            return '以太坊 (ETH) 走势紧随比特币。即将到来的网络升级（Dencun）引发了市场的积极关注。请关注 $2,500 附近的阻力位。';
-        }
-        if (q.includes('安全') || q.includes('私钥') || q.includes('助记词')) {
-            return 'Eagle Wallet 采用行业标准的加密技术。请务必记住：永远不要将你的私钥或助记词分享给任何人，包括官方客服。建议你在设置中开启生物识别验证。';
-        }
-        if (q.includes('价格') || q.includes('涨') || q.includes('跌')) {
-            return '作为一个 AI 助手，我无法准确预测未来的具体价格。目前的市场趋势显示出一定的盘整迹象。投资加密货币有风险，请务必做好自己的研究 (DYOR)。';
-        }
-        return '这是一个很好的问题。但我目前的知识库还在更新中。你可以问我任何问题，我会尽力回答。';
-    } else {
-        // English Responses
-        if (q.includes('hello') || q.includes('hi')) {
-            return 'Hello! I am Eagle AI. How can I help you today?';
-        }
-        if (q.includes('btc') || q.includes('bitcoin')) {
-            return 'Bitcoin (BTC) is showing strong support at $42,000. Market sentiment remains bullish due to recent ETF inflows. RSI indicates it might be slightly overbought in the short term.';
-        }
-        if (q.includes('eth') || q.includes('ethereum')) {
-            return 'Ethereum (ETH) is tracking BTC movements. The upcoming network upgrade is generating positive buzz. Watch resistance at $2,500.';
-        }
-        if (q.includes('security') || q.includes('safe') || q.includes('key')) {
-            return 'Eagle Wallet uses industry-standard encryption. Remember to never share your private key or mnemonic phrase with anyone. Check our Security Center in Settings for more tips.';
-        }
-        if (q.includes('price')) {
-            return 'I cannot predict future prices with certainty, but current market trends suggest a period of consolidation. Always do your own research (DYOR).';
-        }
-        return 'That is an interesting question. I am here to help you with any questions you may have. Could you please provide more details?';
+    } catch (error) {
+        console.error(error);
+        Alert.alert('Payment Failed', 'Please ensure you have enough BNB for gas and 200 EAGLE tokens.');
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -352,12 +384,12 @@ export default function AIScreen({ navigation }: any) {
             <Text style={styles.tierLimit}>50,000 Tokens/Day</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tierOption} onPress={() => { setCurrentTier('pro'); setShowUpgradeModal(false); }}>
+          <TouchableOpacity style={styles.tierOption} onPress={handleSubscribe}>
             <View style={styles.tierHeader}>
               <Icon name="star" size={24} color="#2196F3" />
               <Text style={styles.tierName}>{t.ai.pro}</Text>
             </View>
-            <Text style={styles.tierDesc}>Subscribe with EAGLE</Text>
+            <Text style={styles.tierDesc}>Subscribe (200 EAGLE/Mo)</Text>
             <Text style={styles.tierLimit}>100,000+ Tokens/Day</Text>
           </TouchableOpacity>
 

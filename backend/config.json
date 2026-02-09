@@ -1,0 +1,36 @@
+{
+  "system_settings": {
+    "openai_model": "gpt-4o-mini",
+    "max_response_tokens": 1000
+  },
+  "limits": {
+    "free_daily_tokens": 5000,
+    "holder_daily_tokens": 10000,
+    "vip_daily_tokens": 50000,
+    "pro_daily_tokens": 100000
+  },
+  "nft_config": {
+    "contract_address": "0x3c117d186c5055071eff91d87f2600eaf88d591d",
+    "required_balance": 1
+  },
+  "token_config": {
+    "contract_address": "0x480F12D2ECEFe1660e72149c57327f5E0646E5c4",
+    "required_balance": 50
+  },
+  "subscription": {
+    "enabled": true,
+    "payment_address": "0xf4f02733696cc3bb2cffe8bb8e9f32058654c622",
+    "duration_days": 30,
+    "accepted_tokens": [
+      {
+        "symbol": "EAGLE",
+        "contract_address": "0x480F12D2ECEFe1660e72149c57327f5E0646E5c4",
+        "price": 200,
+        "decimals": 18
+      }
+    ]
+  },
+  "prompts": {
+    "system_message": "You are Eagle AI, a helpful crypto assistant. Keep answers concise."
+  }
+}
