@@ -37,6 +37,12 @@ export const zh: TranslationStrings = {
     contentCopied: '已复制到剪贴板',
     send: '转账',
     receive: '接收',
+    biometrics: '生物识别',
+    verifyBiometrics: '验证生物识别',
+    faceId: 'Face ID',
+    touchId: 'Touch ID',
+    verifyDescription: '请验证您的身份以继续',
+    quickSubmit: '快速提交',
   },
 
   home: {

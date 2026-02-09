@@ -43,6 +43,12 @@ export interface TranslationStrings {
     contentCopied: string;
     send: string;
     receive: string;
+    biometrics: string;
+    verifyBiometrics: string;
+    faceId: string;
+    touchId: string;
+    verifyDescription: string;
+    quickSubmit: string;
   };
 
   // ===== HOME SCREEN =====

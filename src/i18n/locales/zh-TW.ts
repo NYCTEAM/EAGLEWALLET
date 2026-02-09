@@ -37,6 +37,12 @@ export const zhTW: TranslationStrings = {
     contentCopied: '已複製到剪貼簿',
     send: '轉帳',
     receive: '接收',
+    biometrics: '生物識別',
+    verifyBiometrics: '驗證生物識別',
+    faceId: 'Face ID',
+    touchId: 'Touch ID',
+    verifyDescription: '請驗證您的身份以繼續',
+    quickSubmit: '快速提交',
   },
 
   home: {

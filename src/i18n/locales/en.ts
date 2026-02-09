@@ -37,6 +37,12 @@ export const en: TranslationStrings = {
     contentCopied: 'Copied to clipboard',
     send: 'Send',
     receive: 'Receive',
+    biometrics: 'Biometrics',
+    verifyBiometrics: 'Verify Biometrics',
+    faceId: 'Face ID',
+    touchId: 'Touch ID',
+    verifyDescription: 'Please verify your identity to continue',
+    quickSubmit: 'Quick Submit',
   },
 
   home: {
