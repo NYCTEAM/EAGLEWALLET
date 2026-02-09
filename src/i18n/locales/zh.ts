@@ -35,6 +35,8 @@ export const zh: TranslationStrings = {
     skip: '跳过',
     continue: '继续',
     contentCopied: '已复制到剪贴板',
+    send: '转账',
+    receive: '接收',
   },
 
   home: {
@@ -161,10 +163,17 @@ export const zh: TranslationStrings = {
     max: '最大',
     rate: '汇率',
     priceImpact: '价格影响',
-    minimumReceived: '最少接收',
-    slippageTolerance: '滑点容差',
+    minimumReceived: '最小接收数量',
+    estimatedReceived: '预计接收数量',
+    slippageTolerance: '滑点容忍度',
     transactionFee: '交易费用',
     route: '路由',
+    pool: '底池',
+    swapRoute: '兑换路径',
+    priceReference: '参考价格',
+    price: '价格',
+    fee: '手续费',
+    wallet: '钱包',
     swapping: '兑换中...',
     swapSuccess: '兑换成功',
     swapFailed: '兑换失败',
@@ -177,6 +186,8 @@ export const zh: TranslationStrings = {
     slippage: '滑点',
     deadline: '截止时间',
     minutes: '分钟',
+    approve: '授权',
+    approving: '授权中...',
   },
 
   nft: {
@@ -190,7 +201,7 @@ export const zh: TranslationStrings = {
     description: '描述',
     properties: '属性',
     details: '详情',
-    send: '发送',
+    send: '转出',
     viewOnExplorer: '在浏览器查看',
     refresh: '刷新',
     noNFTs: '暂无NFT',
@@ -200,6 +211,9 @@ export const zh: TranslationStrings = {
     sendTo: '发送至',
     confirmSend: '确认发送',
     nftSent: 'NFT发送成功',
+    viewOnMarketplace: '在市场查看',
+    standard: '标准',
+    unknownCollection: '未知集合',
   },
 
   transaction: {
@@ -269,6 +283,10 @@ export const zh: TranslationStrings = {
     contract: '合约',
     holders: '持有者',
     totalSupply: '总供应量',
+    activity: '活动',
+    info: '信息',
+    viewOnExplorer: '在浏览器查看',
+    importToken: '导入代币',
   },
 
   dapp: {

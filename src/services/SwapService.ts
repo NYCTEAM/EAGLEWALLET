@@ -724,14 +724,40 @@ class SwapService {
   }
 
   /**
+   * Get spender address (Aggregator)
+   */
+  getSpenderAddress(chainId: number): string {
+    return AGGREGATOR_CONTRACTS[chainId] || '';
+  }
+
+  /**
+   * Check token allowance
+   */
+  async checkAllowance(
+    tokenAddress: string,
+    ownerAddress: string,
+    spenderAddress: string
+  ): Promise<bigint> {
+    try {
+      const provider = await WalletService.getProvider();
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+      const allowance = await tokenContract.allowance(ownerAddress, spenderAddress);
+      return BigInt(allowance.toString());
+    } catch (error) {
+      console.error('Error checking allowance:', error);
+      return 0n;
+    }
+  }
+
+  /**
    * Approve token for swap
    */
-  private async approveToken(
+  async approveToken(
     tokenAddress: string,
     spenderAddress: string,
     amount: string,
     wallet: ethers.Wallet
-  ): Promise<void> {
+  ): Promise<string> {
     try {
       const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
       
@@ -743,13 +769,14 @@ class SwapService {
 
       // If allowance is sufficient, no need to approve
       if (BigInt(allowance.toString()) >= BigInt(amount)) {
-        return;
+        return '';
       }
 
       // Approve max amount for better UX
       const maxAmount = ethers.MaxUint256;
       const tx = await tokenContract.approve(spenderAddress, maxAmount);
       await tx.wait();
+      return tx.hash;
     } catch (error) {
       console.error('Error approving token:', error);
       throw error;

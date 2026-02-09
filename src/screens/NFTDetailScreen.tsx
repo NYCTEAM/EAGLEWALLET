@@ -24,7 +24,7 @@ const { width } = Dimensions.get('window');
 
 export default function NFTDetailScreen({ route, navigation }: any) {
   const { nft } = route.params;
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const network = WalletService.getCurrentNetwork();
 
   const handleCopy = (text: string) => {
@@ -89,7 +89,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
         <View style={styles.infoList}>
             {/* View on Marketplace */}
             <TouchableOpacity style={styles.infoRow} onPress={openMarketplace}>
-                <Text style={styles.infoLabel}>View on Marketplace</Text>
+                <Text style={styles.infoLabel}>{t.nft.viewOnMarketplace}</Text>
                 <Text style={styles.arrowIcon}>↗</Text>
             </TouchableOpacity>
 
@@ -97,7 +97,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
 
             {/* Contract Address */}
             <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Contract Address</Text>
+                <Text style={styles.infoLabel}>{t.nft.contract}</Text>
                 <TouchableOpacity 
                     style={styles.copyRow}
                     onPress={() => handleCopy(nft.contractAddress)}
@@ -111,7 +111,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
 
             {/* Token ID */}
             <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Token ID</Text>
+                <Text style={styles.infoLabel}>{t.nft.tokenId}</Text>
                 <Text style={styles.infoValue}>#{nft.tokenId.length > 10 ? nft.tokenId.substring(0, 10) + '...' : nft.tokenId}</Text>
             </View>
 
@@ -119,17 +119,17 @@ export default function NFTDetailScreen({ route, navigation }: any) {
 
             {/* Token Standard */}
             <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Token Standard</Text>
+                <Text style={styles.infoLabel}>{t.nft.standard}</Text>
                 <View style={styles.standardBadge}>
                     <Text style={styles.standardText}>{nft.type || 'ERC721'}</Text>
                 </View>
             </View>
-
+            
              <View style={styles.divider} />
 
              {/* Network */}
             <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Network</Text>
+                <Text style={styles.infoLabel}>{t.receive.network}</Text>
                 <Text style={styles.infoValue}>{network.name}</Text>
             </View>
         </View>
@@ -137,7 +137,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
         {/* Description (if exists) */}
         {nft.description ? (
             <View style={styles.descriptionSection}>
-                <Text style={styles.sectionTitle}>Description</Text>
+                <Text style={styles.sectionTitle}>{t.nft.description}</Text>
                 <Text style={styles.descriptionText}>{nft.description}</Text>
             </View>
         ) : null}
@@ -150,7 +150,9 @@ export default function NFTDetailScreen({ route, navigation }: any) {
             style={styles.transferButton}
             onPress={() => navigation.navigate('Send', { nft })}
         >
-            <Text style={styles.transferButtonText}>{t.common.send}</Text>
+            <Text style={styles.transferButtonText}>
+                {t?.nft?.send || (language?.startsWith('zh') ? '转出' : 'Send')}
+            </Text>
         </TouchableOpacity>
       </View>
     </View>

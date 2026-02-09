@@ -41,6 +41,8 @@ export interface TranslationStrings {
     skip: string;
     continue: string;
     contentCopied: string;
+    send: string;
+    receive: string;
   };
 
   // ===== HOME SCREEN =====
@@ -173,9 +175,16 @@ export interface TranslationStrings {
     rate: string;
     priceImpact: string;
     minimumReceived: string;
+    estimatedReceived: string;
     slippageTolerance: string;
     transactionFee: string;
     route: string;
+    pool: string;
+    swapRoute: string;
+    priceReference: string;
+    price: string;
+    fee: string;
+    wallet: string;
     swapping: string;
     swapSuccess: string;
     swapFailed: string;
@@ -188,6 +197,8 @@ export interface TranslationStrings {
     slippage: string;
     deadline: string;
     minutes: string;
+    approve: string;
+    approving: string;
   };
 
   // ===== NFT =====
@@ -212,6 +223,9 @@ export interface TranslationStrings {
     sendTo: string;
     confirmSend: string;
     nftSent: string;
+    viewOnMarketplace: string;
+    standard: string;
+    unknownCollection: string;
   };
 
   // ===== TRANSACTION =====
@@ -283,6 +297,10 @@ export interface TranslationStrings {
     contract: string;
     holders: string;
     totalSupply: string;
+    activity: string;
+    info: string;
+    viewOnExplorer: string;
+    importToken: string;
   };
 
   // ===== DAPP =====

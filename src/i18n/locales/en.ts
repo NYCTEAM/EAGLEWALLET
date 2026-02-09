@@ -35,6 +35,8 @@ export const en: TranslationStrings = {
     skip: 'Skip',
     continue: 'Continue',
     contentCopied: 'Copied to clipboard',
+    send: 'Send',
+    receive: 'Receive',
   },
 
   home: {
@@ -162,9 +164,16 @@ export const en: TranslationStrings = {
     rate: 'Rate',
     priceImpact: 'Price Impact',
     minimumReceived: 'Minimum Received',
+    estimatedReceived: 'Estimated Received',
     slippageTolerance: 'Slippage Tolerance',
     transactionFee: 'Transaction Fee',
     route: 'Route',
+    pool: 'Pool',
+    swapRoute: 'Swap Route',
+    priceReference: 'Reference Price',
+    price: 'Price',
+    fee: 'Fee',
+    wallet: 'Wallet',
     swapping: 'Swapping...',
     swapSuccess: 'Swap Successful',
     swapFailed: 'Swap Failed',
@@ -177,6 +186,8 @@ export const en: TranslationStrings = {
     slippage: 'Slippage',
     deadline: 'Deadline',
     minutes: 'minutes',
+    approve: 'Approve',
+    approving: 'Approving...',
   },
 
   nft: {
@@ -200,6 +211,9 @@ export const en: TranslationStrings = {
     sendTo: 'Send To',
     confirmSend: 'Confirm Send',
     nftSent: 'NFT sent successfully',
+    viewOnMarketplace: 'View on Marketplace',
+    standard: 'Standard',
+    unknownCollection: 'Unknown Collection',
   },
 
   transaction: {
@@ -269,6 +283,10 @@ export const en: TranslationStrings = {
     contract: 'Contract',
     holders: 'Holders',
     totalSupply: 'Total Supply',
+    activity: 'Activity',
+    info: 'Info',
+    viewOnExplorer: 'View on Explorer',
+    importToken: 'Import Token',
   },
 
   dapp: {

@@ -161,16 +161,24 @@ export default function TokenDetailScreen({ route, navigation }: any) {
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Send', { token })}>
-                <View style={styles.actionIcon}><Text style={styles.actionIconText}>↑</Text></View>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Send', { token })}>
+                <View style={styles.actionIconCircle}>
+                    <Text style={styles.actionIcon}>↑</Text>
+                </View>
                 <Text style={styles.actionLabel}>{t.common.send}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Receive', { token })}>
-                <View style={styles.actionIcon}><Text style={styles.actionIconText}>↓</Text></View>
+            
+            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Receive', { token })}>
+                <View style={styles.actionIconCircle}>
+                    <Text style={styles.actionIcon}>↓</Text>
+                </View>
                 <Text style={styles.actionLabel}>{t.common.receive}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Swap', { fromToken: token })}>
-                <View style={styles.actionIcon}><Text style={styles.actionIconText}>⇄</Text></View>
+            
+            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Swap', { fromToken: token })}>
+                <View style={styles.actionIconCircle}>
+                    <Text style={styles.actionIcon}>⇄</Text>
+                </View>
                 <Text style={styles.actionLabel}>{t.home.swap}</Text>
             </TouchableOpacity>
         </View>
@@ -312,25 +320,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     marginVertical: 24,
   },
-  actionButton: {
+  actionBtn: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  actionIcon: {
+  actionIconCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
-  actionIconText: {
-    color: '#000000',
+  actionIcon: {
     fontSize: 24,
+    color: '#000',
+    fontWeight: 'bold',
   },
   actionLabel: {
     color: '#999',
     fontSize: 14,
+    fontWeight: '500',
   },
   tabsContainer: {
     flexDirection: 'row',

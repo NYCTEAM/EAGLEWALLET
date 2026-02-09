@@ -3,7 +3,7 @@
  * Cross-chain swap interface
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
 import WalletService from '../services/WalletService';
 import SwapService from '../services/SwapService';
 import TokenLogoService from '../services/TokenLogoService';
+import PriceService from '../services/PriceService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { ethers } from 'ethers';
 
@@ -30,16 +31,124 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const [quote, setQuote] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [swapping, setSwapping] = useState(false);
-  const [slippage, setSlippage] = useState(0.5); // Default 0.5% (displayed as 1% in screenshot?) let's keep 0.5 or 1
+  const [slippage, setSlippage] = useState(0.5); // Default 0.5%
   const [showSlippageModal, setShowSlippageModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [gasFee, setGasFee] = useState<{native: string, usd: string} | null>(null);
+  const [gasPrice, setGasPrice] = useState<string | null>(null);
+  const [needsApproval, setNeedsApproval] = useState(false);
+  const [approving, setApproving] = useState(false);
 
-  // Balances
+  // Balances & Prices
   const [fromBalance, setFromBalance] = useState('0.0');
   const [toBalance, setToBalance] = useState('0.0');
+  const [prices, setPrices] = useState<{from: number, to: number}>({ from: 0, to: 0 });
+
+  // Debounce and Interval refs
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const refreshInterval = useRef<NodeJS.Timeout | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
     loadDefaultTokens();
+    return () => {
+      isMounted.current = false;
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      if (refreshInterval.current) clearInterval(refreshInterval.current);
+    };
   }, []);
+
+  // Update prices when tokens change
+  useEffect(() => {
+    fetchPrices();
+  }, [fromToken, toToken]);
+
+  // Auto-refresh quote every 5 seconds if valid
+  useEffect(() => {
+    if (refreshInterval.current) clearInterval(refreshInterval.current);
+
+    if (quote && amount && parseFloat(amount) > 0) {
+      refreshInterval.current = setInterval(() => {
+        handleGetQuote(true); // silent refresh
+      }, 5000);
+    }
+
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [amount, fromToken, toToken]);
+
+  // Check allowance when token or amount changes
+  useEffect(() => {
+      checkAllowance();
+  }, [fromToken, amount]);
+
+  const checkAllowance = async () => {
+      if (!fromToken || !amount || parseFloat(amount) <= 0 || fromToken.address === ethers.ZeroAddress) {
+          if (isMounted.current) setNeedsApproval(false);
+          return;
+      }
+      
+      try {
+          const network = WalletService.getCurrentNetwork();
+          const walletAddress = await WalletService.getAddress();
+          const spender = SwapService.getSpenderAddress(network.chainId);
+          
+          if (!walletAddress || !spender) return;
+
+          const allowance = await SwapService.checkAllowance(fromToken.address, walletAddress, spender);
+          const amountInWei = SwapService.parseAmount(amount, fromToken.decimals);
+          
+          if (isMounted.current) {
+              setNeedsApproval(allowance < BigInt(amountInWei));
+          }
+      } catch (e) {
+          console.error("Check allowance failed", e);
+      }
+  };
+
+  const handleApprove = async () => {
+      if (!fromToken || !amount) return;
+      
+      try {
+          setApproving(true);
+          const wallet = await WalletService.getWallet();
+          const network = WalletService.getCurrentNetwork();
+          const spender = SwapService.getSpenderAddress(network.chainId);
+          const amountInWei = SwapService.parseAmount(amount, fromToken.decimals);
+          
+          await SwapService.approveToken(fromToken.address, spender, amountInWei, wallet);
+          
+          Alert.alert(t.common.success, "Token Approved");
+          setNeedsApproval(false);
+      } catch (e) {
+          console.error("Approve failed", e);
+          Alert.alert(t.common.error, "Approval failed");
+      } finally {
+          setApproving(false);
+      }
+  };
+
+  const fetchPrices = async () => {
+    if (!fromToken || !toToken) return;
+
+    const network = WalletService.getCurrentNetwork();
+    const fromAddr = fromToken.address === ethers.ZeroAddress ? 'native' : fromToken.address;
+    const toAddr = toToken.address === ethers.ZeroAddress ? 'native' : toToken.address;
+
+    try {
+      const fetchedPrices = await PriceService.getMultipleTokenPrices([fromAddr, toAddr], network.chainId);
+
+      if (isMounted.current) {
+        setPrices({
+          from: fetchedPrices[fromAddr.toLowerCase()] || fetchedPrices['native'] || 0,
+          to: fetchedPrices[toAddr.toLowerCase()] || fetchedPrices['native'] || 0
+        });
+      }
+    } catch (e) {
+      console.error("Failed to fetch prices", e);
+    }
+  };
 
   const loadDefaultTokens = async () => {
     const network = WalletService.getCurrentNetwork();
@@ -56,7 +165,6 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     setFromToken(nativeToken);
 
     // Default To: USDT
-    setFromToken(nativeToken);
     setToToken({
       symbol: 'USDT',
       name: 'Tether USD',
@@ -67,8 +175,12 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
     // Load Balance for Native
     if (walletAddress) {
-      const bal = await WalletService.getBalance();
-      setFromBalance(bal);
+      try {
+        const bal = await WalletService.getBalance();
+        if (isMounted.current) setFromBalance(bal);
+      } catch (e) {
+        console.error('Failed to load balance', e);
+      }
     }
   };
 
@@ -81,18 +193,20 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     setFromBalance(toBalance);
     setToBalance(tempBal);
 
+    // Swap prices
+    setPrices(prev => ({ from: prev.to, to: prev.from }));
+
     setQuote(null);
   };
 
-  const handleGetQuote = async () => {
+  const handleGetQuote = async (isSilent = false) => {
     if (!amount || parseFloat(amount) <= 0 || !fromToken || !toToken) {
-      setQuote(null);
+      if (isMounted.current) setQuote(null);
       return;
     }
 
     try {
-      setLoading(true);
-      setQuote(null);
+      if (!isSilent && isMounted.current) setLoading(true);
 
       const result = await SwapService.getBestQuote(
         fromToken.address,
@@ -102,22 +216,60 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         toToken.decimals
       );
 
-      if (result) {
-        setQuote(result);
+      if (isMounted.current) {
+        if (result) {
+          setQuote(result);
+        } else {
+          // Only clear quote if explicit failure on non-silent update, 
+          // or maybe keep old quote to avoid flickering? 
+          // Better to keep old quote if refresh fails.
+          if (!isSilent) setQuote(null);
+        }
       }
     } catch (error) {
       console.error(error);
+      // Don't clear quote on silent refresh failure
+      if (!isSilent && isMounted.current) setQuote(null);
     } finally {
-      setLoading(false);
+      if (!isSilent && isMounted.current) setLoading(false);
     }
   };
 
   const handleSwap = async () => {
     if (!quote) return;
+    
+    // Estimate Gas Fee before confirmation
+    try {
+        const provider = await WalletService.getProvider();
+        const feeData = await provider.getFeeData();
+        const gasLimit = BigInt(quote.gasEstimate || 250000);
+        const gasPrice = feeData.gasPrice || BigInt(3000000000); // Default 3 gwei if null
+        const estimatedFee = gasLimit * gasPrice;
+        const feeNative = ethers.formatEther(estimatedFee);
+        
+        // Get native price for USD calculation
+        const nativePrice = prices.from || 0; // Approximate if from is native, else need separate fetch. 
+        // Better to fetch native price directly or use existing if 'from' is native.
+        // If fromToken is not native, prices.from is token price.
+        // Let's rely on PriceService cache or just fetch native price quickly.
+        const network = WalletService.getCurrentNetwork();
+        const nativePriceVal = await PriceService.getTokenPriceBySymbol(network.symbol, network.chainId);
+        const feeUsd = (parseFloat(feeNative) * nativePriceVal).toFixed(2);
 
+        setGasFee({ native: parseFloat(feeNative).toFixed(5), usd: feeUsd });
+        setShowConfirmModal(true);
+    } catch (e) {
+        console.error("Gas estimation failed", e);
+        setGasFee({ native: "0.0005", usd: "0.15" }); // Fallback
+        setShowConfirmModal(true);
+    }
+  };
+
+  const executeSwapTransaction = async () => {
     try {
       setSwapping(true);
-
+      setShowConfirmModal(false);
+      
       const wallet = await WalletService.getWallet();
       const network = WalletService.getCurrentNetwork();
 
@@ -141,7 +293,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       };
 
       const txHash = await SwapService.executeSwap(swapQuote, wallet, network.chainId);
-
+      
       Alert.alert(t.common.success, t.swap.swapSuccess, [
         {
           text: t.common.done,
@@ -184,10 +336,16 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   const getButtonLabel = () => {
     if (!amount) return t.swap.enterAmount || 'Enter Amount';
-    if (hasInsufficientBalance()) return t.swap.insufficientBalance || 'Insufficient Balance'; // 余额不足
-    if (loading) return 'Getting Quote...';
-    if (!quote) return t.swap.reviewSwap; // Or 'Review Swap'
-    return t.swap.confirmSwap || 'Swap'; // 兑换
+    if (hasInsufficientBalance()) return t.swap.insufficientBalance || 'Insufficient Balance'; 
+    if (loading && !quote) return 'Getting Quote...';
+    if (needsApproval) return approving ? (t.swap.approving || 'Approving...') : `${t.swap.approve || 'Approve'} ${fromToken?.symbol}`;
+    if (!quote) return t.swap.reviewSwap; 
+    return t.swap.confirmSwap || 'Swap'; 
+  };
+
+  const getDexName = (quoteType: string) => {
+    if (quoteType === 'V3') return 'PancakeSwap V3';
+    return 'PancakeSwap V2';
   };
 
   return (
@@ -201,7 +359,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         )}
         <Text style={styles.title}>{t.swap.swap}</Text>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => handleGetQuote()}>
             <Text style={styles.headerIcon}>↻</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
@@ -219,11 +377,11 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>{t.swap.youPay || 'Pay'}</Text>
             <Text style={styles.balanceText}>
-              Wallet: {parseFloat(fromBalance).toFixed(4)}
+              {t.swap.wallet || 'Wallet'}: {parseFloat(fromBalance).toFixed(4)}
             </Text>
           </View>
           <View style={styles.inputRow}>
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.tokenSelector}
               onPress={() => navigation.navigate('SelectToken', { onSelect: setFromToken })}
             >
@@ -237,10 +395,9 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
               value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
-              onBlur={handleGetQuote}
             />
           </View>
-          <Text style={styles.usdValue}>≈ ${amount ? (parseFloat(amount) * 644.90).toFixed(2) : '0.00'}</Text>
+          <Text style={styles.usdValue}>≈ ${amount ? (parseFloat(amount) * prices.from).toFixed(2) : '0.00'}</Text>
         </View>
 
         {/* Switch Button */}
@@ -255,11 +412,11 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           <View style={styles.cardHeader}>
             <Text style={styles.cardLabel}>{t.swap.youReceive || 'Receive'}</Text>
             <Text style={styles.balanceText}>
-              Wallet: {parseFloat(toBalance).toFixed(4)}
+              {t.swap.wallet || 'Wallet'}: {parseFloat(toBalance).toFixed(4)}
             </Text>
           </View>
           <View style={styles.inputRow}>
-            <TouchableOpacity
+            <TouchableOpacity 
               style={styles.tokenSelector}
               onPress={() => navigation.navigate('SelectToken', { onSelect: setToToken })}
             >
@@ -271,20 +428,22 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
               {quote ? parseFloat(quote.amountOut).toFixed(6) : '0'}
             </Text>
           </View>
-          <Text style={styles.usdValue}>≈ ${quote ? (parseFloat(quote.amountOut) * 1.00).toFixed(2) : '0.00'}</Text>
+          <Text style={styles.usdValue}>≈ ${quote ? (parseFloat(quote.amountOut) * prices.to).toFixed(2) : '0.00'}</Text>
         </View>
 
         {/* Swap Button */}
         <TouchableOpacity
           style={[
-            styles.swapButton,
+            styles.swapButton, 
             hasInsufficientBalance() ? styles.swapButtonError : null,
-            loading && styles.swapButtonDisabled
+            ((loading && !quote) || approving) && styles.swapButtonDisabled
           ]}
-          onPress={quote ? handleSwap : handleGetQuote}
-          disabled={loading || (!quote && !amount) || (hasInsufficientBalance())}
+          onPress={needsApproval ? handleApprove : (quote ? handleSwap : () => handleGetQuote())}
+          disabled={(loading && !quote) || (!quote && !amount) || (hasInsufficientBalance()) || approving}
         >
-          {loading ? (
+          {approving ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (loading && !quote) ? (
             <ActivityIndicator color="#FFF" />
           ) : (
             <Text style={styles.swapButtonText}>{getButtonLabel()}</Text>
@@ -295,45 +454,148 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         {quote && (
           <View style={styles.detailsContainer}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>预计接收数量</Text>
+              <Text style={styles.detailLabel}>{t.swap.estimatedReceived}</Text>
               <View style={styles.detailValueContainer}>
-                <Text style={styles.detailValueGreen}>{parseFloat(quote.amountOut).toFixed(6)} {toToken?.symbol}</Text>
+                <Text style={styles.detailValueGreenBg}>{parseFloat(quote.amountOut).toFixed(6)} {toToken?.symbol}</Text>
               </View>
             </View>
-
+            
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>最小接收数量</Text>
+              <Text style={styles.detailLabel}>{t.swap.minimumReceived}</Text>
               <Text style={styles.detailValue}>
                 {(parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6)} {toToken?.symbol}
               </Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>滑点容忍度</Text>
+              <Text style={styles.detailLabel}>{t.swap.slippageTolerance}</Text>
               <Text style={styles.detailValue}>{slippage}% ⚙️</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>参考价格</Text>
+              <Text style={styles.detailLabel}>{t.swap.priceReference}</Text>
               <Text style={styles.detailValueGreen}>
-                ${(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)}
+                1 {fromToken?.symbol} ≈ {(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)} {toToken?.symbol} ↻
               </Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>手续费</Text>
-              <Text style={styles.detailValue}>{quote.fees ? (quote.fees / 10000).toFixed(2) : '0.25'}%</Text>
+              <Text style={styles.detailLabel}>{toToken?.symbol} {t.swap.price} ⓘ</Text>
+              <Text style={styles.detailValueGreen}>${prices.to > 0 ? prices.to.toFixed(2) : '-'}</Text>
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>兑换路径</Text>
+              <Text style={styles.detailLabel}>{t.swap.fee} ⓘ</Text>
+              <Text style={styles.detailValue}>{quote.fees ? (quote.fees / 10000).toFixed(2) : '0.25'}%</Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t.swap.route}</Text>
+              <Text style={styles.detailValueBlue}>{getDexName(quote.quoteType)}</Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t.swap.pool}</Text>
+              <Text style={styles.detailValue}>{quote.path.length > 2 ? 'Multi-Hop' : 'DIRECT'}</Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{t.swap.swapRoute}</Text>
               <View style={styles.routeContainer}>
-                <Text style={styles.routeText}>Eagle Swap</Text>
+                {/* Would be nice to have logo here */}
+                <Text style={styles.routeTextBlue}>Eagle Swap</Text>
               </View>
             </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Confirmation Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <View style={styles.confirmHeader}>
+                <Text style={styles.confirmTitle}>{t.swap.reviewSwap || 'Review Swap'}</Text>
+                <TouchableOpacity onPress={() => setShowConfirmModal(false)}>
+                    <Text style={styles.closeButton}>✕</Text>
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.confirmSection}>
+                <View style={styles.confirmTokenRow}>
+                    <View style={styles.tokenInfo}>
+                        {renderTokenIcon(fromToken)}
+                        <View style={{marginLeft: 8}}>
+                            <Text style={styles.confirmAmount}>{amount}</Text>
+                            <Text style={styles.confirmSymbol}>{fromToken?.symbol}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <View style={styles.confirmArrowContainer}>
+                    <Text style={styles.confirmArrow}>↓</Text>
+                </View>
+
+                <View style={styles.confirmTokenRow}>
+                    <View style={styles.tokenInfo}>
+                        {renderTokenIcon(toToken)}
+                        <View style={{marginLeft: 8}}>
+                            <Text style={styles.confirmAmount}>{quote ? parseFloat(quote.amountOut).toFixed(6) : '0'}</Text>
+                            <Text style={styles.confirmSymbol}>{toToken?.symbol}</Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+
+            <View style={styles.confirmDetails}>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Provider</Text>
+                    <Text style={styles.detailValue}>Eagle Swap</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t.swap.rate}</Text>
+                    <Text style={styles.detailValue}>
+                        1 {fromToken?.symbol} ≈ {quote ? (parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6) : '0'} {toToken?.symbol}
+                    </Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t.swap.priceImpact}</Text>
+                    <Text style={styles.detailValueGreen}>{quote?.priceImpact}%</Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{t.swap.minimumReceived}</Text>
+                    <Text style={styles.detailValue}>
+                        {quote ? (parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6) : '0'} {toToken?.symbol}
+                    </Text>
+                </View>
+                <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Network Cost</Text>
+                    <View style={{alignItems: 'flex-end'}}>
+                        <Text style={styles.detailValue}>~${gasFee?.usd || '0.00'}</Text>
+                        <Text style={styles.detailSubValue}>({gasFee?.native || '0'} {WalletService.getCurrentNetwork().symbol})</Text>
+                    </View>
+                </View>
+            </View>
+
+            <TouchableOpacity 
+                style={[styles.confirmButton, swapping && styles.swapButtonDisabled]}
+                onPress={executeSwapTransaction}
+                disabled={swapping}
+            >
+                {swapping ? (
+                    <ActivityIndicator color="#FFF" />
+                ) : (
+                    <Text style={styles.confirmButtonText}>{t.swap.confirmSwap || 'Confirm Swap'}</Text>
+                )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Slippage Modal */}
       <Modal
@@ -574,6 +836,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#26A17B',
   },
+  detailValueBlue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
   detailValueContainer: {
     backgroundColor: '#26A17B',
     paddingHorizontal: 8,
@@ -591,6 +858,11 @@ const styles = StyleSheet.create({
   },
   routeText: {
     color: '#6C8FF7',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  routeTextBlue: {
+    color: '#3B82F6', // Blue color for Eagle Swap link
     fontWeight: '600',
     fontSize: 14,
   },
@@ -648,5 +920,80 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  confirmModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    maxHeight: '90%',
+  },
+  confirmHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  confirmTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  closeButton: {
+    fontSize: 24,
+    color: '#999',
+    fontWeight: 'bold',
+  },
+  confirmSection: {
+    marginBottom: 24,
+  },
+  confirmTokenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  tokenInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  confirmAmount: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  confirmSymbol: {
+    fontSize: 14,
+    color: '#666',
+  },
+  confirmArrowContainer: {
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  confirmArrow: {
+    fontSize: 24,
+    color: '#F3BA2F',
+  },
+  confirmDetails: {
+    backgroundColor: '#F7F8FA',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  detailSubValue: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+  },
+  confirmButton: {
+    backgroundColor: '#F3BA2F',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
