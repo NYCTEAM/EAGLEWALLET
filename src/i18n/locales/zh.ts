@@ -440,6 +440,17 @@ export const zh: TranslationStrings = {
     marketAnalysis: '市场分析',
     securityCheck: '安全检查',
     pricePrediction: '价格预测',
+    dailyLimit: '每日额度',
+    upgrade: '升级',
+    currentTier: '当前等级',
+    free: '免费版',
+    holder: '持币者',
+    vip: 'NFT VIP',
+    pro: 'Pro 订阅',
+    tokensRemaining: '剩余 Tokens',
+    upgradePrompt: '升级以增加额度',
+    buyEagle: '购买 EAGLE',
+    buyNft: '购买 NFT',
   },
 
   errors: {

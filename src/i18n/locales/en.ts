@@ -440,6 +440,17 @@ export const en: TranslationStrings = {
     marketAnalysis: 'Market Analysis',
     securityCheck: 'Security Check',
     pricePrediction: 'Price Prediction',
+    dailyLimit: 'Daily Limit',
+    upgrade: 'Upgrade',
+    currentTier: 'Current Tier',
+    free: 'Free',
+    holder: 'Holder',
+    vip: 'NFT VIP',
+    pro: 'Pro Subscription',
+    tokensRemaining: 'tokens remaining',
+    upgradePrompt: 'Upgrade to increase limit',
+    buyEagle: 'Buy EAGLE',
+    buyNft: 'Buy NFT',
   },
 
   errors: {

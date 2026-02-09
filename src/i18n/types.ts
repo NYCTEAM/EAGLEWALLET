@@ -477,6 +477,17 @@ export interface TranslationStrings {
     marketAnalysis: string;
     securityCheck: string;
     pricePrediction: string;
+    dailyLimit: string;
+    upgrade: string;
+    currentTier: string;
+    free: string;
+    holder: string;
+    vip: string;
+    pro: string;
+    tokensRemaining: string;
+    upgradePrompt: string;
+    buyEagle: string;
+    buyNft: string;
   };
 
   // ===== ERRORS =====
