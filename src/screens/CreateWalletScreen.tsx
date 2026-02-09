@@ -214,12 +214,18 @@ export default function CreateWalletScreen({ navigation }: any) {
         <Text style={styles.warningText}>{t.wallet.backupWarning}</Text>
       </View>
 
-      <TouchableOpacity style={styles.mnemonicBox} onPress={copyMnemonic}>
-        <Text style={styles.mnemonicText}>{mnemonic}</Text>
-        <View style={styles.copyHint}>
-            <Icon name="content-copy" size={16} color="#F3BA2F" />
-            <Text style={styles.copyHintText}>{t.common.copy}</Text>
-        </View>
+      <View style={styles.mnemonicGrid}>
+        {mnemonic.split(' ').map((word, index) => (
+          <View key={index} style={styles.mnemonicWordContainer}>
+            <Text style={styles.mnemonicIndex}>{index + 1}.</Text>
+            <Text style={styles.mnemonicWord}>{word}</Text>
+          </View>
+        ))}
+      </View>
+
+      <TouchableOpacity style={styles.copyButton} onPress={copyMnemonic}>
+        <Icon name="content-copy" size={20} color="#F3BA2F" />
+        <Text style={styles.copyButtonText}>{t.common.copy}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity 
@@ -445,20 +451,47 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 14,
   },
-  mnemonicBox: {
+  mnemonicGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  mnemonicWordContainer: {
+    width: '31%', // 3 columns
     backgroundColor: '#F5F5F5',
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  mnemonicText: {
-    fontSize: 20,
+  mnemonicIndex: {
+    color: '#999',
+    fontSize: 12,
+    marginRight: 4,
+    width: 20,
+  },
+  mnemonicWord: {
     color: '#333',
-    textAlign: 'center',
-    lineHeight: 32,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  copyButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+    padding: 12,
+  },
+  copyButtonText: {
+    color: '#F3BA2F',
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
   },
   copyHint: {
     flexDirection: 'row',

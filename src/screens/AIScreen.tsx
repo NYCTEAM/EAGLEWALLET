@@ -171,19 +171,46 @@ export default function AIScreen({ navigation }: any) {
 
   const getSimulatedResponse = (query: string) => {
     const q = query.toLowerCase();
-    if (q.includes('btc') || q.includes('bitcoin')) {
-      return 'Bitcoin (BTC) is showing strong support at $42,000. Market sentiment remains bullish due to recent ETF inflows. RSI indicates it might be slightly overbought in the short term.';
+    
+    // Simple language detection (check for common Chinese characters)
+    const isChinese = /[\u4e00-\u9fa5]/.test(query);
+
+    if (isChinese) {
+        if (q.includes('你好') || q.includes('hello')) {
+            return '你好！我是 Eagle AI，你的智能加密助手。有什么我可以帮你的吗？你可以问我关于比特币价格、钱包安全或者市场分析的问题。';
+        }
+        if (q.includes('btc') || q.includes('比特币')) {
+            return '比特币 (BTC) 目前表现强劲，支撑位在 $42,000 左右。近期 ETF 的资金流入带来了积极的市场情绪。不过 RSI 指标显示短期内可能略有超买。';
+        }
+        if (q.includes('eth') || q.includes('以太坊')) {
+            return '以太坊 (ETH) 走势紧随比特币。即将到来的网络升级（Dencun）引发了市场的积极关注。请关注 $2,500 附近的阻力位。';
+        }
+        if (q.includes('安全') || q.includes('私钥') || q.includes('助记词')) {
+            return 'Eagle Wallet 采用行业标准的加密技术。请务必记住：永远不要将你的私钥或助记词分享给任何人，包括官方客服。建议你在设置中开启生物识别验证。';
+        }
+        if (q.includes('价格') || q.includes('涨') || q.includes('跌')) {
+            return '作为一个 AI 助手，我无法准确预测未来的具体价格。目前的市场趋势显示出一定的盘整迹象。投资加密货币有风险，请务必做好自己的研究 (DYOR)。';
+        }
+        return '这是一个很好的问题。但我目前的知识库还在更新中。你可以试着问我："比特币现在的行情如何？" 或者 "如何保护我的钱包？"';
+    } else {
+        // English Responses
+        if (q.includes('hello') || q.includes('hi')) {
+            return 'Hello! I am Eagle AI, your smart crypto assistant. How can I help you? You can ask me about BTC prices, wallet security, or market analysis.';
+        }
+        if (q.includes('btc') || q.includes('bitcoin')) {
+            return 'Bitcoin (BTC) is showing strong support at $42,000. Market sentiment remains bullish due to recent ETF inflows. RSI indicates it might be slightly overbought in the short term.';
+        }
+        if (q.includes('eth') || q.includes('ethereum')) {
+            return 'Ethereum (ETH) is tracking BTC movements. The upcoming network upgrade is generating positive buzz. Watch resistance at $2,500.';
+        }
+        if (q.includes('security') || q.includes('safe') || q.includes('key')) {
+            return 'Eagle Wallet uses industry-standard encryption. Remember to never share your private key or mnemonic phrase with anyone. Check our Security Center in Settings for more tips.';
+        }
+        if (q.includes('price')) {
+            return 'I cannot predict future prices with certainty, but current market trends suggest a period of consolidation. Always do your own research (DYOR).';
+        }
+        return 'That is an interesting question. As an AI assistant, I am here to help with crypto insights, market analysis, and wallet security features. Could you please provide more details?';
     }
-    if (q.includes('eth') || q.includes('ethereum')) {
-      return 'Ethereum (ETH) is tracking BTC movements. The upcoming network upgrade is generating positive buzz. Watch resistance at $2,500.';
-    }
-    if (q.includes('security') || q.includes('safe')) {
-      return 'Eagle Wallet uses industry-standard encryption. Remember to never share your private key or mnemonic phrase with anyone. Check our Security Center in Settings for more tips.';
-    }
-    if (q.includes('price')) {
-      return 'I cannot predict future prices with certainty, but current market trends suggest a period of consolidation. Always do your own research (DYOR).';
-    }
-    return 'That is an interesting question. As an AI assistant, I am here to help with crypto insights, market analysis, and wallet security features. Could you please provide more details?';
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
