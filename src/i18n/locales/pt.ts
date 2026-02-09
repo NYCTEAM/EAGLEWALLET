@@ -447,6 +447,19 @@ export const pt: TranslationStrings = {
     below: 'Abaixo',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Pergunte qualquer coisa sobre cripto...',
+    send: 'Enviar',
+    thinking: 'Pensando...',
+    error: 'Desculpe, encontrei um erro.',
+    welcomeMessage: 'Olá! Sou Eagle AI, seu assistente cripto inteligente. Como posso ajudar hoje?',
+    suggestedQuestions: 'Perguntas sugeridas',
+    marketAnalysis: 'Análise de mercado',
+    securityCheck: 'Verificação de segurança',
+    pricePrediction: 'Previsão de preço',
+  },
+
   errors: {
     walletNameRequired: 'Nome necessário',
     passwordRequired: 'Senha necessária',

@@ -465,6 +465,20 @@ export interface TranslationStrings {
     below: string;
   };
 
+  // ===== AI =====
+  ai: {
+    title: string;
+    askPlaceholder: string;
+    send: string;
+    thinking: string;
+    error: string;
+    welcomeMessage: string;
+    suggestedQuestions: string;
+    marketAnalysis: string;
+    securityCheck: string;
+    pricePrediction: string;
+  };
+
   // ===== ERRORS =====
   errors: {
     walletNameRequired: string;

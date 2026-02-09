@@ -447,6 +447,19 @@ export const tr: TranslationStrings = {
     below: 'Altında',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Kripto hakkında her şeyi sor...',
+    send: 'Gönder',
+    thinking: 'Düşünüyor...',
+    error: 'Üzgünüm, bir hata oluştu.',
+    welcomeMessage: 'Merhaba! Ben Eagle AI, akıllı kripto asistanınız. Bugün size nasıl yardımcı olabilirim?',
+    suggestedQuestions: 'Önerilen Sorular',
+    marketAnalysis: 'Piyasa Analizi',
+    securityCheck: 'Güvenlik Kontrolü',
+    pricePrediction: 'Fiyat Tahmini',
+  },
+
   errors: {
     walletNameRequired: 'İsim gerekli',
     passwordRequired: 'Şifre gerekli',

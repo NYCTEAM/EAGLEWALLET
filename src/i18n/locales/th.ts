@@ -447,6 +447,19 @@ export const th: TranslationStrings = {
     below: 'ต่ำกว่า',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'ถามอะไรก็ได้เกี่ยวกับคริปโต...',
+    send: 'ส่ง',
+    thinking: 'กำลังคิด...',
+    error: 'ขออภัย เกิดข้อผิดพลาด',
+    welcomeMessage: 'สวัสดี! ฉันคือ Eagle AI ผู้ช่วยคริปโตอัจฉริยะของคุณ วันนี้ให้ฉันช่วยอะไรดี?',
+    suggestedQuestions: 'คำถามแนะนำ',
+    marketAnalysis: 'วิเคราะห์ตลาด',
+    securityCheck: 'ตรวจสอบความปลอดภัย',
+    pricePrediction: 'ทำนายราคา',
+  },
+
   errors: {
     walletNameRequired: 'กรุณาป้อนชื่อกระเป๋าเงิน',
     passwordRequired: 'กรุณาป้อนรหัสผ่าน',

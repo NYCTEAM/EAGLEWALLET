@@ -447,6 +447,19 @@ export const vi: TranslationStrings = {
     below: 'Dưới',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Hỏi tôi bất cứ điều gì về tiền điện tử...',
+    send: 'Gửi',
+    thinking: 'Đang suy nghĩ...',
+    error: 'Xin lỗi, tôi gặp lỗi.',
+    welcomeMessage: 'Xin chào! Tôi là Eagle AI, trợ lý tiền điện tử thông minh của bạn. Tôi có thể giúp gì cho bạn hôm nay?',
+    suggestedQuestions: 'Câu hỏi gợi ý',
+    marketAnalysis: 'Phân tích thị trường',
+    securityCheck: 'Kiểm tra bảo mật',
+    pricePrediction: 'Dự đoán giá',
+  },
+
   errors: {
     walletNameRequired: 'Vui lòng nhập tên ví',
     passwordRequired: 'Vui lòng nhập mật khẩu',

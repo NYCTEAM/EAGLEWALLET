@@ -4,6 +4,7 @@ import HomeScreen from './HomeScreen';
 import SettingsScreen from './SettingsScreen';
 import DAppBrowserScreen from './DAppBrowserScreen';
 import SwapScreen from './SwapScreen';
+import AIScreen from './AIScreen';
 import BottomTabBar from '../components/BottomTabBar';
 
 export default function MainScreen(props: any) {
@@ -15,6 +16,8 @@ export default function MainScreen(props: any) {
         return <HomeScreen {...props} isTabScreen={true} />;
       case 'swap':
         return <SwapScreen {...props} isTabScreen={true} />;
+      case 'ai':
+        return <AIScreen {...props} isTabScreen={true} />;
       case 'dapps':
         return <DAppBrowserScreen {...props} isTabScreen={true} />;
       case 'settings':

@@ -447,6 +447,19 @@ export const hi: TranslationStrings = {
     below: 'नीचे',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'मुझसे क्रिप्टो के बारे में कुछ भी पूछें...',
+    send: 'भेजें',
+    thinking: 'सोच रहा हूँ...',
+    error: 'क्षमा करें, एक त्रुटि हुई।',
+    welcomeMessage: 'नमस्ते! मैं Eagle AI हूँ, आपका स्मार्ट क्रिप्टो सहायक। मैं आज आपकी कैसे मदद कर सकता हूँ?',
+    suggestedQuestions: 'सुझाए गए प्रश्न',
+    marketAnalysis: 'बाज़ार विश्लेषण',
+    securityCheck: 'सुरक्षा जाँच',
+    pricePrediction: 'मूल्य भविष्यवाणी',
+  },
+
   errors: {
     walletNameRequired: 'नाम आवश्यक है',
     passwordRequired: 'पासवर्ड आवश्यक है',

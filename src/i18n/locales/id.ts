@@ -447,6 +447,19 @@ export const id: TranslationStrings = {
     below: 'Di Bawah',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Tanya saya apa saja tentang kripto...',
+    send: 'Kirim',
+    thinking: 'Berpikir...',
+    error: 'Maaf, terjadi kesalahan.',
+    welcomeMessage: 'Halo! Saya Eagle AI, asisten kripto cerdas Anda. Ada yang bisa saya bantu hari ini?',
+    suggestedQuestions: 'Pertanyaan yang Disarankan',
+    marketAnalysis: 'Analisis Pasar',
+    securityCheck: 'Pemeriksaan Keamanan',
+    pricePrediction: 'Prediksi Harga',
+  },
+
   errors: {
     walletNameRequired: 'Nama wajib diisi',
     passwordRequired: 'Kata sandi wajib diisi',

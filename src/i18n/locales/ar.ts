@@ -447,6 +447,19 @@ export const ar: TranslationStrings = {
     below: 'تحت',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'اسألني أي شيء عن العملات المشفرة...',
+    send: 'إرسال',
+    thinking: 'يفكر...',
+    error: 'عذرا، حدث خطأ.',
+    welcomeMessage: 'مرحبا! أنا Eagle AI، مساعدك الذكي في العملات المشفرة. كيف يمكنني مساعدتك اليوم؟',
+    suggestedQuestions: 'أسئلة مقترحة',
+    marketAnalysis: 'تحليل السوق',
+    securityCheck: 'فحص الأمان',
+    pricePrediction: 'توقع السعر',
+  },
+
   errors: {
     walletNameRequired: 'الاسم مطلوب',
     passwordRequired: 'كلمة المرور مطلوبة',

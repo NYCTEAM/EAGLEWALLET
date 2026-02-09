@@ -447,6 +447,19 @@ export const ko: TranslationStrings = {
     below: '이하',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: '암호화폐에 대해 무엇이든 물어보세요...',
+    send: '전송',
+    thinking: '생각 중...',
+    error: '죄송합니다. 오류가 발생했습니다.',
+    welcomeMessage: '안녕하세요! 저는 스마트 암호화폐 도우미 Eagle AI입니다. 무엇을 도와드릴까요?',
+    suggestedQuestions: '추천 질문',
+    marketAnalysis: '시장 분석',
+    securityCheck: '보안 검사',
+    pricePrediction: '가격 예측',
+  },
+
   errors: {
     walletNameRequired: '지갑 이름을 입력하세요',
     passwordRequired: '비밀번호를 입력하세요',

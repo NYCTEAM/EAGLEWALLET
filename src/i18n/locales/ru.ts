@@ -447,6 +447,19 @@ export const ru: TranslationStrings = {
     below: 'Ниже',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Спросите меня о чем угодно...',
+    send: 'Отправить',
+    thinking: 'Думаю...',
+    error: 'Извините, произошла ошибка.',
+    welcomeMessage: 'Привет! Я Eagle AI, ваш умный крипто-помощник. Чем могу помочь?',
+    suggestedQuestions: 'Предлагаемые вопросы',
+    marketAnalysis: 'Анализ рынка',
+    securityCheck: 'Проверка безопасности',
+    pricePrediction: 'Прогноз цен',
+  },
+
   errors: {
     walletNameRequired: 'Введите имя кошелька',
     passwordRequired: 'Введите пароль',

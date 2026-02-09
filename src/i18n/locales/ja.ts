@@ -62,6 +62,19 @@ export const ja: TranslationStrings = {
     myWallets: 'マイウォレット',
     activeWallet: '✓ アクティブ',
   },
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: '仮想通貨について何でも聞いてください...',
+    send: '送信',
+    thinking: '考え中...',
+    error: '申し訳ありません、エラーが発生しました。',
+    welcomeMessage: 'こんにちは！私はEagle AI、あなたのスマートな仮想通貨アシスタントです。今日はどのようにお手伝いできますか？',
+    suggestedQuestions: 'おすすめの質問',
+    marketAnalysis: '市場分析',
+    securityCheck: 'セキュリティチェック',
+    pricePrediction: '価格予測',
+  },
+
   errors: {
     walletNameRequired: 'ウォレット名を入力してください',
     passwordRequired: 'パスワードを入力してください',

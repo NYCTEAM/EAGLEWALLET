@@ -429,6 +429,19 @@ export const zhTW: TranslationStrings = {
     below: '低於',
   },
 
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: '詢問關於加密貨幣的任何問題...',
+    send: '發送',
+    thinking: '思考中...',
+    error: '抱歉，我遇到了一些問題。',
+    welcomeMessage: '你好！我是 Eagle AI，你的智能加密助手。今天有什麼可以幫你？',
+    suggestedQuestions: '建議問題',
+    marketAnalysis: '市場分析',
+    securityCheck: '安全檢查',
+    pricePrediction: '價格預測',
+  },
+
   errors: {
     walletNameRequired: '請輸入錢包名稱',
     passwordRequired: '請輸入密碼',
