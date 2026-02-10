@@ -23,6 +23,11 @@ const QUOTER_V3_ABI = [
 
 // Aggregator Contract ABI (Eagle Swap V11)
 const AGGREGATOR_ABI = [
+  // Legacy quote/read methods kept for IINDEX on-chain quoting compatibility
+  'function swap(address fromToken, address toToken, uint256 amountIn, uint256 minAmountOut, address[] calldata path, uint8 dexId) external payable returns (uint256)',
+  'function getAmountOut(uint256 amountIn, address fromToken, address toToken, uint8 dexId) external view returns (uint256)',
+  'function getBestRate(uint256 amountIn, address fromToken, address toToken) external view returns (uint256 amountOut, uint8 dexId, address[] memory path)',
+  'function supportedDEXs() external view returns (string[] memory)',
   // V2
   'function eagleSwapV2Router(address router, address[] calldata path, uint256 amountIn, uint256 minOut) external payable returns (uint256)',
   'function eagleSwapV2RouterSupportingFee(address router, address[] calldata path, uint256 amountIn, uint256 minOut) external payable',
@@ -37,6 +42,21 @@ const AGGREGATOR_ABI = [
 const PANCAKESWAP_V2_ROUTER = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 const PANCAKESWAP_V3_QUOTER = '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997'; // QuoterV2
 const WBNB_ADDRESS = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+const WRAPPED_NATIVE_BY_CHAIN: Record<number, string> = {
+  56: WBNB_ADDRESS,
+};
+const MAINSTREAM_INTERMEDIATES_BY_CHAIN: Record<number, string[]> = {
+  56: [
+    WBNB_ADDRESS,
+    '0x55d398326f99059ff775485246999027b3197955', // USDT
+    '0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d', // USD1
+    '0xce24439f2d9c6a2289f741120fe202248b666666', // USDS
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d', // USDC
+    '0xc5f0f7b66764f6ec8c8dff7ba683102295e16409', // FDUSD
+    '0x7130d2a12b9bcbaed4f2634d864a1ee1ce3ead9c', // BTCB
+    '0x2170ed0880ac9a755fd29b2688956bd959f933f8', // ETH
+  ],
+};
 
 // ERC20 ABI for approval
 const ERC20_ABI = [
@@ -148,6 +168,72 @@ class SwapService {
   }
 
   /**
+   * Pick mainstream intermediate token by largest route liquidity.
+   * Score = min(liquidity(tokenIn->mid), liquidity(mid->tokenOut)).
+   */
+  private async pickBestIntermediateToken(
+    tokenIn: string,
+    tokenOut: string,
+    chainId: number
+  ): Promise<string | null> {
+    const candidates = (MAINSTREAM_INTERMEDIATES_BY_CHAIN[chainId] || [WBNB_ADDRESS])
+      .map((a) => a.toLowerCase())
+      .filter((a, i, arr) => arr.indexOf(a) === i)
+      .filter((a) => a !== tokenIn && a !== tokenOut);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const q: string[] = [];
+    candidates.forEach((mid, i) => {
+      q.push(
+        `v2_leg1_a_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${tokenIn}", token1: "${mid}" }) { reserveUSD }`,
+        `v2_leg1_b_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenIn}" }) { reserveUSD }`,
+        `v3_leg1_a_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${tokenIn}", token1: "${mid}" }) { totalValueLockedUSD }`,
+        `v3_leg1_b_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenIn}" }) { totalValueLockedUSD }`,
+        `v2_leg2_a_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenOut}" }) { reserveUSD }`,
+        `v2_leg2_b_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${tokenOut}", token1: "${mid}" }) { reserveUSD }`,
+        `v3_leg2_a_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenOut}" }) { totalValueLockedUSD }`,
+        `v3_leg2_b_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${tokenOut}", token1: "${mid}" }) { totalValueLockedUSD }`
+      );
+    });
+
+    const data = await this.querySubgraph(`{ ${q.join('\n')} }`);
+    if (!data) {
+      return null;
+    }
+
+    const getVal = (key: string, field: 'reserveUSD' | 'totalValueLockedUSD') =>
+      parseFloat(data?.[key]?.[0]?.[field] || '0');
+
+    let bestToken: string | null = null;
+    let bestScore = 0;
+
+    candidates.forEach((mid, i) => {
+      const leg1 = Math.max(
+        getVal(`v2_leg1_a_${i}`, 'reserveUSD'),
+        getVal(`v2_leg1_b_${i}`, 'reserveUSD'),
+        getVal(`v3_leg1_a_${i}`, 'totalValueLockedUSD'),
+        getVal(`v3_leg1_b_${i}`, 'totalValueLockedUSD')
+      );
+      const leg2 = Math.max(
+        getVal(`v2_leg2_a_${i}`, 'reserveUSD'),
+        getVal(`v2_leg2_b_${i}`, 'reserveUSD'),
+        getVal(`v3_leg2_a_${i}`, 'totalValueLockedUSD'),
+        getVal(`v3_leg2_b_${i}`, 'totalValueLockedUSD')
+      );
+      const score = Math.min(leg1, leg2);
+      if (score > bestScore) {
+        bestScore = score;
+        bestToken = mid;
+      }
+    });
+
+    return bestScore > 0 ? bestToken : null;
+  }
+
+  /**
    * Get Best Quote using Subgraph (Direct & Multi-hop)
    */
   async getBestQuote(
@@ -156,7 +242,8 @@ class SwapService {
     amountInStr: string,
     decimalsIn: number,
     decimalsOut: number,
-    chainId: number = 56
+    chainId: number = 56,
+    allowMultiHop: boolean = true
   ): Promise<SwapRouteResult | null> {
     if (!this.isSwapSupported(chainId)) {
       return null;
@@ -165,10 +252,7 @@ class SwapService {
     const amountIn = ethers.parseUnits(amountInStr, decimalsIn);
     
     // Map native token to wrapped token for subgraph query
-    const wrappedNativeByChain: Record<number, string> = {
-      56: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
-    };
-    const wrappedNative = (wrappedNativeByChain[chainId] || WBNB_ADDRESS).toLowerCase();
+    const wrappedNative = (WRAPPED_NATIVE_BY_CHAIN[chainId] || WBNB_ADDRESS).toLowerCase();
 
     let queryTokenIn = tokenIn.toLowerCase();
     let queryTokenOut = tokenOut.toLowerCase();
@@ -182,8 +266,8 @@ class SwapService {
     }
 
     // 1. Check Direct Pools
-    const directV2Query = `{
-      pairs(where: {
+    const directQuery = `{
+      pairs(orderBy: reserveUSD, orderDirection: desc, where: {
         or: [
           { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
           { token0: "${queryTokenOut}", token1: "${queryTokenIn}" }
@@ -191,9 +275,6 @@ class SwapService {
       }) {
         id, token0 { id, decimals }, token1 { id, decimals }, reserve0, reserve1
       }
-    }`;
-    
-    const directV3Query = `{
       pools(orderBy: totalValueLockedUSD, orderDirection: desc, where: {
         or: [
           { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
@@ -204,17 +285,14 @@ class SwapService {
       }
     }`;
 
-    const [v2Data, v3Data] = await Promise.all([
-      this.querySubgraph(directV2Query),
-      this.querySubgraph(directV3Query)
-    ]);
+    const directData = await this.querySubgraph(directQuery);
 
     let bestQuote: SwapRouteResult | null = null;
     let maxAmountOut = 0n;
 
     // Evaluate Direct V2
-    if (v2Data?.pairs?.[0]) {
-      const pair = v2Data.pairs[0];
+    if (directData?.pairs?.[0]) {
+      const pair = directData.pairs[0];
       const isToken0In = pair.token0.id === queryTokenIn;
       const reserveIn = ethers.parseUnits(isToken0In ? pair.reserve0 : pair.reserve1, parseInt(isToken0In ? pair.token0.decimals : pair.token1.decimals));
       const reserveOut = ethers.parseUnits(isToken0In ? pair.reserve1 : pair.reserve0, parseInt(isToken0In ? pair.token1.decimals : pair.token0.decimals));
@@ -235,8 +313,8 @@ class SwapService {
     }
 
     // Evaluate Direct V3
-    if (v3Data?.pools) {
-      for (const pool of v3Data.pools) {
+    if (directData?.pools) {
+      for (const pool of directData.pools) {
         const fee = parseInt(pool.feeTier);
         const amountOut = this.calculateV3AmountOut(BigInt(amountIn.toString()), BigInt(pool.liquidity), fee);
         
@@ -255,68 +333,27 @@ class SwapService {
 
     if (bestQuote) return bestQuote;
 
-    // 2. Multi-hop via WBNB (Intermediate)
-    // If input/output is already WBNB/Native, we don't need to hop via WBNB again.
-    const isNativeOrWrapped = (addr: string) => addr === wrappedNative || addr === ethers.ZeroAddress.toLowerCase();
-    
-    // Check if Direct V2 failed (fallback to RPC)
-    if (!bestQuote) {
-        try {
-            // Try both V2 and V3 RPC in parallel
-            const [v2Quote, v3Quote] = await Promise.all([
-                this.getV2QuoteRouter(queryTokenIn, queryTokenOut, amountIn),
-                this.getV3QuoteQuoter(queryTokenIn, queryTokenOut, amountIn)
-            ]);
-
-            // Determine best RPC quote
-            let bestRpcAmount = 0n;
-            let bestRpcType = '';
-            let bestRpcFee = 0;
-
-            if (v2Quote && v2Quote > bestRpcAmount) {
-                bestRpcAmount = v2Quote;
-                bestRpcType = 'V2';
-            }
-            
-            if (v3Quote && v3Quote.amount > bestRpcAmount) {
-                bestRpcAmount = v3Quote.amount;
-                bestRpcType = 'V3';
-                bestRpcFee = v3Quote.fee;
-            }
-
-            if (bestRpcAmount > 0n) {
-                 bestQuote = {
-                    quoteType: bestRpcType as 'V2' | 'V3',
-                    amountOut: ethers.formatUnits(bestRpcAmount, decimalsOut),
-                    path: [tokenIn, tokenOut],
-                    fees: bestRpcType === 'V3' ? bestRpcFee : 2500,
-                    priceImpact: '0.00'
-                };
-            }
-        } catch (err) {
-            console.warn('RPC Quote failed:', err);
-        }
-    }
-
     if (bestQuote) return bestQuote;
 
-    if (!isNativeOrWrapped(tokenIn.toLowerCase()) && !isNativeOrWrapped(tokenOut.toLowerCase())) {
-        // Find TokenIn -> WBNB
-        // Note: We use original tokenIn for recursive call, but target WBNB address
-        const hop1 = await this.getBestQuote(tokenIn, wrappedNative, amountInStr, decimalsIn, 18, chainId);
-        if (hop1 && parseFloat(hop1.amountOut) > 0) {
-            // Find WBNB -> TokenOut
-            const hop2 = await this.getBestQuote(wrappedNative, tokenOut, hop1.amountOut, 18, decimalsOut, chainId);
-            if (hop2 && parseFloat(hop2.amountOut) > 0) {
-                 return {
-                    quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
-                    amountOut: hop2.amountOut,
-                    path: [tokenIn, wrappedNative, tokenOut], // Contract handles wrapped native in path
-                    fees: hop1.fees + hop2.fees,
-                    priceImpact: '0.00'
-                 };
-            }
+    if (!allowMultiHop) {
+      return null;
+    }
+
+    const bestIntermediate = await this.pickBestIntermediateToken(queryTokenIn, queryTokenOut, chainId);
+    if (bestIntermediate) {
+      const hop1 = await this.getBestQuote(tokenIn, bestIntermediate, amountInStr, decimalsIn, 18, chainId, false);
+      if (hop1 && parseFloat(hop1.amountOut) > 0) {
+        const hop2 = await this.getBestQuote(bestIntermediate, tokenOut, hop1.amountOut, 18, decimalsOut, chainId, false);
+        if (hop2 && parseFloat(hop2.amountOut) > 0) {
+          return {
+            quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
+            amountOut: hop2.amountOut,
+            path: [tokenIn, bestIntermediate, tokenOut],
+            fees: (hop1.fees || 2500) + (hop2.fees || 2500),
+            priceImpact: '0.00'
+          };
         }
+      }
     }
 
     return null;
@@ -838,6 +875,8 @@ class SwapService {
       56: [
         ethers.ZeroAddress, // BNB
         '0x55d398326f99059fF775485246999027B3197955', // USDT
+        '0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d', // USD1
+        '0xce24439f2d9c6a2289f741120fe202248b666666', // USDS
         '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
         '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
         '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH

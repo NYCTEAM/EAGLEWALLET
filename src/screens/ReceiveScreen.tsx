@@ -5,8 +5,10 @@
 
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
+  Image,
   SafeAreaView,
   Share,
   StyleSheet,
@@ -15,7 +17,6 @@ import {
   View,
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
-import QRCode from 'react-native-qrcode-svg';
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -23,31 +24,59 @@ const { width } = Dimensions.get('window');
 
 export default function ReceiveScreen({ route, navigation }: any) {
   const { t } = useLanguage();
-  const token = route.params?.token;
+  const token = route?.params?.token;
   const [address, setAddress] = useState('');
+  const [loadingAddress, setLoadingAddress] = useState(true);
+  const [qrFailed, setQrFailed] = useState(false);
   const [network] = useState(WalletService.getCurrentNetwork());
 
-  const displaySymbol = token?.symbol || network.symbol;
+  const displaySymbol = token?.symbol || network?.symbol || 'BNB';
+  const networkLabel = `${network?.name || 'BNB Smart Chain'} (${network?.symbol || 'BNB'})`;
+  const commonText = t.common || {};
+  const receiveText = t.receive || {};
+  const errorText = t.errors || {};
+  const receiveTemplate = receiveText.onlyReceive || 'Only receive {symbol} on this address';
+  const receiveHint = receiveTemplate.includes('{symbol}')
+    ? receiveTemplate.replace('{symbol}', networkLabel)
+    : `${receiveTemplate} ${networkLabel}`;
+  const shareLabel = receiveText.share || 'Share';
+  const qrImageUrl = address
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(address)}`
+    : '';
 
   useEffect(() => {
     const loadAddress = async () => {
-      const addr = await WalletService.getAddress();
-      if (addr) {
-        setAddress(addr);
+      try {
+        const addr = await WalletService.getAddress();
+        if (addr) {
+          setAddress(addr);
+        }
+      } finally {
+        setLoadingAddress(false);
       }
     };
+
     loadAddress();
   }, []);
 
   const copyAddress = () => {
+    if (!address) {
+      Alert.alert(commonText.error || 'Error', errorText.unknownError || 'Address unavailable');
+      return;
+    }
     Clipboard.setString(address);
-    Alert.alert(t.common.copied, t.receive.addressCopied);
+    Alert.alert(commonText.copied || 'Copied', receiveText.addressCopied || 'Address copied');
   };
 
   const shareAddress = () => {
+    if (!address) {
+      Alert.alert(commonText.error || 'Error', errorText.unknownError || 'Address unavailable');
+      return;
+    }
+
     Share.share({
-      title: t.receive.shareAddress,
-      message: `${displaySymbol} (${network.name})\n${address}`,
+      title: receiveText.shareAddress || 'Share Address',
+      message: `${displaySymbol} (${network?.name || 'BNB Smart Chain'})\n${address}`,
     });
   };
 
@@ -62,31 +91,40 @@ export default function ReceiveScreen({ route, navigation }: any) {
       <View style={styles.content}>
         <View style={styles.qrSection}>
           <View style={styles.qrWrapper}>
-            {address ? (
-              <QRCode value={address} size={220} backgroundColor="white" color="black" />
+            {loadingAddress ? (
+              <View style={styles.qrCenter}>
+                <ActivityIndicator size="large" color="#222222" />
+              </View>
+            ) : address && !qrFailed ? (
+              <Image
+                source={{ uri: qrImageUrl }}
+                style={styles.qrImage}
+                resizeMode="contain"
+                onError={() => setQrFailed(true)}
+              />
             ) : (
-              <View style={[styles.qrPlaceholder, { width: 220, height: 220 }]} />
+              <View style={[styles.qrPlaceholder, styles.qrCenter]}>
+                <Text style={styles.placeholderText}>QR unavailable</Text>
+              </View>
             )}
           </View>
 
-          <Text style={styles.networkWarning}>
-            {t.receive.onlyReceive.replace('{symbol}', `${network.name} (${network.symbol})`)}
-          </Text>
+          <Text style={styles.networkWarning}>{receiveHint}</Text>
         </View>
 
         <View style={styles.addressSection}>
           <View style={styles.addressInfoLeft}>
             <Text style={styles.tokenSymbol}>{displaySymbol}</Text>
-            <Text style={styles.addressText}>{address}</Text>
+            <Text style={styles.addressText}>{address || 'Loading address...'}</Text>
           </View>
           <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-            <Text style={styles.copyButtonText}>{t.common.copy}</Text>
+            <Text style={styles.copyButtonText}>{commonText.copy || 'Copy'}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.bottomActions}>
           <TouchableOpacity style={styles.setAmountButton} onPress={shareAddress}>
-            <Text style={styles.setAmountText}>{t.receive.share}</Text>
+            <Text style={styles.setAmountText}>{shareLabel}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -127,10 +165,27 @@ const styles = StyleSheet.create({
   qrWrapper: {
     padding: 10,
     backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
     marginBottom: 20,
   },
+  qrImage: {
+    width: 220,
+    height: 220,
+  },
   qrPlaceholder: {
+    width: 220,
+    height: 220,
     backgroundColor: '#F0F0F0',
+  },
+  qrCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#777',
   },
   networkWarning: {
     fontSize: 14,
