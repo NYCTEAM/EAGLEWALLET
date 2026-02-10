@@ -13,11 +13,11 @@ export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProp
   const { t } = useLanguage();
 
   const tabs = [
-    { key: 'wallet', label: t.home.myWallet, icon: '👛' },
-    { key: 'swap', label: t.home.swap, icon: '�? },
-    { key: 'ai', label: t.ai.title, icon: '🤖' },
-    { key: 'dapps', label: t.dapp.discover, icon: '🧭' },
-    { key: 'settings', label: t.settings.settings, icon: '⚙️' },
+    { key: 'wallet', label: t.home.myWallet, icon: 'W' },
+    { key: 'swap', label: t.home.swap, icon: 'S' },
+    { key: 'ai', label: t.ai.title, icon: 'AI' },
+    { key: 'dapps', label: t.dapp.discover, icon: 'D' },
+    { key: 'settings', label: t.settings.settings, icon: 'G' },
   ];
 
   return (
@@ -86,4 +86,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
 
