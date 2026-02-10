@@ -160,7 +160,7 @@ export default function SettingsScreen({ navigation, isTabScreen }: any) {
           <SettingItem
             icon="B"
             title={t.settings.biometricAuth}
-            subtitle={biometricAvailable ? t.settings.biometricAuthSubtitle : 'Not available on this device'}
+            subtitle={biometricAvailable ? t.settings.biometricAuthSubtitle : t.common.none}
             showArrow={false}
             rightElement={
               <Switch
@@ -256,7 +256,7 @@ export default function SettingsScreen({ navigation, isTabScreen }: any) {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Eagle Wallet</Text>
-          <Text style={styles.footerSubtext}>Secure BSC Wallet</Text>
+          <Text style={styles.footerSubtext}>{t.wallet.appSubtitle}</Text>
         </View>
       </ScrollView>
     </View>

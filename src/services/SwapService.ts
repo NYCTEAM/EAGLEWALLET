@@ -122,7 +122,15 @@ export interface SwapRouteResult {
   priceImpact: string;
 }
 
+export interface SwapSimulationResult {
+  ok: boolean;
+  gasEstimate?: string;
+  reason?: string;
+}
+
 class SwapService {
+  private subgraphHasPools: boolean | null = null;
+
   isSwapSupported(chainId: number): boolean {
     const contractAddress = AGGREGATOR_CONTRACTS[chainId];
     return !!contractAddress && ethers.isAddress(contractAddress);
@@ -139,6 +147,14 @@ class SwapService {
         body: JSON.stringify({ query })
       });
       const result = await response.json();
+      if (Array.isArray(result?.errors) && result.errors.length > 0) {
+        const poolFieldUnsupported = result.errors.some((e: any) =>
+          String(e?.message || '').toLowerCase().includes('no field `pools`')
+        );
+        if (poolFieldUnsupported) {
+          this.subgraphHasPools = false;
+        }
+      }
       return result.data;
     } catch (error) {
       console.error('Subgraph query error:', error);
@@ -185,43 +201,55 @@ class SwapService {
       return null;
     }
 
-    const q: string[] = [];
+    const v2QueryParts: string[] = [];
+    const v3QueryParts: string[] = [];
+
     candidates.forEach((mid, i) => {
-      q.push(
+      v2QueryParts.push(
         `v2_leg1_a_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${tokenIn}", token1: "${mid}" }) { reserveUSD }`,
         `v2_leg1_b_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenIn}" }) { reserveUSD }`,
+        `v2_leg2_a_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenOut}" }) { reserveUSD }`,
+        `v2_leg2_b_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${tokenOut}", token1: "${mid}" }) { reserveUSD }`
+      );
+
+      v3QueryParts.push(
         `v3_leg1_a_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${tokenIn}", token1: "${mid}" }) { totalValueLockedUSD }`,
         `v3_leg1_b_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenIn}" }) { totalValueLockedUSD }`,
-        `v2_leg2_a_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenOut}" }) { reserveUSD }`,
-        `v2_leg2_b_${i}: pairs(first: 1, orderBy: reserveUSD, orderDirection: desc, where: { token0: "${tokenOut}", token1: "${mid}" }) { reserveUSD }`,
         `v3_leg2_a_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${mid}", token1: "${tokenOut}" }) { totalValueLockedUSD }`,
         `v3_leg2_b_${i}: pools(first: 1, orderBy: totalValueLockedUSD, orderDirection: desc, where: { token0: "${tokenOut}", token1: "${mid}" }) { totalValueLockedUSD }`
       );
     });
 
-    const data = await this.querySubgraph(`{ ${q.join('\n')} }`);
-    if (!data) {
+    const v2Data = await this.querySubgraph(`{ ${v2QueryParts.join('\n')} }`);
+    if (!v2Data) {
       return null;
     }
+    let v3Data: any = {};
+    if (this.subgraphHasPools !== false) {
+      v3Data = (await this.querySubgraph(`{ ${v3QueryParts.join('\n')} }`)) || {};
+      if (Array.isArray(v3Data?.pools)) {
+        this.subgraphHasPools = true;
+      }
+    }
 
-    const getVal = (key: string, field: 'reserveUSD' | 'totalValueLockedUSD') =>
-      parseFloat(data?.[key]?.[0]?.[field] || '0');
+    const getV2Val = (key: string) => parseFloat(v2Data?.[key]?.[0]?.reserveUSD || '0');
+    const getV3Val = (key: string) => parseFloat(v3Data?.[key]?.[0]?.totalValueLockedUSD || '0');
 
     let bestToken: string | null = null;
     let bestScore = 0;
 
     candidates.forEach((mid, i) => {
       const leg1 = Math.max(
-        getVal(`v2_leg1_a_${i}`, 'reserveUSD'),
-        getVal(`v2_leg1_b_${i}`, 'reserveUSD'),
-        getVal(`v3_leg1_a_${i}`, 'totalValueLockedUSD'),
-        getVal(`v3_leg1_b_${i}`, 'totalValueLockedUSD')
+        getV2Val(`v2_leg1_a_${i}`),
+        getV2Val(`v2_leg1_b_${i}`),
+        getV3Val(`v3_leg1_a_${i}`),
+        getV3Val(`v3_leg1_b_${i}`)
       );
       const leg2 = Math.max(
-        getVal(`v2_leg2_a_${i}`, 'reserveUSD'),
-        getVal(`v2_leg2_b_${i}`, 'reserveUSD'),
-        getVal(`v3_leg2_a_${i}`, 'totalValueLockedUSD'),
-        getVal(`v3_leg2_b_${i}`, 'totalValueLockedUSD')
+        getV2Val(`v2_leg2_a_${i}`),
+        getV2Val(`v2_leg2_b_${i}`),
+        getV3Val(`v3_leg2_a_${i}`),
+        getV3Val(`v3_leg2_b_${i}`)
       );
       const score = Math.min(leg1, leg2);
       if (score > bestScore) {
@@ -266,7 +294,7 @@ class SwapService {
     }
 
     // 1. Check Direct Pools
-    const directQuery = `{
+    const directV2Query = `{
       pairs(orderBy: reserveUSD, orderDirection: desc, where: {
         or: [
           { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
@@ -275,51 +303,82 @@ class SwapService {
       }) {
         id, token0 { id, decimals }, token1 { id, decimals }, reserve0, reserve1
       }
+    }`;
+
+    const directV3Query = `{
       pools(orderBy: totalValueLockedUSD, orderDirection: desc, where: {
         or: [
           { token0: "${queryTokenIn}", token1: "${queryTokenOut}" },
           { token0: "${queryTokenOut}", token1: "${queryTokenIn}" }
         ]
       }) {
-        id, token0 { id, decimals }, token1 { id, decimals }, liquidity, feeTier
+        id, token0 { id, decimals }, token1 { id, decimals }, liquidity, totalValueLockedUSD, feeTier
       }
     }`;
 
-    const directData = await this.querySubgraph(directQuery);
-
-    let bestQuote: SwapRouteResult | null = null;
-    let maxAmountOut = 0n;
-
-    // Evaluate Direct V2
-    if (directData?.pairs?.[0]) {
-      const pair = directData.pairs[0];
-      const isToken0In = pair.token0.id === queryTokenIn;
-      const reserveIn = ethers.parseUnits(isToken0In ? pair.reserve0 : pair.reserve1, parseInt(isToken0In ? pair.token0.decimals : pair.token1.decimals));
-      const reserveOut = ethers.parseUnits(isToken0In ? pair.reserve1 : pair.reserve0, parseInt(isToken0In ? pair.token1.decimals : pair.token0.decimals));
-      
-      // Calculate amount out
-      const amountOut = this.calculateV2AmountOut(BigInt(amountIn.toString()), BigInt(reserveIn.toString()), BigInt(reserveOut.toString()));
-      
-      if (amountOut > maxAmountOut) {
-        maxAmountOut = amountOut;
-        bestQuote = {
-          quoteType: 'V2',
-          amountOut: ethers.formatUnits(amountOut, decimalsOut),
-          path: [tokenIn, tokenOut], // Use original addresses for execution path (contract handles native)
-          fees: 2500,
-          priceImpact: '0.00' 
-        };
+    const directV2Data = await this.querySubgraph(directV2Query);
+    let directV3Data: any = {};
+    if (this.subgraphHasPools !== false) {
+      directV3Data = (await this.querySubgraph(directV3Query)) || {};
+      if (Array.isArray(directV3Data?.pools)) {
+        this.subgraphHasPools = true;
       }
     }
 
-    // Evaluate Direct V3
-    if (directData?.pools) {
-      for (const pool of directData.pools) {
+    let bestQuote: SwapRouteResult | null = null;
+    let maxLiquidity = 0;
+
+    // Evaluate Direct V2: liquidity-priority route selection
+    if (directV2Data?.pairs) {
+      for (const pair of directV2Data.pairs) {
+        const pairLiquidity = parseFloat(pair?.reserveUSD || '0');
+        const isToken0In = pair.token0.id === queryTokenIn;
+        const reserveIn = ethers.parseUnits(
+          isToken0In ? pair.reserve0 : pair.reserve1,
+          parseInt(isToken0In ? pair.token0.decimals : pair.token1.decimals)
+        );
+        const reserveOut = ethers.parseUnits(
+          isToken0In ? pair.reserve1 : pair.reserve0,
+          parseInt(isToken0In ? pair.token1.decimals : pair.token0.decimals)
+        );
+        const amountOut = this.calculateV2AmountOut(
+          BigInt(amountIn.toString()),
+          BigInt(reserveIn.toString()),
+          BigInt(reserveOut.toString())
+        );
+        if (amountOut <= 0n) {
+          continue;
+        }
+
+        if (pairLiquidity > maxLiquidity) {
+          maxLiquidity = pairLiquidity;
+          bestQuote = {
+            quoteType: 'V2',
+            amountOut: ethers.formatUnits(amountOut, decimalsOut),
+            path: [tokenIn, tokenOut],
+            fees: 2500,
+            priceImpact: '0.00'
+          };
+        }
+      }
+    }
+
+    // Evaluate Direct V3: liquidity-priority route selection
+    if (directV3Data?.pools) {
+      for (const pool of directV3Data.pools) {
         const fee = parseInt(pool.feeTier);
-        const amountOut = this.calculateV3AmountOut(BigInt(amountIn.toString()), BigInt(pool.liquidity), fee);
-        
-        if (amountOut > maxAmountOut) {
-          maxAmountOut = amountOut;
+        const poolLiquidityUSD = parseFloat(pool?.totalValueLockedUSD || '0');
+        const amountOut = this.calculateV3AmountOut(
+          BigInt(amountIn.toString()),
+          BigInt(pool.liquidity || '0'),
+          fee
+        );
+        if (amountOut <= 0n) {
+          continue;
+        }
+
+        if (poolLiquidityUSD > maxLiquidity) {
+          maxLiquidity = poolLiquidityUSD;
           bestQuote = {
             quoteType: 'V3',
             amountOut: ethers.formatUnits(amountOut, decimalsOut),
@@ -330,8 +389,6 @@ class SwapService {
         }
       }
     }
-
-    if (bestQuote) return bestQuote;
 
     if (bestQuote) return bestQuote;
 
@@ -667,115 +724,164 @@ class SwapService {
     try {
       const provider = await WalletService.getProvider();
       const connectedWallet = wallet.connect(provider);
-      
-      const aggregatorAddress = AGGREGATOR_CONTRACTS[chainId];
-      if (!aggregatorAddress || !ethers.isAddress(aggregatorAddress)) {
-        throw new Error('Aggregator not supported on this chain');
-      }
-      const routerV2 = '0x10ED43C718714eb63d5aA57B78B54704E256024E'; // PancakeSwap V2 Router
-      const routerV3 = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4'; // PancakeSwap V3 Router (Universal)
+      const prepared = await this.prepareSwapExecution(quote, connectedWallet, chainId);
 
       // Check if token needs approval
       if (quote.fromToken !== ethers.ZeroAddress) {
         await this.approveToken(
           quote.fromToken,
-          aggregatorAddress,
+          prepared.aggregatorAddress,
           quote.fromAmount,
           connectedWallet
         );
       }
 
-      // Get aggregator contract
-      const contract = new ethers.Contract(
-        aggregatorAddress,
-        AGGREGATOR_ABI,
-        connectedWallet
-      );
-
-      // Execute swap based on type
-      let tx;
-      const value = quote.fromToken === ethers.ZeroAddress ? quote.fromAmount : '0';
-
-      if (quote.quoteType === 'V2') {
-        // V2 Swap - Use SupportingFee variant for better compatibility with tax tokens
-        tx = await contract.eagleSwapV2RouterSupportingFee(
-          routerV2,
-          quote.path,
-          quote.fromAmount,
-          quote.toAmountMin,
-          { value }
-        );
-      } else {
-        // V3 Swap
-        if (quote.path.length === 2) {
-          // V3 Direct
-          // Encode path: tokenIn + fee + tokenOut (Standard V3 encoding)
-          // Actually eagleSwapV3Direct takes bytes path? No, looking at ABI:
-          // function eagleSwapV3Direct(address router, bytes calldata path, address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut)
-          
-          // We need to encode the path for V3.
-          // Format: [tokenIn (20)][fee (3)][tokenOut (20)]
-          const fee = quote.fees || 2500; // Default 0.25% if missing
-          const pathTypes = ['address', 'uint24', 'address'];
-          const pathValues = [quote.fromToken, fee, quote.toToken];
-          
-          // Note: ethers solidityPacked is needed for path encoding
-          // But eagleSwapV3Direct signature implies it handles it? 
-          // Let's look at the ABI again: `bytes calldata path`
-          // Typically V3 paths are packed bytes.
-          
-          const encodedPath = ethers.solidityPacked(
-             ['address', 'uint24', 'address'],
-             [quote.fromToken, fee, quote.toToken]
-          );
-
-          tx = await contract.eagleSwapV3Direct(
-            routerV3,
-            encodedPath,
-            quote.fromToken,
-            quote.toToken,
-            quote.fromAmount,
-            quote.toAmountMin,
-            { value }
-          );
-        } else {
-          // V3 Multi-hop
-          // Encode path: tokenIn + fee + tokenMid + fee + tokenOut
-          // This is complex without the fee info for each hop.
-          // For now, assuming fixed fee or we need fees in path.
-          // Our getBestQuote returns simple path. We'll assume 2500 fee for hops if not provided.
-          
-          const types = [];
-          const values = [];
-          for (let i = 0; i < quote.path.length; i++) {
-             types.push('address');
-             values.push(quote.path[i]);
-             if (i < quote.path.length - 1) {
-                 types.push('uint24');
-                 values.push(quote.fees || 2500); // Approximation
-             }
-          }
-          
-          const encodedPath = ethers.solidityPacked(types, values);
-
-          tx = await contract.eagleSwapV3RouterMultiHop(
-            routerV3,
-            encodedPath,
-            quote.fromToken,
-            quote.toToken,
-            quote.fromAmount,
-            quote.toAmountMin,
-            { value }
-          );
-        }
-      }
-
+      const tx = await (prepared.contract as any)[prepared.method](...prepared.args);
       await tx.wait();
       return tx.hash;
     } catch (error) {
       console.error('Error executing swap:', error);
       throw error;
     }
+  }
+
+  async simulateSwap(
+    quote: SwapQuote,
+    wallet: ethers.Wallet | ethers.HDNodeWallet,
+    chainId: number
+  ): Promise<SwapSimulationResult> {
+    try {
+      const provider = await WalletService.getProvider();
+      const connectedWallet = wallet.connect(provider);
+      const prepared = await this.prepareSwapExecution(quote, connectedWallet, chainId);
+
+      if (quote.fromToken !== ethers.ZeroAddress) {
+        const allowance = await this.checkAllowance(
+          quote.fromToken,
+          connectedWallet.address,
+          prepared.aggregatorAddress
+        );
+        if (allowance < BigInt(quote.fromAmount)) {
+          return {
+            ok: false,
+            reason: 'Insufficient token allowance. Please approve token first.',
+          };
+        }
+      }
+
+      await (prepared.contract as any)[prepared.method].staticCall(...prepared.args);
+      const gas = await (prepared.contract as any)[prepared.method].estimateGas(...prepared.args);
+      return {
+        ok: true,
+        gasEstimate: gas.toString(),
+      };
+    } catch (error: any) {
+      return {
+        ok: false,
+        reason: this.parseSwapError(error),
+      };
+    }
+  }
+
+  private parseSwapError(error: any): string {
+    const candidates = [
+      error?.reason,
+      error?.shortMessage,
+      error?.error?.reason,
+      error?.info?.error?.message,
+      error?.message,
+    ];
+    const message = candidates.find((m) => typeof m === 'string' && m.trim().length > 0) || 'Simulation failed';
+    const normalized = String(message);
+    if (normalized.toLowerCase().includes('insufficient allowance')) {
+      return 'Insufficient token allowance. Please approve token first.';
+    }
+    if (normalized.toLowerCase().includes('insufficient funds')) {
+      return 'Insufficient native balance for amount + gas.';
+    }
+    if (normalized.toLowerCase().includes('slippage')) {
+      return 'Swap would fail due to slippage.';
+    }
+    return normalized;
+  }
+
+  private async prepareSwapExecution(
+    quote: SwapQuote,
+    signer: ethers.Wallet | ethers.HDNodeWallet,
+    chainId: number
+  ): Promise<{
+    aggregatorAddress: string;
+    contract: ethers.Contract;
+    method: string;
+    args: any[];
+  }> {
+    const aggregatorAddress = AGGREGATOR_CONTRACTS[chainId];
+    if (!aggregatorAddress || !ethers.isAddress(aggregatorAddress)) {
+      throw new Error('Aggregator not supported on this chain');
+    }
+
+    const routerV2 = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+    const routerV3 = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4';
+    const contract = new ethers.Contract(aggregatorAddress, AGGREGATOR_ABI, signer);
+    const value = quote.fromToken === ethers.ZeroAddress ? quote.fromAmount : '0';
+
+    if (quote.quoteType === 'V2') {
+      return {
+        aggregatorAddress,
+        contract,
+        method: 'eagleSwapV2RouterSupportingFee',
+        args: [routerV2, quote.path, quote.fromAmount, quote.toAmountMin, { value }],
+      };
+    }
+
+    if (quote.path.length === 2) {
+      const fee = quote.fees || 2500;
+      const encodedPath = ethers.solidityPacked(
+        ['address', 'uint24', 'address'],
+        [quote.fromToken, fee, quote.toToken]
+      );
+      return {
+        aggregatorAddress,
+        contract,
+        method: 'eagleSwapV3Direct',
+        args: [
+          routerV3,
+          encodedPath,
+          quote.fromToken,
+          quote.toToken,
+          quote.fromAmount,
+          quote.toAmountMin,
+          { value },
+        ],
+      };
+    }
+
+    const types: string[] = [];
+    const values: Array<string | number> = [];
+    for (let i = 0; i < quote.path.length; i++) {
+      types.push('address');
+      values.push(quote.path[i]);
+      if (i < quote.path.length - 1) {
+        types.push('uint24');
+        values.push(quote.fees || 2500);
+      }
+    }
+    const encodedPath = ethers.solidityPacked(types as any, values as any);
+
+    return {
+      aggregatorAddress,
+      contract,
+      method: 'eagleSwapV3RouterMultiHop',
+      args: [
+        routerV3,
+        encodedPath,
+        quote.fromToken,
+        quote.toToken,
+        quote.fromAmount,
+        quote.toAmountMin,
+        { value },
+      ],
+    };
   }
 
   /**

@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function PlaceholderScreen({ route }: any) {
+  const { t } = useLanguage();
   const name = route.name || 'Screen';
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{name} (Coming Soon)</Text>
+      <Text style={styles.text}>{`${name} (${t.common.loading})`}</Text>
     </View>
   );
 }

@@ -40,9 +40,20 @@ import LanguageSettingsScreen from './src/screens/LanguageSettingsScreen';
 import BackupWalletScreen from './src/screens/BackupWalletScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import WalletService from './src/services/WalletService';
-import { LanguageProvider } from './src/i18n/LanguageContext';
+import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
 const Stack = createStackNavigator();
+
+function AppLoading() {
+  const { t } = useLanguage();
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
+      <ActivityIndicator size="large" color="#F3BA2F" />
+      <Text style={{ marginTop: 20, color: '#333' }}>{t.common.loading}</Text>
+    </View>
+  );
+}
 
 export default function App() {
   const [hasWallet, setHasWallet] = useState<boolean | null>(null);
@@ -66,10 +77,7 @@ export default function App() {
   if (hasWallet === null) {
     return (
       <LanguageProvider>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F5F5' }}>
-          <ActivityIndicator size="large" color="#F3BA2F" />
-          <Text style={{ marginTop: 20, color: '#333' }}>Loading wallet...</Text>
-        </View>
+        <AppLoading />
       </LanguageProvider>
     );
   }
