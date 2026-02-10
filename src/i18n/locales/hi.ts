@@ -98,6 +98,9 @@ export const hi: TranslationStrings = {
     appSubtitle: 'सुरक्षित मल्टी-चेन क्रिप्टो वॉलेट',
     poweredBy: 'ईगल नेटवर्क द्वारा संचालित',
     privateKeyName: 'निजी कुंजी',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'भेजें',
@@ -321,6 +324,19 @@ export const hi: TranslationStrings = {
     addInfo: 'ℹ️ यह DApp इसमें जोड़ा जाएगा ',
     pancakeDesc: 'BSC पर अग्रणी DEX',
     uniswapDesc: 'विकेंद्रीकृत एक्सचेंज',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'सेटिंग्स',
@@ -415,6 +431,14 @@ export const hi: TranslationStrings = {
   priceAlert: {
     above: 'ऊपर',
     below: 'नीचे',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

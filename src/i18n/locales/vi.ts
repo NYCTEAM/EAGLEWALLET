@@ -98,6 +98,9 @@ export const vi: TranslationStrings = {
     appSubtitle: 'Ví tiền điện tử đa chuỗi an toàn',
     poweredBy: 'Được hỗ trợ bởi Eagle Network',
     privateKeyName: 'Khóa riêng tư',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'Gửi',
@@ -321,6 +324,19 @@ export const vi: TranslationStrings = {
     addInfo: 'ℹ️ DApp này sẽ được thêm vào ',
     pancakeDesc: 'Sàn DEX hàng đầu trên BSC',
     uniswapDesc: 'Sàn giao dịch phi tập trung',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'Cài đặt',
@@ -415,6 +431,14 @@ export const vi: TranslationStrings = {
   priceAlert: {
     above: 'Trên',
     below: 'Dưới',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

@@ -42,7 +42,7 @@ export default function ExportPrivateKeyScreen({ navigation, route }: any) {
           : await WalletService.exportPrivateKey(password);
       } else {
         if (walletId) {
-          throw new Error('Mnemonic export is only available for the active wallet');
+          throw new Error(t.errors.permissionDenied);
         }
         value = await WalletService.exportMnemonic(password);
       }
@@ -76,7 +76,7 @@ export default function ExportPrivateKeyScreen({ navigation, route }: any) {
 
       <View style={styles.content}>
         <Text style={styles.warning}>{t.settings.exportPrivateKeyMessage}</Text>
-        {walletName ? <Text style={styles.walletName}>Wallet: {walletName}</Text> : null}
+        {walletName ? <Text style={styles.walletName}>{t.wallet.walletName}: {walletName}</Text> : null}
 
         <View style={styles.modeRow}>
           <TouchableOpacity

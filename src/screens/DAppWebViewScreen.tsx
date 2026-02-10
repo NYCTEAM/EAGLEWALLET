@@ -159,7 +159,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const approvedOriginsRef = useRef<Set<string>>(new Set());
 
   const initialUrl = route.params?.url || 'https://pancakeswap.finance';
-  const title = route.params?.title || 'DApp';
+  const title = route.params?.title || t.dapp.dappBrowser;
   const [currentUrl, setCurrentUrl] = useState(initialUrl);
   const [canGoBack, setCanGoBack] = useState(false);
   const chainId = WalletService.getCurrentNetwork().chainId;
@@ -203,12 +203,12 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     }
 
     const approved = await askForApproval(
-      'Connect Wallet',
-      `${origin}\n\nThis site wants to connect to your wallet address.`
+      t.dapp.connectWallet,
+      `${origin}\n\n${t.dapp.connectWalletMessage}`
     );
 
     if (!approved) {
-      throw new Error('User rejected connection request');
+      throw new Error(t.errors.operationCancelled);
     }
 
     approvedOriginsRef.current.add(origin);
@@ -275,9 +275,9 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         const message = decodeSignMessage(raw);
         const preview = message.length > 180 ? `${message.slice(0, 180)}...` : message;
         await ensureDappConnected(origin);
-        const approved = await askForApproval('Sign Message', `${origin}\n\n${preview}`);
+        const approved = await askForApproval(t.dapp.signMessage, `${origin}\n\n${preview}`);
         if (!approved) {
-          throw new Error('User rejected signature request');
+          throw new Error(t.errors.operationCancelled);
         }
         return WalletService.signMessage(message);
       }
@@ -287,9 +287,9 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         const message = decodeSignMessage(raw);
         const preview = message.length > 180 ? `${message.slice(0, 180)}...` : message;
         await ensureDappConnected(origin);
-        const approved = await askForApproval('Sign Message', `${origin}\n\n${preview}`);
+        const approved = await askForApproval(t.dapp.signMessage, `${origin}\n\n${preview}`);
         if (!approved) {
-          throw new Error('User rejected signature request');
+          throw new Error(t.errors.operationCancelled);
         }
         return WalletService.signMessage(message);
       }
@@ -301,11 +301,11 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         const typed = normalizeTypedData(raw);
         await ensureDappConnected(origin);
         const approved = await askForApproval(
-          'Sign Typed Data',
-          `${origin}\n\nA dApp requested EIP-712 signature.`
+          t.dapp.signTypedData,
+          `${origin}\n\n${t.dapp.signTypedDataMessage}`
         );
         if (!approved) {
-          throw new Error('User rejected typed data signature');
+          throw new Error(t.errors.operationCancelled);
         }
         return WalletService.signTypedData(typed.domain, typed.types, typed.message);
       }
@@ -313,20 +313,20 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
       case 'eth_sendTransaction': {
         const tx = params[0] || {};
         if (!tx.to) {
-          throw new Error('Transaction missing recipient');
+          throw new Error(t.errors.invalidAddress);
         }
 
         await ensureDappConnected(origin);
         const txValue = tx.value != null ? ethers.formatEther(ethers.toBigInt(tx.value)) : '0';
         const approved = await askForApproval(
-          'Send Transaction',
-          `${origin}\n\nTo: ${tx.to}\nValue: ${txValue}`
+          t.send.confirmTransaction,
+          `${origin}\n\n${t.send.to}: ${tx.to}\n${t.send.amount}: ${txValue}`
         );
         if (!approved) {
-          throw new Error('User rejected transaction request');
+          throw new Error(t.errors.operationCancelled);
         }
 
-        await WalletService.authorizeSensitiveAction('Approve dApp transaction');
+        await WalletService.authorizeSensitiveAction(t.send.confirmTransaction);
 
         const wallet = await WalletService.getWallet();
         const requestTx: any = { to: tx.to };
@@ -346,15 +346,15 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         const chainParam = params[0]?.chainId ?? params[0];
         const targetChainId = Number(ethers.toBigInt(chainParam));
         if (targetChainId !== 56) {
-          throw new Error('Only BSC (56) is supported');
+          throw new Error(t.errors.networkError);
         }
         await ensureDappConnected(origin);
         const approved = await askForApproval(
-          'Switch Network',
-          `${origin}\n\nSwitch network to chainId ${targetChainId}?`
+          t.network.selectNetwork,
+          `${origin}\n\n${t.network.selectNetwork} (${t.network.chainId}: ${targetChainId})`
         );
         if (!approved) {
-          throw new Error('User rejected network switch');
+          throw new Error(t.errors.operationCancelled);
         }
         await WalletService.switchNetwork(targetChainId);
         await syncWalletState();
@@ -365,7 +365,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         return null;
 
       default:
-        throw new Error(`Unsupported method: ${method}`);
+        throw new Error(`${t.errors.invalidInput}: ${method}`);
     }
   };
 
@@ -387,7 +387,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
       const result = await handleBridgeRequest(request, origin);
       sendBridgeResponse(request.id, result, undefined);
     } catch (error: any) {
-      sendBridgeResponse(request.id, undefined, error?.message || 'Wallet request failed');
+      sendBridgeResponse(request.id, undefined, error?.message || t.errors.unknownError);
     }
   };
 
@@ -416,7 +416,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
             <Text style={styles.headerAction}>{t.common.refresh}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => Linking.openURL(currentUrl)}>
-            <Text style={styles.headerAction}>Open</Text>
+            <Text style={styles.headerAction}>{t.dapp.openInBrowser}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={shareCurrentUrl}>
             <Text style={styles.headerAction}>{t.common.share}</Text>

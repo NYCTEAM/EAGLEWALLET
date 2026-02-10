@@ -53,7 +53,7 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
           <Text style={styles.title}>{t.transaction.transactionDetails}</Text>
           <View style={{ width: 48 }} />
         </View>
-        <Text style={styles.empty}>Transaction data missing</Text>
+        <Text style={styles.empty}>{t.errors.notFound}</Text>
       </SafeAreaView>
     );
   }

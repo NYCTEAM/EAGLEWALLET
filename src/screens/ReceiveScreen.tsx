@@ -31,15 +31,17 @@ export default function ReceiveScreen({ route, navigation }: any) {
   const [network] = useState(WalletService.getCurrentNetwork());
 
   const displaySymbol = token?.symbol || network?.symbol || 'BNB';
-  const networkLabel = `${network?.name || 'BNB Smart Chain'} (${network?.symbol || 'BNB'})`;
-  const commonText = t.common || {};
-  const receiveText = t.receive || {};
-  const errorText = t.errors || {};
-  const receiveTemplate = receiveText.onlyReceive || 'Only receive {symbol} on this address';
+  const networkName = network?.name || t.network.bsc || t.network.network;
+  const networkSymbol = network?.symbol || 'BNB';
+  const networkLabel = `${networkName} (${networkSymbol})`;
+  const commonText = t.common;
+  const receiveText = t.receive;
+  const errorText = t.errors;
+  const receiveTemplate = receiveText.onlyReceive;
   const receiveHint = receiveTemplate.includes('{symbol}')
     ? receiveTemplate.replace('{symbol}', networkLabel)
     : `${receiveTemplate} ${networkLabel}`;
-  const shareLabel = receiveText.share || 'Share';
+  const shareLabel = receiveText.share;
   const qrImageUrl = address
     ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data=${encodeURIComponent(address)}`
     : '';
@@ -61,22 +63,22 @@ export default function ReceiveScreen({ route, navigation }: any) {
 
   const copyAddress = () => {
     if (!address) {
-      Alert.alert(commonText.error || 'Error', errorText.unknownError || 'Address unavailable');
+      Alert.alert(commonText.error, errorText.notFound);
       return;
     }
     Clipboard.setString(address);
-    Alert.alert(commonText.copied || 'Copied', receiveText.addressCopied || 'Address copied');
+    Alert.alert(commonText.copied, receiveText.addressCopied);
   };
 
   const shareAddress = () => {
     if (!address) {
-      Alert.alert(commonText.error || 'Error', errorText.unknownError || 'Address unavailable');
+      Alert.alert(commonText.error, errorText.notFound);
       return;
     }
 
     Share.share({
-      title: receiveText.shareAddress || 'Share Address',
-      message: `${displaySymbol} (${network?.name || 'BNB Smart Chain'})\n${address}`,
+      title: receiveText.shareAddress,
+      message: `${displaySymbol} (${networkName})\n${address}`,
     });
   };
 
@@ -104,7 +106,7 @@ export default function ReceiveScreen({ route, navigation }: any) {
               />
             ) : (
               <View style={[styles.qrPlaceholder, styles.qrCenter]}>
-                <Text style={styles.placeholderText}>QR unavailable</Text>
+                <Text style={styles.placeholderText}>{errorText.connectionFailed}</Text>
               </View>
             )}
           </View>
@@ -115,10 +117,10 @@ export default function ReceiveScreen({ route, navigation }: any) {
         <View style={styles.addressSection}>
           <View style={styles.addressInfoLeft}>
             <Text style={styles.tokenSymbol}>{displaySymbol}</Text>
-            <Text style={styles.addressText}>{address || 'Loading address...'}</Text>
+            <Text style={styles.addressText}>{address || commonText.loading}</Text>
           </View>
           <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-            <Text style={styles.copyButtonText}>{commonText.copy || 'Copy'}</Text>
+            <Text style={styles.copyButtonText}>{commonText.copy}</Text>
           </TouchableOpacity>
         </View>
 

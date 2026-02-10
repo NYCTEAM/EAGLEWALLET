@@ -35,7 +35,7 @@ export default function AddWalletScreen({ navigation }: any) {
 
     const walletInstance = await MultiWalletService.getWalletInstance(walletId);
     if (!walletInstance) {
-      throw new Error('Unable to load wallet private key');
+      throw new Error(t.errors.notFound);
     }
 
     await WalletService.setActiveWalletFromPrivateKey(walletInstance.privateKey);
@@ -122,10 +122,10 @@ export default function AddWalletScreen({ navigation }: any) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.modeRow}>
-          {renderModeButton('create', 'Create')}
-          {renderModeButton('mnemonic', 'Mnemonic')}
-          {renderModeButton('privateKey', 'Private Key')}
-          {renderModeButton('watch', 'Watch')}
+          {renderModeButton('create', t.wallet.createWallet)}
+          {renderModeButton('mnemonic', t.wallet.mnemonic)}
+          {renderModeButton('privateKey', t.wallet.privateKey)}
+          {renderModeButton('watch', t.wallet.watchWallet)}
         </View>
 
         <Text style={styles.label}>{t.wallet.walletName}</Text>
@@ -179,7 +179,7 @@ export default function AddWalletScreen({ navigation }: any) {
               placeholderTextColor="#8D95AC"
               autoCapitalize="none"
             />
-            <Text style={styles.hint}>Watch wallet can view balances, but cannot send transactions.</Text>
+            <Text style={styles.hint}>{t.wallet.watchHint}</Text>
           </>
         ) : null}
 

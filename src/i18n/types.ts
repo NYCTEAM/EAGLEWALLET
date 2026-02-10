@@ -108,6 +108,8 @@ export interface TranslationStrings {
     appSubtitle: string;
     poweredBy: string;
     privateKeyName: string;
+    watchWallet: string;
+    watchHint: string;
   };
 
   // ===== SEND =====
@@ -343,6 +345,18 @@ export interface TranslationStrings {
     customDApp: string;
     icon: string;
     addInfo: string;
+    description: string;
+    category: string;
+    categoryDefi: string;
+    categoryNft: string;
+    categoryGame: string;
+    categorySocial: string;
+    categoryOther: string;
+    connectWallet: string;
+    connectWalletMessage: string;
+    signMessage: string;
+    signTypedData: string;
+    signTypedDataMessage: string;
     pancakeDesc: string;
     uniswapDesc: string;
   };
@@ -463,6 +477,13 @@ export interface TranslationStrings {
   priceAlert: {
     above: string;
     below: string;
+    targetPrice: string;
+    noAlerts: string;
+    triggered: string;
+    active: string;
+    paused: string;
+    pause: string;
+    resume: string;
   };
 
   // ===== AI =====

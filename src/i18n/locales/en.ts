@@ -100,6 +100,9 @@ export const en: TranslationStrings = {
     appSubtitle: 'Secure Multi-Chain Crypto Wallet',
     poweredBy: 'Powered by Eagle Network',
     privateKeyName: 'Private Key',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
 
   send: {
@@ -330,6 +333,19 @@ export const en: TranslationStrings = {
     addInfo: 'ℹ️ This DApp will be added to ',
     pancakeDesc: 'Leading DEX on BSC',
     uniswapDesc: 'Decentralized exchange',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
 
   settings: {
@@ -427,6 +443,14 @@ export const en: TranslationStrings = {
   priceAlert: {
     above: 'Above',
     below: 'Below',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
 
   ai: {

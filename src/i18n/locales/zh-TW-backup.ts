@@ -61,6 +61,9 @@ export const zhTW: TranslationStrings = {
     deleteSuccess: '錢包已刪除',
     myWallets: '我的錢包',
     activeWallet: '✓ 目前',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   errors: {
     walletNameRequired: '請輸入錢包名稱',
@@ -98,6 +101,19 @@ export const zhTW: TranslationStrings = {
     linkCopied: '連結已複製',
     favoriteAdded: '已新增至收藏',
     translateInDevelopment: '翻譯功能開發中',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: '設定',

@@ -90,17 +90,17 @@ export default function PriceAlertScreen({ navigation }: any) {
       </View>
 
       <View style={styles.formCard}>
-        <Text style={styles.label}>Token Symbol</Text>
+        <Text style={styles.label}>{t.token.tokenSymbol}</Text>
         <TextInput
           style={styles.input}
           value={tokenSymbol}
           onChangeText={setTokenSymbol}
-          placeholder="BNB"
+          placeholder={network.symbol}
           placeholderTextColor="#8F97AD"
           autoCapitalize="characters"
         />
 
-        <Text style={styles.label}>Target Price (USD)</Text>
+        <Text style={styles.label}>{t.priceAlert.targetPrice}</Text>
         <TextInput
           style={styles.input}
           value={targetPrice}
@@ -134,16 +134,20 @@ export default function PriceAlertScreen({ navigation }: any) {
         data={alerts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>No alerts yet</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t.priceAlert.noAlerts}</Text>}
         renderItem={({ item }) => (
           <View style={styles.alertCard}>
             <View>
-              <Text style={styles.alertTitle}>{item.tokenSymbol} {item.condition} ${item.targetPrice}</Text>
-              <Text style={styles.alertSub}>{item.isTriggered ? 'Triggered' : item.isActive ? 'Active' : 'Paused'}</Text>
+              <Text style={styles.alertTitle}>
+                {item.tokenSymbol} {item.condition === 'above' ? t.priceAlert.above : t.priceAlert.below} ${item.targetPrice}
+              </Text>
+              <Text style={styles.alertSub}>
+                {item.isTriggered ? t.priceAlert.triggered : item.isActive ? t.priceAlert.active : t.priceAlert.paused}
+              </Text>
             </View>
             <View style={styles.alertActions}>
               <TouchableOpacity style={styles.smallButton} onPress={() => toggleAlert(item)}>
-                <Text style={styles.smallButtonText}>{item.isActive ? 'Pause' : 'Resume'}</Text>
+                <Text style={styles.smallButtonText}>{item.isActive ? t.priceAlert.pause : t.priceAlert.resume}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.smallButton, styles.deleteButton]} onPress={() => removeAlert(item.id)}>
                 <Text style={[styles.smallButtonText, styles.deleteText]}>{t.common.delete}</Text>

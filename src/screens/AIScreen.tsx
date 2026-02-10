@@ -381,7 +381,7 @@ export default function AIScreen({ navigation }: any) {
               <Text style={styles.tierName}>{t.ai.holder}</Text>
             </View>
             <Text style={styles.tierDesc}>{t.ai.buyEagle} (50+ EAGLE)</Text>
-            <Text style={styles.tierLimit}>10,000 Tokens/Day</Text>
+            <Text style={styles.tierLimit}>{t.ai.dailyLimit}: 10,000</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.tierOption} onPress={async () => {
@@ -401,7 +401,7 @@ export default function AIScreen({ navigation }: any) {
               <Text style={styles.tierName}>{t.ai.vip}</Text>
             </View>
             <Text style={styles.tierDesc}>{t.ai.buyNft} (Eagle NFT)</Text>
-            <Text style={styles.tierLimit}>50,000 Tokens/Day</Text>
+            <Text style={styles.tierLimit}>{t.ai.dailyLimit}: 50,000</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.tierOption} onPress={handleSubscribe}>
@@ -410,7 +410,7 @@ export default function AIScreen({ navigation }: any) {
               <Text style={styles.tierName}>{t.ai.pro}</Text>
             </View>
             <Text style={styles.tierDesc}>{t.ai.pro} (200 EAGLE/Mo)</Text>
-            <Text style={styles.tierLimit}>100,000+ Tokens/Day</Text>
+            <Text style={styles.tierLimit}>{t.ai.dailyLimit}: 100,000+</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 

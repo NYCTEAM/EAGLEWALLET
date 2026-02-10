@@ -98,6 +98,9 @@ export const zhTW: TranslationStrings = {
     appSubtitle: '安全的多鏈加密錢包',
     poweredBy: '由 Eagle Network 提供支援',
     privateKeyName: '私鑰',
+  
+    watchWallet: '????',
+    watchHint: '??????????????????'
   },
   send: {
     send: '發送',
@@ -321,6 +324,19 @@ export const zhTW: TranslationStrings = {
     addInfo: 'ℹ️ 此DApp將被新增到 ',
     pancakeDesc: 'BSC上的領先DEX',
     uniswapDesc: '去中心化交易所',
+  
+    description: '??',
+    category: '??',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: '??',
+    categorySocial: '??',
+    categoryOther: '??',
+    connectWallet: '????',
+    connectWalletMessage: '??????????????',
+    signMessage: '????',
+    signTypedData: '???????',
+    signTypedDataMessage: 'DApp ?? EIP-712 ???'
   },
   settings: {
     settings: '設定',
@@ -415,6 +431,14 @@ export const zhTW: TranslationStrings = {
   priceAlert: {
     above: '高於',
     below: '低於',
+  
+    targetPrice: '?????USD?',
+    noAlerts: '????',
+    triggered: '???',
+    active: '???',
+    paused: '???',
+    pause: '??',
+    resume: '??'
   },
   ai: {
     title: 'Eagle AI',

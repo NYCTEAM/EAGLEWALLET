@@ -86,6 +86,9 @@ export const zh: TranslationStrings = {
     walletAddress: '钱包地址',
     copyAddress: '复制地址',
     addressCopied: '地址已复制',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
 
   send: {
@@ -295,6 +298,19 @@ export const zh: TranslationStrings = {
     dappAdded: 'DApp已添加',
     removeDApp: '移除DApp',
     openInBrowser: '在浏览器打开',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
 
   settings: {

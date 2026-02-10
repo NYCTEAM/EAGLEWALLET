@@ -63,7 +63,7 @@ export default function CreateWalletScreen({ navigation }: any) {
           setMnemonic(randomWallet.mnemonic.phrase);
           setStep('show_mnemonic');
         } else {
-          throw new Error('Failed to generate mnemonic');
+          throw new Error(t.errors.createWalletFailed);
         }
       } catch (error) {
         console.error(error);

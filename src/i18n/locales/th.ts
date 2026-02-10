@@ -98,6 +98,9 @@ export const th: TranslationStrings = {
     appSubtitle: 'กระเป๋าเงินคริปโตหลายเชนที่ปลอดภัย',
     poweredBy: 'ขับเคลื่อนโดย Eagle Network',
     privateKeyName: 'คีย์ส่วนตัว',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'ส่ง',
@@ -321,6 +324,19 @@ export const th: TranslationStrings = {
     addInfo: 'ℹ️ DApp นี้จะถูกเพิ่มไปยัง ',
     pancakeDesc: 'DEX ชั้นนำบน BSC',
     uniswapDesc: 'การแลกเปลี่ยนแบบกระจายศูนย์',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'การตั้งค่า',
@@ -415,6 +431,14 @@ export const th: TranslationStrings = {
   priceAlert: {
     above: 'สูงกว่า',
     below: 'ต่ำกว่า',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

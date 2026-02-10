@@ -101,7 +101,7 @@ export default function WalletsScreen({ navigation }: any) {
           <View style={styles.badges}>
             {isActive ? <Text style={styles.activeBadge}>{t.wallet.activeWallet}</Text> : null}
             {item.isDefault ? <Text style={styles.defaultBadge}>{t.network.selected}</Text> : null}
-            {item.type === 'watch' ? <Text style={styles.watchBadge}>WATCH</Text> : null}
+            {item.type === 'watch' ? <Text style={styles.watchBadge}>{t.wallet.watchWallet}</Text> : null}
           </View>
         </View>
 

@@ -37,7 +37,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const [totalValue, setTotalValue] = useState('0.00');
   const [address, setAddress] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [walletName, setWalletName] = useState('Main Wallet');
+  const [walletName, setWalletName] = useState('');
   const [tokens, setTokens] = useState<any[]>([]);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
@@ -235,7 +235,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           onPress={() => navigation.navigate('Wallets')}
         >
           <View style={styles.walletIcon} />
-          <Text style={styles.walletName}>{walletName}</Text>
+          <Text style={styles.walletName}>{walletName || t.home.myWallet}</Text>
           <Text style={styles.dropdownIcon}>▼</Text>
         </TouchableOpacity>
         
@@ -320,7 +320,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
                 style={[styles.tabButton, activeTab === 'nft' && styles.activeTabButton]}
                 onPress={() => setActiveTab('nft')}
               >
-                <Text style={[styles.tabText, activeTab === 'nft' && styles.activeTabText]}>NFTs</Text>
+                <Text style={[styles.tabText, activeTab === 'nft' && styles.activeTabText]}>{t.home.nft}</Text>
               </TouchableOpacity>
             </View>
             
@@ -412,7 +412,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
               ) : (
                 <View style={styles.emptyNftState}>
                   <Text style={styles.emptyNftIcon}>🖼️</Text>
-                  <Text style={styles.emptyNftText}>No NFTs found</Text>
+                  <Text style={styles.emptyNftText}>{t.nft.noNFTs}</Text>
                 </View>
               )}
             </View>

@@ -108,7 +108,7 @@ export default function AddDAppScreen({ navigation }: any) {
           placeholderTextColor="#8E96AD"
         />
 
-        <Text style={styles.label}>Description</Text>
+        <Text style={styles.label}>{t.dapp.description}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={description}
@@ -119,13 +119,13 @@ export default function AddDAppScreen({ navigation }: any) {
           placeholderTextColor="#8E96AD"
         />
 
-        <Text style={styles.label}>Category</Text>
+        <Text style={styles.label}>{t.dapp.category}</Text>
         <View style={styles.categoryRow}>
-          {renderCategoryButton('defi', 'DeFi')}
-          {renderCategoryButton('nft', 'NFT')}
-          {renderCategoryButton('game', 'Game')}
-          {renderCategoryButton('social', 'Social')}
-          {renderCategoryButton('other', 'Other')}
+          {renderCategoryButton('defi', t.dapp.categoryDefi)}
+          {renderCategoryButton('nft', t.dapp.categoryNft)}
+          {renderCategoryButton('game', t.dapp.categoryGame)}
+          {renderCategoryButton('social', t.dapp.categorySocial)}
+          {renderCategoryButton('other', t.dapp.categoryOther)}
         </View>
 
         <TouchableOpacity style={styles.submitButton} onPress={saveDapp} disabled={saving}>

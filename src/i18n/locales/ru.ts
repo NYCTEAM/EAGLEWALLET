@@ -98,6 +98,9 @@ export const ru: TranslationStrings = {
     appSubtitle: 'Безопасный мультичейн криптокошелек',
     poweredBy: 'При поддержке Eagle Network',
     privateKeyName: 'Приватный ключ',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'Отправить',
@@ -321,6 +324,19 @@ export const ru: TranslationStrings = {
     addInfo: 'ℹ️ Это DApp будет добавлено в ',
     pancakeDesc: 'Ведущая DEX на BSC',
     uniswapDesc: 'Децентрализованная биржа',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'Настройки',
@@ -415,6 +431,14 @@ export const ru: TranslationStrings = {
   priceAlert: {
     above: 'Выше',
     below: 'Ниже',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

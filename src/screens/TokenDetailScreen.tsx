@@ -1,6 +1,6 @@
 /**
  * Eagle Wallet - Token Detail Screen
- * Shows detailed token info, actions, and transaction history
+ * Shows token details, actions, and transaction history.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -9,6 +9,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,8 @@ import WalletService from '../services/WalletService';
 import TransactionService, { Transaction } from '../services/TransactionService';
 import TokenLogoService from '../services/TokenLogoService';
 
+const HISTORY_TIMEOUT_MS = 8000;
+
 export default function TokenDetailScreen({ route, navigation }: any) {
   const { token } = route.params;
   const { t } = useLanguage();
@@ -33,26 +36,55 @@ export default function TokenDetailScreen({ route, navigation }: any) {
   const network = WalletService.getCurrentNetwork();
   const tokenLogo = TokenLogoService.getTokenLogo(token.logo || token.symbol);
   const isNative = token.address === 'native';
+  const contractAddressText = isNative ? network.symbol : token.address;
+  const tokenExplorerUrl = isNative
+    ? network.blockExplorerUrl
+    : `${network.blockExplorerUrl}/token/${token.address}`;
+  const emptyActivityText = t.transaction.noTransactions;
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadHistory = async () => {
-      setLoading(true);
+      if (isMounted) {
+        setLoading(true);
+      }
+
       try {
         const address = await WalletService.getAddress();
         if (!address) {
-          setTransactions([]);
+          if (isMounted) {
+            setTransactions([]);
+          }
           return;
         }
 
-        setCurrentAddress(address);
-        const txs = await TransactionService.getTransactionHistory(address, network.chainId);
-        setTransactions(txs);
+        if (isMounted) {
+          setCurrentAddress(address);
+        }
+
+        const txs = await Promise.race<Transaction[]>([
+          TransactionService.getTransactionHistory(address, network.chainId),
+          new Promise<Transaction[]>((resolve) => {
+            setTimeout(() => resolve([]), HISTORY_TIMEOUT_MS);
+          }),
+        ]);
+
+        if (isMounted) {
+          setTransactions(Array.isArray(txs) ? txs : []);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadHistory();
+    void loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, [network.chainId]);
 
   const displayBalanceValue = useMemo(() => {
@@ -62,10 +94,18 @@ export default function TokenDetailScreen({ route, navigation }: any) {
 
   const openExplorer = (value: string, type: 'tx' | 'token' = 'tx') => {
     const path = type === 'token' ? 'token' : 'tx';
-    Linking.openURL(`${network.blockExplorerUrl}/${path}/${value}`);
+    void Linking.openURL(`${network.blockExplorerUrl}/${path}/${value}`);
+  };
+
+  const openTokenExplorer = () => {
+    void Linking.openURL(tokenExplorerUrl);
   };
 
   const copyAddress = () => {
+    if (isNative) {
+      Alert.alert(t.common.error, `${t.token.tokenAddress}: ${t.common.none}`);
+      return;
+    }
     Clipboard.setString(token.address);
     Alert.alert(t.common.copied, t.receive.addressCopied);
   };
@@ -196,21 +236,24 @@ export default function TokenDetailScreen({ route, navigation }: any) {
             ) : transactions.length > 0 ? (
               transactions.map((tx, i) => renderActivityItem(tx, i))
             ) : (
-              <Text style={styles.emptyText}>{t.transaction.noTransactions}</Text>
+              <Text style={styles.emptyText}>{emptyActivityText}</Text>
             )}
           </View>
         ) : (
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t.token.contract}</Text>
-              <TouchableOpacity onPress={copyAddress}>
-                <Text style={styles.infoValue}>
-                  {isNative ? network.symbol : `${token.address.substring(0, 10)}...${token.address.substring(38)}`}
-                </Text>
+              <Text style={styles.infoLabel}>{t.token.tokenAddress}</Text>
+              <TouchableOpacity onPress={copyAddress} style={styles.infoValueButton}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.infoValueInline}>
+                  <Text style={styles.infoAddressText} numberOfLines={1} ellipsizeMode="clip">
+                    {contractAddressText}
+                  </Text>
+                </ScrollView>
+                {!isNative ? <Text style={styles.copyHint}>{t.common.copy}</Text> : null}
               </TouchableOpacity>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Decimals</Text>
+              <Text style={styles.infoLabel}>{t.token.tokenDecimals}</Text>
               <Text style={styles.infoValue}>{token.decimals}</Text>
             </View>
             <View style={styles.infoRow}>
@@ -218,7 +261,19 @@ export default function TokenDetailScreen({ route, navigation }: any) {
               <Text style={styles.infoValue}>{network.name}</Text>
             </View>
             {!isNative ? (
-              <TouchableOpacity style={styles.explorerButton} onPress={() => openExplorer(token.address, 'token')}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{`${network.name} ${t.network.blockExplorer}`}</Text>
+                <TouchableOpacity onPress={openTokenExplorer} style={styles.infoValueButton}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.infoValueInline}>
+                    <Text style={styles.infoLinkText} numberOfLines={1} ellipsizeMode="clip">
+                      {tokenExplorerUrl}
+                    </Text>
+                  </ScrollView>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            {!isNative ? (
+              <TouchableOpacity style={styles.explorerButton} onPress={openTokenExplorer}>
                 <Text style={styles.explorerButtonText}>{t.token.viewOnExplorer}</Text>
               </TouchableOpacity>
             ) : null}
@@ -413,6 +468,33 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     maxWidth: '60%',
     textAlign: 'right',
+  },
+  infoValueButton: {
+    maxWidth: '68%',
+    alignItems: 'flex-end',
+  },
+  infoValueInline: {
+    maxWidth: '100%',
+  },
+  infoAddressText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '500',
+    ...Platform.select({
+      android: { includeFontPadding: false },
+      ios: {},
+      default: {},
+    }),
+  },
+  copyHint: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#F3BA2F',
+  },
+  infoLinkText: {
+    color: '#3B82F6',
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
   explorerButton: {
     marginTop: 24,

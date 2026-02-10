@@ -86,6 +86,9 @@ export const en: TranslationStrings = {
     walletAddress: 'Wallet Address',
     copyAddress: 'Copy Address',
     addressCopied: 'Address copied',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
 
   send: {
@@ -295,6 +298,19 @@ export const en: TranslationStrings = {
     dappAdded: 'DApp added',
     removeDApp: 'Remove DApp',
     openInBrowser: 'Open in Browser',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
 
   settings: {

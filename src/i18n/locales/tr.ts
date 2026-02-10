@@ -98,6 +98,9 @@ export const tr: TranslationStrings = {
     appSubtitle: 'Güvenli Çok Zincirli Kripto Cüzdanı',
     poweredBy: 'Eagle Network tarafından desteklenmektedir',
     privateKeyName: 'Özel Anahtar',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'Gönder',
@@ -321,6 +324,19 @@ export const tr: TranslationStrings = {
     addInfo: 'ℹ️ Bu DApp şuraya eklenecek: ',
     pancakeDesc: 'BSC\'de Lider DEX',
     uniswapDesc: 'Merkeziyetsiz Borsa',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'Ayarlar',
@@ -415,6 +431,14 @@ export const tr: TranslationStrings = {
   priceAlert: {
     above: 'Üstünde',
     below: 'Altında',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

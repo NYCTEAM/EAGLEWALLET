@@ -98,6 +98,9 @@ export const id: TranslationStrings = {
     appSubtitle: 'Dompet Kripto Multi-Chain Aman',
     poweredBy: 'Didukung oleh Eagle Network',
     privateKeyName: 'Kunci Pribadi',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'Kirim',
@@ -321,6 +324,19 @@ export const id: TranslationStrings = {
     addInfo: 'ℹ️ DApp ini akan ditambahkan ke ',
     pancakeDesc: 'DEX Terkemuka di BSC',
     uniswapDesc: 'Bursa Terdesentralisasi',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'Pengaturan',
@@ -415,6 +431,14 @@ export const id: TranslationStrings = {
   priceAlert: {
     above: 'Di Atas',
     below: 'Di Bawah',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',

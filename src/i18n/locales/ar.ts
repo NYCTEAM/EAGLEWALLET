@@ -98,6 +98,9 @@ export const ar: TranslationStrings = {
     appSubtitle: 'محفظة تشفير آمنة متعددة السلاسل',
     poweredBy: 'بدعم من Eagle Network',
     privateKeyName: 'المفتاح الخاص',
+  
+    watchWallet: 'Watch Wallet',
+    watchHint: 'Watch wallets can view balances but cannot send transactions.'
   },
   send: {
     send: 'إرسال',
@@ -321,6 +324,19 @@ export const ar: TranslationStrings = {
     addInfo: 'ℹ️ سيتم إضافة هذا DApp إلى ',
     pancakeDesc: 'أفضل DEX على BSC',
     uniswapDesc: 'منصة تبادل لامركزية',
+  
+    description: 'Description',
+    category: 'Category',
+    categoryDefi: 'DeFi',
+    categoryNft: 'NFT',
+    categoryGame: 'Game',
+    categorySocial: 'Social',
+    categoryOther: 'Other',
+    connectWallet: 'Connect Wallet',
+    connectWalletMessage: 'This site wants to connect to your wallet address.',
+    signMessage: 'Sign Message',
+    signTypedData: 'Sign Typed Data',
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
   },
   settings: {
     settings: 'الإعدادات',
@@ -415,6 +431,14 @@ export const ar: TranslationStrings = {
   priceAlert: {
     above: 'فوق',
     below: 'تحت',
+  
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume'
   },
   ai: {
     title: 'Eagle AI',
