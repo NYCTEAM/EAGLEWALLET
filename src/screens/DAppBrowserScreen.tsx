@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,8 +15,8 @@ import DAppService, { DApp } from '../services/DAppService';
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
-const CUSTOM_DAPPS_KEY = 'EAGLE_CUSTOM_DAPPS';
 const RECENT_DAPPS_KEY = 'EAGLE_RECENT_DAPPS';
+const EAGLE_LOGO = require('../assets/tokens/eagle.png');
 
 export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -27,16 +28,14 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
     const network = WalletService.getCurrentNetwork();
     const featured = DAppService.getDAppsForChain(network.chainId);
 
-    const customRaw = await AsyncStorage.getItem(CUSTOM_DAPPS_KEY);
     const recentRaw = await AsyncStorage.getItem(RECENT_DAPPS_KEY);
-
-    const custom = customRaw ? (JSON.parse(customRaw) as DApp[]) : [];
     const recent = recentRaw ? (JSON.parse(recentRaw) as DApp[]) : [];
+    const allowedIds = new Set(featured.map((item) => item.id));
+    const chainRecent = recent.filter(
+      (item) => item.chainId === network.chainId && allowedIds.has(item.id)
+    );
 
-    const chainCustom = custom.filter((item) => item.chainId === network.chainId);
-    const chainRecent = recent.filter((item) => item.chainId === network.chainId);
-
-    setAllDapps([...featured, ...chainCustom]);
+    setAllDapps(featured);
     setRecentDapps(chainRecent);
   }, []);
 
@@ -71,10 +70,16 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
     );
   }, [allDapps, query]);
 
-  const renderDapp = ({ item }: { item: DApp }) => (
+  const renderDapp = ({ item }: { item: DApp }) => {
+    const isEagle = item.icon === 'eagle' || item.id.startsWith('eagleswap');
+    return (
     <TouchableOpacity style={styles.dappCard} onPress={() => openDapp(item)}>
       <View style={styles.iconBox}>
-        <Text style={styles.iconText}>{item.icon?.[0] || item.name[0]}</Text>
+        {isEagle ? (
+          <Image source={EAGLE_LOGO} style={styles.logo} />
+        ) : (
+          <Text style={styles.iconText}>{item.icon?.[0] || item.name[0]}</Text>
+        )}
       </View>
       <View style={styles.dappInfo}>
         <Text style={styles.dappName}>{item.name}</Text>
@@ -82,7 +87,8 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
         <Text style={styles.dappUrl} numberOfLines={1}>{item.url}</Text>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -95,9 +101,7 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
           <View style={{ width: 48 }} />
         )}
         <Text style={styles.title}>{t.dapp.dappBrowser}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('AddDApp')}>
-          <Text style={styles.add}>+ {t.common.add}</Text>
-        </TouchableOpacity>
+        <View style={{ width: 48 }} />
       </View>
 
       <View style={styles.searchWrap}>
@@ -217,6 +221,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  logo: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   iconText: {
     color: '#FFFFFF',

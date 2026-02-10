@@ -192,6 +192,7 @@ export const th: TranslationStrings = {
     minutes: 'นาที',
     approve: 'อนุมัติ',
     approving: 'กำลังอนุมัติ...',
+    miningReward: 'คุณสามารถรับรางวัล EAGLE จำนวน {amount}',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const th: TranslationStrings = {
     failure: 'ล้มเหลว',
     confirming: 'กำลังยืนยัน...',
     confirmed: 'ยืนยันแล้ว',
+    miningReward: 'รางวัล EAGLE',
+    viewRewards: 'ดูรางวัล',
   },
   token: {
     tokens: 'โทเค็น',

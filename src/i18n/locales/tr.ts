@@ -192,6 +192,7 @@ export const tr: TranslationStrings = {
     minutes: 'dk',
     approve: 'Onayla',
     approving: 'Onaylanıyor...',
+    miningReward: '{amount} EAGLE ödülü kazanabilirsiniz',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const tr: TranslationStrings = {
     failure: 'Başarısız',
     confirming: 'Onaylanıyor...',
     confirmed: 'Onaylandı',
+    miningReward: 'EAGLE Ödülü',
+    viewRewards: 'Ödülleri Gör',
   },
   token: {
     tokens: 'Tokenlar',

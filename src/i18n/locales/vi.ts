@@ -192,6 +192,7 @@ export const vi: TranslationStrings = {
     minutes: 'phút',
     approve: 'Phê duyệt',
     approving: 'Đang phê duyệt...',
+    miningReward: 'Bạn có thể nhận {amount} phần thưởng EAGLE',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const vi: TranslationStrings = {
     failure: 'Thất bại',
     confirming: 'Đang xác nhận...',
     confirmed: 'Đã xác nhận',
+    miningReward: 'Phần thưởng EAGLE',
+    viewRewards: 'Xem phần thưởng',
   },
   token: {
     tokens: 'Token',

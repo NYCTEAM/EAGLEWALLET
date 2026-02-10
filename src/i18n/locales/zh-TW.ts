@@ -192,6 +192,7 @@ export const zhTW: TranslationStrings = {
     minutes: '分鐘',
     approve: '授權',
     approving: '授權中...',
+    miningReward: '可獲得 {amount} EAGLE 獎勵',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const zhTW: TranslationStrings = {
     failure: '失敗',
     confirming: '確認中...',
     confirmed: '已確認',
+    miningReward: 'EAGLE 獎勵',
+    viewRewards: '查看獎勵',
   },
   token: {
     tokens: '代幣',

@@ -197,6 +197,7 @@ export const en: TranslationStrings = {
     minutes: 'minutes',
     approve: 'Approve',
     approving: 'Approving...',
+    miningReward: 'You can earn {amount} EAGLE reward',
   },
 
   nft: {
@@ -262,6 +263,8 @@ export const en: TranslationStrings = {
     failure: 'Failure',
     confirming: 'Confirming...',
     confirmed: 'Confirmed',
+    miningReward: 'EAGLE Reward',
+    viewRewards: 'View Rewards',
   },
 
   token: {

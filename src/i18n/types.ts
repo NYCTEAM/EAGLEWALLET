@@ -207,6 +207,7 @@ export interface TranslationStrings {
     minutes: string;
     approve: string;
     approving: string;
+    miningReward: string;
   };
 
   // ===== NFT =====
@@ -274,6 +275,8 @@ export interface TranslationStrings {
     failure: string;
     confirming: string;
     confirmed: string;
+    miningReward: string;
+    viewRewards: string;
   };
 
   // ===== TOKEN =====

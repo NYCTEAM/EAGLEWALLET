@@ -174,6 +174,7 @@ export const zh: TranslationStrings = {
     slippage: '滑点',
     deadline: '截止时间',
     minutes: '分钟',
+    miningReward: '可获得 {amount} EAGLE 奖励',
   },
 
   nft: {
@@ -236,6 +237,8 @@ export const zh: TranslationStrings = {
     failure: '失败',
     confirming: '确认中...',
     confirmed: '已确认',
+    miningReward: 'EAGLE 奖励',
+    viewRewards: '查看奖励',
   },
 
   token: {

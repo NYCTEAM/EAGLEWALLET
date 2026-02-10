@@ -40,6 +40,8 @@ import LanguageSettingsScreen from './src/screens/LanguageSettingsScreen';
 import BackupWalletScreen from './src/screens/BackupWalletScreen';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import WalletService from './src/services/WalletService';
+import ApiBaseService from './src/services/ApiBaseService';
+import RewardsDappService from './src/services/RewardsDappService';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
 const Stack = createStackNavigator();
@@ -72,6 +74,11 @@ export default function App() {
     runCheck();
     const interval = setInterval(runCheck, 2000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    ApiBaseService.prewarm();
+    RewardsDappService.prewarm();
   }, []);
 
   if (hasWallet === null) {

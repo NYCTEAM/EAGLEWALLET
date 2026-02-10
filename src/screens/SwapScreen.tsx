@@ -20,6 +20,8 @@ import { useLanguage } from '../i18n/LanguageContext';
 import PriceService from '../services/PriceService';
 import SwapService, { SwapSimulationResult } from '../services/SwapService';
 import WalletService from '../services/WalletService';
+import SwapMiningService from '../services/SwapMiningService';
+import RewardsDappService from '../services/RewardsDappService';
 
 export default function SwapScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -261,8 +263,83 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       setShowConfirmModal(false);
       const wallet = await WalletService.getWallet();
       const network = WalletService.getCurrentNetwork();
-      await SwapService.executeSwap(swapQuote, wallet, network.chainId);
-      Alert.alert(t.common.success, t.swap.swapSuccess, [{ text: t.common.done, onPress: () => navigation.goBack() }]);
+      const txHash = await SwapService.executeSwap(swapQuote, wallet, network.chainId);
+
+      const openRewards = async () => {
+        const url = await RewardsDappService.getRewardsUrl();
+        navigation.navigate('DAppWebView', {
+          url,
+          title: t.transaction.viewRewards,
+        });
+      };
+
+      // Record swap mining reward (non-blocking)
+      const fromSymbol = fromToken?.symbol || 'UNKNOWN';
+      const toSymbol = toToken?.symbol || 'UNKNOWN';
+      const amountInNum = parseFloat(amount || '0');
+      const amountOutNum = parseFloat(quote?.amountOut || '0');
+      const tradeValueUsdt =
+        prices.from > 0
+          ? amountInNum * prices.from
+          : prices.to > 0
+            ? amountOutNum * prices.to
+            : 0;
+
+      const normalizeNativeForApi = (addr: string) =>
+        addr === ethers.ZeroAddress ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : addr;
+
+      let rewardAmount: number | null = null;
+      try {
+        const fromTokenAddress = fromToken?.address || ethers.ZeroAddress;
+        const toTokenAddress = toToken?.address || ethers.ZeroAddress;
+        const userAddress = (await WalletService.getAddress()) || '';
+        if (userAddress) {
+          const recordResult = await SwapMiningService.recordSwap({
+            txHash,
+            userAddress,
+            fromToken: normalizeNativeForApi(fromTokenAddress),
+            toToken: normalizeNativeForApi(toTokenAddress),
+            fromAmount: amountInNum,
+            toAmount: amountOutNum,
+            tradeValueUsdt: Number.isFinite(tradeValueUsdt) ? tradeValueUsdt : 0,
+            chainId: network.chainId,
+            routeInfo: `${fromSymbol} → ${toSymbol} via ${getDexName(quote?.quoteType)}`,
+            fromTokenSymbol: fromSymbol,
+            toTokenSymbol: toSymbol,
+            swapType: 'instant',
+            fromTokenDecimals: fromToken?.decimals || 18,
+            toTokenDecimals: toToken?.decimals || 18,
+            dexName: getDexName(quote?.quoteType),
+          });
+
+          const rawReward =
+            recordResult?.data?.eagleReward ??
+            recordResult?.eagleReward ??
+            0;
+          const parsedReward = Number(rawReward);
+          rewardAmount = Number.isFinite(parsedReward) ? parsedReward : 0;
+        }
+      } catch (error) {
+        console.warn('Swap mining record error:', error);
+      }
+
+      setTimeout(() => {
+        if (rewardAmount !== null) {
+          const rewardMessage = t.swap.miningReward.replace('{amount}', rewardAmount.toFixed(4));
+          Alert.alert(
+            t.swap.swapSuccess,
+            rewardMessage,
+            [
+              { text: t.transaction.viewRewards, onPress: openRewards },
+              { text: t.common.done, onPress: () => navigation.goBack() },
+            ]
+          );
+        } else {
+          Alert.alert(t.common.success, t.swap.swapSuccess, [
+            { text: t.common.done, onPress: () => navigation.goBack() },
+          ]);
+        }
+      }, 1000);
     } catch (error) {
       console.error('executeSwap', error);
       Alert.alert(t.common.error, t.swap.swapFailed);

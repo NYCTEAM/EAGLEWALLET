@@ -174,6 +174,7 @@ export const en: TranslationStrings = {
     slippage: 'Slippage',
     deadline: 'Deadline',
     minutes: 'minutes',
+    miningReward: 'You can earn {amount} EAGLE reward',
   },
 
   nft: {
@@ -236,6 +237,8 @@ export const en: TranslationStrings = {
     failure: 'Failure',
     confirming: 'Confirming...',
     confirmed: 'Confirmed',
+    miningReward: 'EAGLE Reward',
+    viewRewards: 'View Rewards',
   },
 
   token: {

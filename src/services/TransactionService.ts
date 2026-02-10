@@ -20,6 +20,8 @@ export interface Transaction {
     symbol: string;
     decimals: number;
   };
+  swapReward?: number;
+  swapRoute?: string;
   timestamp: number;
   status: 'pending' | 'success' | 'failed';
   gasUsed?: string;

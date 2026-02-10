@@ -192,6 +192,7 @@ export const ar: TranslationStrings = {
     minutes: 'دقيقة',
     approve: 'موافقة',
     approving: 'جاري الموافقة...',
+    miningReward: 'يمكنك كسب مكافأة {amount} EAGLE',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const ar: TranslationStrings = {
     failure: 'فشل',
     confirming: 'جاري التأكيد...',
     confirmed: 'تم التأكيد',
+    miningReward: 'مكافأة EAGLE',
+    viewRewards: 'عرض المكافآت',
   },
   token: {
     tokens: 'الرموز',

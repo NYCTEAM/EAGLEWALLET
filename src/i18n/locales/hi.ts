@@ -192,6 +192,7 @@ export const hi: TranslationStrings = {
     minutes: 'मिनट',
     approve: 'अनुमोदन',
     approving: 'अनुमोदन हो रहा है...',
+    miningReward: 'आप {amount} EAGLE पुरस्कार प्राप्त कर सकते हैं',
   },
   nft: {
     nft: 'एनएफटी',
@@ -255,6 +256,8 @@ export const hi: TranslationStrings = {
     failure: 'विफल',
     confirming: 'पुष्टि हो रही है...',
     confirmed: 'पुष्टि की गई',
+    miningReward: 'EAGLE पुरस्कार',
+    viewRewards: 'पुरस्कार देखें',
   },
   token: {
     tokens: 'टोकन',

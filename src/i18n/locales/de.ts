@@ -192,6 +192,7 @@ export const de: TranslationStrings = {
     minutes: 'Min',
     approve: 'Genehmigen',
     approving: 'Genehmigen...',
+    miningReward: 'Sie können {amount} EAGLE-Belohnung erhalten',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const de: TranslationStrings = {
     failure: 'Fehlschlag',
     confirming: 'Bestätigen...',
     confirmed: 'Bestätigt',
+    miningReward: 'EAGLE-Belohnung',
+    viewRewards: 'Belohnungen anzeigen',
   },
   token: {
     tokens: 'Token',

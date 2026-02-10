@@ -192,6 +192,7 @@ export const uk: TranslationStrings = {
     minutes: 'хв',
     approve: 'Схвалити',
     approving: 'Схвалення...',
+    miningReward: 'Ви можете отримати винагороду {amount} EAGLE',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const uk: TranslationStrings = {
     failure: 'Помилка',
     confirming: 'Підтвердження...',
     confirmed: 'Підтверджено',
+    miningReward: 'Винагорода EAGLE',
+    viewRewards: 'Переглянути винагороди',
   },
   token: {
     tokens: 'Токени',

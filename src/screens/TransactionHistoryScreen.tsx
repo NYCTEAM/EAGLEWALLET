@@ -13,6 +13,8 @@ import { ethers } from 'ethers';
 import WalletService from '../services/WalletService';
 import TransactionService, { Transaction } from '../services/TransactionService';
 import { useLanguage } from '../i18n/LanguageContext';
+import SwapMiningService from '../services/SwapMiningService';
+import RewardsDappService from '../services/RewardsDappService';
 
 export default function TransactionHistoryScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -28,13 +30,33 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       return;
     }
 
-    const [history, pending] = await Promise.all([
+    const [history, pending, mining] = await Promise.all([
       TransactionService.getTransactionHistory(address, network.chainId, 50),
       TransactionService.getPendingTransactions(),
+      SwapMiningService.getUserTransactions(address, 50),
     ]);
 
     const pendingChain = pending.filter((item) => item.chainId === network.chainId);
-    const merged = [...pendingChain, ...history].sort((a, b) => b.timestamp - a.timestamp);
+    const miningTxs = mining?.data?.transactions || [];
+    const miningMap = new Map<string, any>(
+      miningTxs.map((tx: any) => [String(tx.tx_hash || tx.hash || '').toLowerCase(), tx])
+    );
+
+    const merged = [...pendingChain, ...history]
+      .map((item) => {
+        const miningInfo = miningMap.get(item.hash.toLowerCase());
+        const reward = miningInfo?.eagle_reward ?? miningInfo?.eagle_earned ?? miningInfo?.eagleReward;
+        const rewardNum =
+          typeof reward === 'number' ? reward : reward !== undefined && reward !== null ? Number(reward) : undefined;
+        const safeReward = Number.isFinite(rewardNum) ? rewardNum : undefined;
+        return {
+          ...item,
+          swapReward: safeReward,
+          swapRoute: miningInfo?.route_info,
+        };
+      })
+      .sort((a, b) => b.timestamp - a.timestamp);
+
     setTxs(merged);
   }, []);
 
@@ -86,9 +108,22 @@ export default function TransactionHistoryScreen({ navigation }: any) {
           <Text style={styles.back}>{t.common.back}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>{t.transaction.history}</Text>
-        <TouchableOpacity onPress={loadTransactions}>
-          <Text style={styles.refresh}>{t.common.refresh}</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={async () => {
+              const url = await RewardsDappService.getRewardsUrl();
+              navigation.navigate('DAppWebView', {
+                url,
+                title: t.transaction.viewRewards,
+              });
+            }}
+          >
+            <Text style={styles.rewards}>{t.transaction.viewRewards}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={loadTransactions}>
+            <Text style={styles.refresh}>{t.common.refresh}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -104,6 +139,9 @@ export default function TransactionHistoryScreen({ navigation }: any) {
               <Text style={[styles.status, { color: statusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
             </View>
             <Text style={styles.amount}>{formatAmount(item)}</Text>
+            {item.swapReward !== undefined && (
+              <Text style={styles.reward}>{`${t.transaction.miningReward}: ${item.swapReward.toFixed(4)} EAGLE`}</Text>
+            )}
             <Text style={styles.meta}>{new Date(item.timestamp).toLocaleString()}</Text>
           </TouchableOpacity>
         )}
@@ -123,8 +161,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1E2230',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   back: { color: '#E9B949', fontSize: 16, fontWeight: '600' },
   title: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
+  rewards: { color: '#38D39F', fontSize: 13, fontWeight: '700', marginRight: 12 },
   refresh: { color: '#E9B949', fontSize: 13, fontWeight: '700' },
   list: { padding: 16, paddingBottom: 24 },
   item: {
@@ -143,6 +186,7 @@ const styles = StyleSheet.create({
   hash: { color: '#D8DEEE', fontSize: 12, fontWeight: '600' },
   status: { fontSize: 11, fontWeight: '700' },
   amount: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  reward: { color: '#38D39F', fontSize: 12, fontWeight: '700', marginBottom: 4 },
   meta: { color: '#98A1B8', fontSize: 11 },
   empty: { color: '#98A1B8', textAlign: 'center', marginTop: 24 },
 });

@@ -192,6 +192,7 @@ export const ja: TranslationStrings = {
     minutes: '分',
     approve: '承認',
     approving: '承認中...',
+    miningReward: '{amount} EAGLE の報酬を獲得できます',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const ja: TranslationStrings = {
     failure: '失敗',
     confirming: '確認中...',
     confirmed: '確認済み',
+    miningReward: 'EAGLE 報酬',
+    viewRewards: '報酬を見る',
   },
   token: {
     tokens: 'トークン',

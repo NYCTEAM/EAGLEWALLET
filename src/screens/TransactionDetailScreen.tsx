@@ -12,6 +12,7 @@ import {
 import Clipboard from '@react-native-clipboard/clipboard';
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
+import RewardsDappService from '../services/RewardsDappService';
 
 export default function TransactionDetailScreen({ navigation, route }: any) {
   const { t } = useLanguage();
@@ -34,6 +35,14 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
     const network = WalletService.getCurrentNetwork();
     const url = `${network.blockExplorerUrl}/tx/${tx.hash}`;
     await Linking.openURL(url);
+  };
+
+  const openRewards = async () => {
+    const url = await RewardsDappService.getRewardsUrl();
+    navigation.navigate('DAppWebView', {
+      url,
+      title: t.transaction.viewRewards,
+    });
   };
 
   const renderRow = (label: string, value: string | number | undefined) => (
@@ -77,6 +86,10 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
           {renderRow(t.transaction.from, tx.from)}
           {renderRow(t.transaction.to, tx.to)}
           {renderRow(t.transaction.amount, tx.value)}
+          {renderRow(
+            t.transaction.miningReward,
+            tx.swapReward !== undefined ? `${tx.swapReward.toFixed(4)} EAGLE` : '-'
+          )}
           {renderRow(t.transaction.time, new Date(tx.timestamp).toLocaleString())}
           {renderRow(t.transaction.nonce, tx.nonce)}
           {renderRow(t.transaction.block, tx.blockNumber)}
@@ -87,6 +100,9 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
 
         <TouchableOpacity style={styles.button} onPress={openExplorer}>
           <Text style={styles.buttonText}>{t.transaction.viewOnExplorer}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.secondaryButton} onPress={openRewards}>
+          <Text style={styles.secondaryButtonText}>{t.transaction.viewRewards}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -136,6 +152,20 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#141414',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  secondaryButton: {
+    marginTop: 10,
+    backgroundColor: '#1A1D29',
+    borderRadius: 10,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#2E3550',
+  },
+  secondaryButtonText: {
+    color: '#38D39F',
     fontWeight: '700',
     fontSize: 14,
   },

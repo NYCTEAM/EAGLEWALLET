@@ -192,6 +192,7 @@ export const id: TranslationStrings = {
     minutes: 'mnt',
     approve: 'Setujui',
     approving: 'Menyetujui...',
+    miningReward: 'Anda dapat memperoleh hadiah EAGLE sebesar {amount}',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const id: TranslationStrings = {
     failure: 'Gagal',
     confirming: 'Mengonfirmasi...',
     confirmed: 'Terkonfirmasi',
+    miningReward: 'Hadiah EAGLE',
+    viewRewards: 'Lihat hadiah',
   },
   token: {
     tokens: 'Token',

@@ -192,6 +192,7 @@ export const zh: TranslationStrings = {
     minutes: '分钟',
     approve: '授权',
     approving: '授权中...',
+    miningReward: '可获得 {amount} EAGLE 奖励',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const zh: TranslationStrings = {
     failure: '失败',
     confirming: '确认中...',
     confirmed: '已确认',
+    miningReward: 'EAGLE 奖励',
+    viewRewards: '查看奖励',
   },
   token: {
     tokens: '代币',

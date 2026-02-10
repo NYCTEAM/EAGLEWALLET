@@ -192,6 +192,7 @@ export const ko: TranslationStrings = {
     minutes: '분',
     approve: '승인',
     approving: '승인 중...',
+    miningReward: '{amount} EAGLE 보상을 받을 수 있습니다',
   },
   nft: {
     nft: 'NFT',
@@ -255,6 +256,8 @@ export const ko: TranslationStrings = {
     failure: '실패',
     confirming: '확인 중...',
     confirmed: '확인됨',
+    miningReward: 'EAGLE 보상',
+    viewRewards: '보상 보기',
   },
   token: {
     tokens: '토큰',
