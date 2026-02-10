@@ -13,9 +13,59 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public'))); // Serve Web UI
 
 // Configuration Helper
 const CONFIG_FILE = path.join(__dirname, 'config.json');
+
+// --- Search Tool Helper (Serper.dev - Free 2500/month) ---
+async function searchWeb(query) {
+    const apiKey = process.env.SERPER_API_KEY;
+    
+    if (!apiKey) {
+        console.log('⚠️ No SERPER_API_KEY found, search disabled');
+        return null;
+    }
+
+    try {
+        console.log(`🔍 [Serper] Searching Google for: "${query}"`);
+        const response = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: {
+                'X-API-KEY': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                q: query, 
+                num: 5,
+                gl: 'us',
+                hl: 'zh-cn'
+            })
+        });
+        
+        const data = await response.json();
+        console.log(`✅ [Serper] Got ${data.organic?.length || 0} results`);
+        
+        if (!data.organic || data.organic.length === 0) {
+            return "No search results found.";
+        }
+        
+        // Format results with source attribution
+        let formattedResults = `📰 Latest Search Results (${new Date().toLocaleString('zh-CN')}):\n\n`;
+        data.organic.slice(0, 5).forEach((r, i) => {
+            formattedResults += `${i + 1}. **${r.title}**\n`;
+            formattedResults += `   Source: ${r.link}\n`;
+            formattedResults += `   ${r.snippet}\n\n`;
+        });
+        
+        console.log(`📤 [Serper] Returning formatted results to AI`);
+        return formattedResults;
+        
+    } catch (error) {
+        console.error('❌ [Serper] Search Error:', error.message);
+        return "Error occurred while searching the web.";
+    }
+}
 
 const getConfig = () => {
     try {
@@ -42,14 +92,26 @@ let config = getConfig();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const APP_SECRET = process.env.APP_SECRET || 'eagle_wallet_secret_123'; // Protection header
 const RPC_URL = process.env.RPC_URL || 'https://bsc-dataseed.binance.org/'; // Default BSC
+const RPC_API_KEY = process.env.RPC_API_KEY; // Eagle HK RPC API Key
 
 // Initialize OpenAI
 const openai = new OpenAI({
     apiKey: OPENAI_API_KEY,
 });
 
-// Initialize Ethers Provider
-const provider = new ethers.JsonRpcProvider(RPC_URL);
+// Initialize Ethers Provider with API Key support
+let provider;
+if (RPC_API_KEY) {
+    // Eagle HK RPC with API key in header
+    const fetchRequest = new ethers.FetchRequest(RPC_URL);
+    fetchRequest.setHeader('X-API-Key', RPC_API_KEY);
+    provider = new ethers.JsonRpcProvider(fetchRequest);
+    console.log('✅ Using Eagle HK RPC with API key authentication');
+} else {
+    // Standard RPC without API key
+    provider = new ethers.JsonRpcProvider(RPC_URL);
+    console.log('✅ Using standard RPC:', RPC_URL);
+}
 const nftAbi = ["function balanceOf(address owner) view returns (uint256)"];
 const erc20Abi = [
     "function balanceOf(address owner) view returns (uint256)",
@@ -136,11 +198,21 @@ const getUserTier = async (walletAddress) => {
 
 // --- Routes ---
 
-app.get('/', (req, res) => {
+// Health Check
+app.get('/health', (req, res) => {
     res.send('Eagle AI Backend is Running 🦅');
 });
 
-// Verify Payment & Activate Subscription
+// Serve Web Interface explicitly
+app.get('/', (req, res) => {
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+    } else {
+        res.send('Eagle AI Backend is Running 🦅 (Web Interface not found in public/index.html)');
+    }
+});
+
 app.post('/api/verify-payment', async (req, res) => {
     const { txHash, walletAddress } = req.body;
     const authHeader = req.headers['x-app-secret'];
@@ -266,23 +338,108 @@ app.post('/api/chat', async (req, res) => {
         });
     }
 
-    // 4. Call OpenAI
+    // 4. Call OpenAI with Built-in Web Search (Responses API)
     try {
+        // Safe history mapping
+        const safeHistory = Array.isArray(history) ? history.map(h => ({
+            role: h.role === 'user' ? 'user' : 'assistant',
+            content: typeof h.content === 'string' ? h.content : ''
+        })) : [];
+
+        // Dynamic System Message with Time Context
+        const now = new Date();
+        const systemPrompt = `Current Date and Time: ${now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}. 
+        You are Eagle AI, a specialized crypto assistant for Eagle Wallet.
+        
+        IMPORTANT: When users ask about real-time information (news, current events, weather, latest prices, market movements, "why did X happen", etc.), you MUST use the search_web function to get accurate, up-to-date information.
+        
+        Always cite sources when using search results.`;
+        
         // Construct messages array
         const messagesToSend = [
-            { role: "system", content: currentConfig.prompts.system_message },
-            ...(history || []).slice(-4), // Only keep last 4 turns for context
+            { role: "system", content: systemPrompt },
+            ...safeHistory.slice(-4),
             { role: "user", content: message }
         ];
 
-        const completion = await openai.chat.completions.create({
+        // Define search tool for Function Calling
+        const tools = [
+            {
+                type: "function",
+                function: {
+                    name: "search_web",
+                    description: "Search the web for real-time information, news, current events, weather, latest crypto prices, market movements, or any information that requires up-to-date data. Use this when the user asks about recent events, current prices, news, or anything happening 'now', 'today', 'recently', or 'latest'.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            query: {
+                                type: "string",
+                                description: "The search query. Be specific and include relevant keywords. For example: 'Bitcoin price drop February 2026' or 'Shanghai weather today'"
+                            }
+                        },
+                        required: ["query"]
+                    }
+                }
+            }
+        ];
+
+        console.log('📤 Sending to OpenAI with Function Calling enabled');
+
+        // First API call - AI decides if it needs to search
+        let completion = await openai.chat.completions.create({
+            model: currentConfig.system_settings.openai_model,
             messages: messagesToSend,
-            model: currentConfig.system_settings.openai_model, // Use model from config
             max_tokens: currentConfig.system_settings.max_response_tokens,
+            tools: tools,
+            tool_choice: "auto" // Let AI decide
         });
 
-        const reply = completion.choices[0].message.content;
-        const totalTokens = completion.usage.total_tokens;
+        let reply = completion.choices[0].message?.content || '';
+        let totalTokens = completion.usage?.total_tokens || 0;
+        const toolCalls = completion.choices[0].message?.tool_calls;
+
+        // If AI wants to search, execute the search and call again
+        if (toolCalls && toolCalls.length > 0) {
+            console.log('🔍 AI decided to search:', toolCalls[0].function.arguments);
+            
+            // Add AI's message with tool calls to conversation
+            messagesToSend.push(completion.choices[0].message);
+
+            // Execute each tool call
+            for (const toolCall of toolCalls) {
+                if (toolCall.function.name === 'search_web') {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    const searchResults = await searchWeb(args.query);
+                    
+                    console.log('✅ Search completed, results length:', searchResults?.length || 0);
+                    
+                    // Add search results to conversation
+                    messagesToSend.push({
+                        tool_call_id: toolCall.id,
+                        role: "tool",
+                        name: "search_web",
+                        content: searchResults || "No results found."
+                    });
+                }
+            }
+
+            // Second API call - AI generates final answer with search results
+            console.log('📤 Sending search results back to AI for final answer');
+            const finalCompletion = await openai.chat.completions.create({
+                model: currentConfig.system_settings.openai_model,
+                messages: messagesToSend,
+                max_tokens: currentConfig.system_settings.max_response_tokens
+            });
+
+            reply = finalCompletion.choices[0].message?.content || '';
+            totalTokens += finalCompletion.usage?.total_tokens || 0;
+        }
+
+        if (!reply) {
+            reply = "I apologize, but I couldn't generate a response. Please try again.";
+        }
+
+        console.log('✅ OpenAI Response received, total tokens used:', totalTokens);
 
         // 5. Update Usage
         usageData.daily_usage[userKey] = currentUsage + totalTokens;
@@ -297,9 +454,39 @@ app.post('/api/chat', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('OpenAI Error:', error);
-        res.status(500).json({ error: 'AI Service currently unavailable' });
+        console.error('❌ Chat API Error:', error);
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        });
+        
+        // Return user-friendly error
+        let errorMessage = 'AI service temporarily unavailable';
+        if (error.message?.includes('API key')) {
+            errorMessage = 'API configuration error';
+        } else if (error.message?.includes('quota')) {
+            errorMessage = 'API quota exceeded';
+        } else if (error.message?.includes('timeout')) {
+            errorMessage = 'Request timeout';
+        }
+        
+        res.status(500).json({ 
+            error: errorMessage,
+            details: error.message 
+        });
     }
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        openai: !!OPENAI_API_KEY,
+        rpc: RPC_URL,
+        serper: !!process.env.SERPER_API_KEY
+    });
 });
 
 app.get('/api/status', async (req, res) => {

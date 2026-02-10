@@ -28,7 +28,7 @@ interface Message {
 
 type Tier = 'free' | 'holder' | 'vip' | 'pro';
 
-const API_URL = 'https://us.eagleswaps.com/api';
+const API_URL = 'https://ai.eagleswaps.com/api';
 const APP_SECRET = 'eagle_wallet_secret_123';
 const DEVICE_ID_KEY = 'EAGLE_DEVICE_ID';
 
@@ -150,6 +150,10 @@ export default function AIScreen({ navigation }: any) {
       
       if (!responseText) {
         // Call Backend AI
+        console.log('📤 Calling AI API:', API_URL);
+        console.log('Device ID:', deviceId);
+        console.log('Wallet:', walletAddress || 'Not connected');
+        
         const res = await fetch(`${API_URL}/chat`, {
             method: 'POST',
             headers: {
@@ -164,10 +168,13 @@ export default function AIScreen({ navigation }: any) {
             })
         });
         
-        const data = await res.json();
+        console.log('📥 Response status:', res.status);
         
-        if (data.error) {
-            throw new Error(data.error);
+        const data = await res.json();
+        console.log('📥 Response data:', data);
+        
+        if (!res.ok || data.error) {
+            throw new Error(data.error || `HTTP ${res.status}: ${res.statusText}`);
         }
 
         responseText = data.reply;
@@ -190,10 +197,11 @@ export default function AIScreen({ navigation }: any) {
       setMessages((prev) => [...prev, aiResponse]);
       
     } catch (error) {
-      console.error(error);
+      console.error('❌ AI Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: t.ai.error,
+        text: `${t.ai.error}\n\n${errorMessage}`,
         sender: 'ai',
         timestamp: Date.now(),
       };

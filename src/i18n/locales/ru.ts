@@ -458,6 +458,17 @@ export const ru: TranslationStrings = {
     marketAnalysis: 'Анализ рынка',
     securityCheck: 'Проверка безопасности',
     pricePrediction: 'Прогноз цен',
+    dailyLimit: 'Дневной лимит',
+    upgrade: 'Обновить',
+    currentTier: 'Текущий уровень',
+    free: 'Бесплатно',
+    holder: 'Держатель',
+    vip: 'NFT VIP',
+    pro: 'Подписка Pro',
+    tokensRemaining: 'токенов осталось',
+    upgradePrompt: 'Обновите для увеличения лимита',
+    buyEagle: 'Купить EAGLE',
+    buyNft: 'Купить NFT',
   },
 
   errors: {

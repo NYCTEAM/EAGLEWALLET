@@ -458,6 +458,17 @@ export const vi: TranslationStrings = {
     marketAnalysis: 'Phân tích thị trường',
     securityCheck: 'Kiểm tra bảo mật',
     pricePrediction: 'Dự đoán giá',
+    dailyLimit: 'Giới hạn hàng ngày',
+    upgrade: 'Nâng cấp',
+    currentTier: 'Cấp hiện tại',
+    free: 'Miễn phí',
+    holder: 'Người giữ',
+    vip: 'NFT VIP',
+    pro: 'Đăng ký Pro',
+    tokensRemaining: 'token còn lại',
+    upgradePrompt: 'Nâng cấp để tăng giới hạn',
+    buyEagle: 'Mua EAGLE',
+    buyNft: 'Mua NFT',
   },
 
   errors: {

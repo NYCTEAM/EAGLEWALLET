@@ -13,9 +13,9 @@ export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProp
   const { t } = useLanguage();
 
   const tabs = [
-    { key: 'wallet', label: t.home.wallet || 'Wallet', icon: '👛' },
+    { key: 'wallet', label: t.home.myWallet || 'Wallet', icon: '👛' },
     { key: 'swap', label: t.home.swap || 'Swap', icon: '⇄' },
-    { key: 'ai', label: 'AI', icon: '🤖' },
+    { key: 'ai', label: t.ai.title || 'AI', icon: '🤖' },
     { key: 'dapps', label: t.dapp.discover || 'Discover', icon: '🧭' },
     { key: 'settings', label: t.settings.settings || 'Settings', icon: '⚙️' },
   ];

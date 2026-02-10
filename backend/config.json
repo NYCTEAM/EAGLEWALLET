@@ -5,9 +5,9 @@
   },
   "limits": {
     "free_daily_tokens": 5000,
-    "holder_daily_tokens": 10000,
-    "vip_daily_tokens": 50000,
-    "pro_daily_tokens": 100000
+    "holder_daily_tokens": 50000,
+    "vip_daily_tokens": 100000,
+    "pro_daily_tokens": 500000
   },
   "nft_config": {
     "contract_address": "0x3c117d186c5055071eff91d87f2600eaf88d591d",

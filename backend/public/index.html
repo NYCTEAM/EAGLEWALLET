@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eagle AI - Your Crypto Assistant</title>
+    <style>
+        :root {
+            --primary: #F3BA2F;
+            --bg: #f5f5f5;
+            --white: #ffffff;
+            --text: #333333;
+            --gray: #999999;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            background: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .logo {
+            font-weight: bold;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+        .logo span { 
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .tier-badge {
+            background: #FFF8E1;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .wallet-btn {
+            background: #1E88E5;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        .wallet-btn:hover {
+            opacity: 0.9;
+        }
+        .wallet-btn.connected {
+            background: #4CAF50;
+        }
+        .wallet-info {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+            word-wrap: break-word;
+        }
+        .msg-user {
+            align-self: flex-end;
+            background-color: var(--primary);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+        .msg-ai {
+            align-self: flex-start;
+            background-color: var(--white);
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 2px;
+        }
+        .msg-ai.loading {
+            color: var(--gray);
+            font-style: italic;
+        }
+        .input-area {
+            background: var(--white);
+            padding: 15px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            outline: none;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: var(--primary);
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .footer-info {
+            text-align: center;
+            font-size: 11px;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+        .promo-banner {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .promo-banner .promo-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .promo-banner .promo-btn {
+            background: white;
+            color: #667eea;
+            padding: 8px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        .promo-banner .promo-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+<div class="promo-banner">
+    <div class="promo-text">
+        <span>🎁</span>
+        <span>Want VIP access? Get Eagle NFT or EAGLE Token to unlock higher limits!</span>
+    </div>
+    <a href="https://eagleswap.llc/swap" target="_blank" class="promo-btn">Get NFT/Token →</a>
+</div>
+
+<div class="header">
+    <div class="logo">
+        <img src="eagle_logo.png" alt="Eagle Wallet Logo">
+        <span>Eagle AI Web</span>
+    </div>
+    <div class="wallet-info">
+        <div class="tier-badge" id="tier-badge">FREE TIER</div>
+        <button class="wallet-btn" id="wallet-btn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+</div>
+
+<div class="chat-container" id="chat-box">
+    <div class="message msg-ai">Hello! I am Eagle AI. Ask me anything about crypto! 🦅</div>
+</div>
+
+<div class="input-area">
+    <input type="text" id="user-input" placeholder="Ask about BTC, trends, or safety..." autocomplete="off">
+    <button id="send-btn">Send</button>
+</div>
+<div class="footer-info" id="status-info">Remaining: 5,000 Tokens</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+    const API_URL = '/api'; // Relative path, works automatically on same domain
+    const APP_SECRET = 'eagle_wallet_secret_123';
+    
+    // Contract Addresses (BSC Mainnet)
+    const NFT_CONTRACT = '0x3c117d186c5055071eff91d87f2600eaf88d591d';
+    const EAGLE_TOKEN = '0x480F12D2ECEFe1660e72149c57327f5E0646E5c4';
+    const BSC_RPC = 'https://bsc.eagleswap.llc'; // Eagle HK RPC
+    
+    // Generate or get persistent Device ID
+    let deviceId = localStorage.getItem('eagle_device_id');
+    if (!deviceId) {
+        deviceId = 'web_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('eagle_device_id', deviceId);
+    }
+
+    let walletAddress = null;
+
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const statusInfo = document.getElementById('status-info');
+    const tierBadge = document.getElementById('tier-badge');
+    const walletBtn = document.getElementById('wallet-btn');
+
+    let history = []; // Keep short history context
+
+    // Check Status on Load
+    fetch(`${API_URL}/status?deviceId=${deviceId}`)
+        .then(res => res.json())
+        .then(updateStatus)
+        .catch(console.error);
+
+    // Connect Wallet Function
+    async function connectWallet() {
+        if (!window.ethereum) {
+            alert('Please install MetaMask to connect your wallet!');
+            return;
+        }
+
+        try {
+            walletBtn.disabled = true;
+            walletBtn.textContent = 'Connecting...';
+
+            // Request account access
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            walletAddress = accounts[0];
+
+            // Switch to BSC if needed
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x38' }], // BSC Mainnet
+                });
+            } catch (switchError) {
+                // Chain not added, add it
+                if (switchError.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x38',
+                            chainName: 'BSC Mainnet',
+                            nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+                            rpcUrls: ['https://bsc.eagleswap.llc'],
+                            blockExplorerUrls: ['https://bscscan.com/']
+                        }]
+                    });
+                }
+            }
+
+            // Check NFT and Token balances
+            await checkWalletHoldings(walletAddress);
+
+            // Update UI
+            const shortAddr = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+            walletBtn.textContent = shortAddr;
+            walletBtn.classList.add('connected');
+
+            // Refresh status from backend
+            fetch(`${API_URL}/status?deviceId=${deviceId}&walletAddress=${walletAddress}`)
+                .then(res => res.json())
+                .then(updateStatus)
+                .catch(console.error);
+
+        } catch (error) {
+            console.error('Wallet connection error:', error);
+            alert('Failed to connect wallet: ' + error.message);
+            walletBtn.disabled = false;
+            walletBtn.textContent = 'Connect Wallet';
+        }
+    }
+
+    // Check NFT and Token Holdings
+    async function checkWalletHoldings(address) {
+        try {
+            // Check if ethers is loaded
+            if (typeof ethers === 'undefined') {
+                throw new Error('Ethers.js library not loaded');
+            }
+
+            // Use MetaMask's provider
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+            // ERC721 ABI for balanceOf
+            const nftAbi = ['function balanceOf(address owner) view returns (uint256)'];
+            const nftContract = new ethers.Contract(NFT_CONTRACT, nftAbi, provider);
+
+            // ERC20 ABI for balanceOf
+            const tokenAbi = ['function balanceOf(address account) view returns (uint256)'];
+            const tokenContract = new ethers.Contract(EAGLE_TOKEN, tokenAbi, provider);
+
+            // Check balances
+            const nftBalance = await nftContract.balanceOf(address);
+            const tokenBalance = await tokenContract.balanceOf(address);
+            const tokenBalanceFormatted = ethers.utils.formatEther(tokenBalance);
+
+            console.log('NFT Balance:', nftBalance.toString());
+            console.log('EAGLE Token Balance:', tokenBalanceFormatted);
+
+            // Display results in chat
+            let message = `🔗 Wallet Connected: ${address}\n\n`;
+            message += `🎨 NFT Balance: ${nftBalance.toString()}\n`;
+            message += `🪙 EAGLE Token: ${parseFloat(tokenBalanceFormatted).toFixed(2)}\n\n`;
+
+            if (nftBalance.gt(0)) {
+                message += '✅ VIP Tier Detected (NFT Holder)';
+            } else if (parseFloat(tokenBalanceFormatted) >= 50) {
+                message += '✅ Holder Tier Detected (50+ EAGLE)';
+            } else {
+                message += 'ℹ️ Free Tier (Hold NFT or 50+ EAGLE to upgrade)';
+            }
+
+            appendMessage(message, false);
+
+        } catch (error) {
+            console.error('Balance check error:', error);
+            appendMessage('⚠️ Failed to check wallet holdings: ' + error.message, false);
+        }
+    }
+
+    function updateStatus(data) {
+        if (!data) return;
+        const remaining = data.remaining || 0;
+        statusInfo.textContent = `Remaining: ${remaining.toLocaleString()} Tokens`;
+        tierBadge.textContent = (data.tier || 'FREE').toUpperCase() + ' TIER';
+    }
+
+    function appendMessage(text, isUser, isLoading = false) {
+        const div = document.createElement('div');
+        div.className = `message ${isUser ? 'msg-user' : 'msg-ai'} ${isLoading ? 'loading' : ''}`;
+        div.innerText = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return div;
+    }
+
+    async function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = '';
+        input.disabled = true;
+        sendBtn.disabled = true;
+
+        appendMessage(text, true);
+        const loadingMsg = appendMessage('Thinking...', false, true);
+
+        try {
+            const res = await fetch(`${API_URL}/chat`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-app-secret': APP_SECRET
+                },
+                body: JSON.stringify({
+                    message: text,
+                    deviceId: deviceId,
+                    walletAddress: walletAddress, // Include wallet for tier detection
+                    history: history.slice(-4)
+                })
+            });
+
+            const data = await res.json();
+            
+            chatBox.removeChild(loadingMsg); // Remove loading
+
+            if (data.error) {
+                appendMessage('Error: ' + data.error, false);
+            } else {
+                appendMessage(data.reply, false);
+                history.push({ role: 'user', content: text });
+                history.push({ role: 'assistant', content: data.reply });
+                
+                // Update limits
+                const limit = 5000; // Default or from data
+                const remaining = data.remaining;
+                statusInfo.textContent = `Remaining: ${remaining.toLocaleString()} Tokens`;
+            }
+
+        } catch (e) {
+            chatBox.removeChild(loadingMsg);
+            appendMessage('Network Error. Please try again.', false);
+        } finally {
+            input.disabled = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+</script>
+
+</body>
+</html>
