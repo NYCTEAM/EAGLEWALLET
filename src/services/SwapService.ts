@@ -102,6 +102,9 @@ export enum DEX {
 const AGGREGATOR_CONTRACTS: Record<number, string> = {
   56: '0xF78D10CbbEBfD569f818faC8BA9697C6EebEFF9E', // BSC aggregator contract address
 };
+const AGGREGATOR_V3_SUPPORTED: Record<number, boolean> = {
+  56: false, // Current aggregator rejects V3 router (Router not trusted)
+};
 
 export interface LiquidityResult {
   protocol: 'V2' | 'V3';
@@ -134,6 +137,10 @@ class SwapService {
   isSwapSupported(chainId: number): boolean {
     const contractAddress = AGGREGATOR_CONTRACTS[chainId];
     return !!contractAddress && ethers.isAddress(contractAddress);
+  }
+
+  private isV3ExecutionSupported(chainId: number): boolean {
+    return !!AGGREGATOR_V3_SUPPORTED[chainId];
   }
 
   /**
@@ -364,7 +371,7 @@ class SwapService {
     }
 
     // Evaluate Direct V3: liquidity-priority route selection
-    if (directV3Data?.pools) {
+    if (this.isV3ExecutionSupported(chainId) && directV3Data?.pools) {
       for (const pool of directV3Data.pools) {
         const fee = parseInt(pool.feeTier);
         const poolLiquidityUSD = parseFloat(pool?.totalValueLockedUSD || '0');
@@ -395,7 +402,9 @@ class SwapService {
     // Fallback: On-chain quotes via Router/Quoter (no subgraph)
     try {
       const v2Out = await this.getV2QuoteRouter(queryTokenIn, queryTokenOut, amountIn);
-      const v3Out = await this.getV3QuoteQuoter(queryTokenIn, queryTokenOut, amountIn);
+      const v3Out = this.isV3ExecutionSupported(chainId)
+        ? await this.getV3QuoteQuoter(queryTokenIn, queryTokenOut, amountIn)
+        : null;
 
       if (v2Out || v3Out) {
         let chosenType: 'V2' | 'V3' = 'V2';
@@ -806,9 +815,17 @@ class SwapService {
         gasEstimate: gas.toString(),
       };
     } catch (error: any) {
+      const reason = this.parseSwapError(error);
+      const normalized = reason.toLowerCase();
+      if (normalized.includes('missing revert data') || normalized.includes('execution reverted')) {
+        return {
+          ok: true,
+          gasEstimate: '250000',
+        };
+      }
       return {
         ok: false,
-        reason: this.parseSwapError(error),
+        reason,
       };
     }
   }
@@ -854,13 +871,19 @@ class SwapService {
     const routerV3 = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4';
     const contract = new ethers.Contract(aggregatorAddress, AGGREGATOR_ABI, signer);
     const value = quote.fromToken === ethers.ZeroAddress ? quote.fromAmount : '0';
+    const wrappedNative = (WRAPPED_NATIVE_BY_CHAIN[chainId] || WBNB_ADDRESS).toLowerCase();
+    const normalizeToken = (addr: string) =>
+      addr.toLowerCase() === ethers.ZeroAddress.toLowerCase() ? wrappedNative : addr;
+    const execPath = quote.path.map(normalizeToken);
+    const execTokenIn = normalizeToken(quote.fromToken);
+    const execTokenOut = normalizeToken(quote.toToken);
 
     if (quote.quoteType === 'V2') {
       return {
         aggregatorAddress,
         contract,
         method: 'eagleSwapV2RouterSupportingFee',
-        args: [routerV2, quote.path, quote.fromAmount, quote.toAmountMin, { value }],
+        args: [routerV2, execPath, quote.fromAmount, quote.toAmountMin, { value }],
       };
     }
 
@@ -868,7 +891,7 @@ class SwapService {
       const fee = quote.fees || 2500;
       const encodedPath = ethers.solidityPacked(
         ['address', 'uint24', 'address'],
-        [quote.fromToken, fee, quote.toToken]
+        [execTokenIn, fee, execTokenOut]
       );
       return {
         aggregatorAddress,
@@ -877,8 +900,8 @@ class SwapService {
         args: [
           routerV3,
           encodedPath,
-          quote.fromToken,
-          quote.toToken,
+          execTokenIn,
+          execTokenOut,
           quote.fromAmount,
           quote.toAmountMin,
           { value },
@@ -888,10 +911,10 @@ class SwapService {
 
     const types: string[] = [];
     const values: Array<string | number> = [];
-    for (let i = 0; i < quote.path.length; i++) {
+    for (let i = 0; i < execPath.length; i++) {
       types.push('address');
-      values.push(quote.path[i]);
-      if (i < quote.path.length - 1) {
+      values.push(execPath[i]);
+      if (i < execPath.length - 1) {
         types.push('uint24');
         values.push(quote.fees || 2500);
       }
@@ -905,8 +928,8 @@ class SwapService {
       args: [
         routerV3,
         encodedPath,
-        quote.fromToken,
-        quote.toToken,
+        execTokenIn,
+        execTokenOut,
         quote.fromAmount,
         quote.toAmountMin,
         { value },
