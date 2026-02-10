@@ -99,8 +99,8 @@ export const zhTW: TranslationStrings = {
     poweredBy: '由 Eagle Network 提供支援',
     privateKeyName: '私鑰',
   
-    watchWallet: '????',
-    watchHint: '??????????????????'
+    watchWallet: '觀察錢包',
+    watchHint: '觀察錢包可查看餘額，但無法發送交易。'
   },
   send: {
     send: '發送',
@@ -325,18 +325,18 @@ export const zhTW: TranslationStrings = {
     pancakeDesc: 'BSC上的領先DEX',
     uniswapDesc: '去中心化交易所',
   
-    description: '??',
-    category: '??',
+    description: '描述',
+    category: '分類',
     categoryDefi: 'DeFi',
     categoryNft: 'NFT',
-    categoryGame: '??',
-    categorySocial: '??',
-    categoryOther: '??',
-    connectWallet: '????',
-    connectWalletMessage: '??????????????',
-    signMessage: '????',
-    signTypedData: '???????',
-    signTypedDataMessage: 'DApp ?? EIP-712 ???'
+    categoryGame: '遊戲',
+    categorySocial: '社交',
+    categoryOther: '其他',
+    connectWallet: '連接錢包',
+    connectWalletMessage: '此網站要求連接你的錢包地址。',
+    signMessage: '簽名訊息',
+    signTypedData: '簽名結構化資料',
+    signTypedDataMessage: 'DApp 要求 EIP-712 簽名。'
   },
   settings: {
     settings: '設定',
@@ -432,13 +432,13 @@ export const zhTW: TranslationStrings = {
     above: '高於',
     below: '低於',
   
-    targetPrice: '?????USD?',
-    noAlerts: '????',
-    triggered: '???',
-    active: '???',
-    paused: '???',
-    pause: '??',
-    resume: '??'
+    targetPrice: '目標價格（USD）',
+    noAlerts: '暫無提醒',
+    triggered: '已觸發',
+    active: '已啟用',
+    paused: '已暫停',
+    pause: '暫停',
+    resume: '繼續'
   },
   ai: {
     title: 'Eagle AI',

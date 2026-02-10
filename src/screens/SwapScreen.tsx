@@ -176,12 +176,14 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     }
     try {
       if (!silent) setLoading(true);
+      const network = WalletService.getCurrentNetwork();
       const result = await SwapService.getBestQuote(
         fromToken.address,
         toToken.address,
         amount,
         fromToken.decimals,
         toToken.decimals,
+        network.chainId,
       );
       if (isMounted.current) setQuote(result || null);
     } catch (error) {
@@ -301,6 +303,11 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     return t.swap.confirmSwap;
   };
 
+  const getDexName = (quoteType?: string) => {
+    if (quoteType === 'V3') return 'PancakeSwap V3';
+    return 'PancakeSwap V2';
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -372,7 +379,12 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
             <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.estimatedReceived}</Text><Text style={styles.detailValue}>{`${parseFloat(quote.amountOut).toFixed(6)} ${toToken?.symbol}`}</Text></View>
             <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.minimumReceived}</Text><Text style={styles.detailValue}>{`${(parseFloat(quote.amountOut) * (1 - slippage / 100)).toFixed(6)} ${toToken?.symbol}`}</Text></View>
             <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.priceImpact}</Text><Text style={styles.detailValue}>{`${quote?.priceImpact || '0'}%`}</Text></View>
-            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.route}</Text><Text style={styles.detailValue}>{quote?.quoteType === 'V3' ? 'PancakeSwap V3' : 'PancakeSwap V2'}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.priceReference}</Text><Text style={styles.detailValue}>{`1 ${fromToken?.symbol} ≈ ${(parseFloat(quote.amountOut) / parseFloat(amount)).toFixed(6)} ${toToken?.symbol}`}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{`${toToken?.symbol} ${t.swap.price}`}</Text><Text style={styles.detailValue}>{prices.to > 0 ? `$${prices.to.toFixed(2)}` : '-'}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.fee}</Text><Text style={styles.detailValue}>{quote?.fees ? `${(quote.fees / 10000).toFixed(2)}%` : '0.25%'}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.route}</Text><Text style={styles.detailValue}>{getDexName(quote?.quoteType)}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.pool}</Text><Text style={styles.detailValue}>{quote?.path?.length > 2 ? 'Multi-Hop' : 'DIRECT'}</Text></View>
+            <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.swapRoute}</Text><Text style={styles.detailValue}>Eagle Swap</Text></View>
           </View>
         ) : null}
       </ScrollView>

@@ -18,7 +18,35 @@ export default function WalletsScreen({ navigation }: any) {
   const [wallets, setWallets] = useState<any[]>([]);
   const [activeWalletId, setActiveWalletId] = useState<string | null>(null);
 
+  const ensureActiveWalletInList = useCallback(async () => {
+    const address = await WalletService.getAddress();
+    if (!address) {
+      return;
+    }
+
+    const existing = await MultiWalletService.getAllWallets();
+    const alreadyStored = existing.some((wallet) => wallet.address.toLowerCase() === address.toLowerCase());
+    if (alreadyStored) {
+      return;
+    }
+
+    try {
+      try {
+        const wallet = await WalletService.getWallet();
+        if (wallet.address.toLowerCase() !== address.toLowerCase()) {
+          throw new Error('Active wallet is read-only');
+        }
+        await MultiWalletService.importFromPrivateKey(t.home.myWallet, wallet.privateKey, '');
+      } catch (error) {
+        await MultiWalletService.addWatchWallet(t.home.myWallet, address);
+      }
+    } catch (error) {
+      console.error('WalletsScreen: failed to sync active wallet', error);
+    }
+  }, [t.home.myWallet]);
+
   const loadWallets = useCallback(async () => {
+    await ensureActiveWalletInList();
     const [allWallets, activeWallet] = await Promise.all([
       MultiWalletService.getAllWallets(),
       MultiWalletService.getActiveWallet(),
@@ -26,7 +54,7 @@ export default function WalletsScreen({ navigation }: any) {
 
     setWallets(allWallets);
     setActiveWalletId(activeWallet?.id || null);
-  }, []);
+  }, [ensureActiveWalletInList]);
 
   useFocusEffect(
     useCallback(() => {

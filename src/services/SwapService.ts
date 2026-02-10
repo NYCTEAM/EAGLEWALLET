@@ -392,6 +392,36 @@ class SwapService {
 
     if (bestQuote) return bestQuote;
 
+    // Fallback: On-chain quotes via Router/Quoter (no subgraph)
+    try {
+      const v2Out = await this.getV2QuoteRouter(queryTokenIn, queryTokenOut, amountIn);
+      const v3Out = await this.getV3QuoteQuoter(queryTokenIn, queryTokenOut, amountIn);
+
+      if (v2Out || v3Out) {
+        let chosenType: 'V2' | 'V3' = 'V2';
+        let chosenAmount = v2Out || 0n;
+        let chosenFee = 2500;
+
+        if (v3Out && (!v2Out || v3Out.amount > v2Out)) {
+          chosenType = 'V3';
+          chosenAmount = v3Out.amount;
+          chosenFee = v3Out.fee;
+        }
+
+        if (chosenAmount > 0n) {
+          return {
+            quoteType: chosenType,
+            amountOut: ethers.formatUnits(chosenAmount, decimalsOut),
+            path: [tokenIn, tokenOut],
+            fees: chosenFee,
+            priceImpact: '0.00'
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Fallback quote error:', error);
+    }
+
     if (!allowMultiHop) {
       return null;
     }

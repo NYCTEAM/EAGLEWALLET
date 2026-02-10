@@ -17,6 +17,7 @@ import { ethers } from 'ethers';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Clipboard from '@react-native-clipboard/clipboard';
 import WalletService from '../services/WalletService';
+import MultiWalletService from '../services/MultiWalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 
 type ScreenStep = 'landing' | 'create_password' | 'show_mnemonic' | 'import_select' | 'import_input';
@@ -80,6 +81,11 @@ export default function CreateWalletScreen({ navigation }: any) {
       try {
         // Now save the wallet using the generated mnemonic
         await WalletService.importFromMnemonic(mnemonic, password);
+        try {
+          await MultiWalletService.importFromMnemonic(t.home.myWallet, mnemonic, password);
+        } catch (syncError) {
+          console.warn('CreateWallet: failed to sync wallet record', syncError);
+        }
         // App.tsx will automatically switch to MainScreen when it detects wallet
       } catch (error) {
         console.error(error);
@@ -112,9 +118,21 @@ export default function CreateWalletScreen({ navigation }: any) {
     setTimeout(async () => {
       try {
         if (importType === 'mnemonic') {
-            await WalletService.importFromMnemonic(importValue.trim(), password);
+            const trimmedMnemonic = importValue.trim();
+            await WalletService.importFromMnemonic(trimmedMnemonic, password);
+            try {
+              await MultiWalletService.importFromMnemonic(t.home.myWallet, trimmedMnemonic, password);
+            } catch (syncError) {
+              console.warn('CreateWallet: failed to sync wallet record', syncError);
+            }
         } else {
-            await WalletService.importFromPrivateKey(importValue.trim(), password);
+            const trimmedPrivateKey = importValue.trim();
+            await WalletService.importFromPrivateKey(trimmedPrivateKey, password);
+            try {
+              await MultiWalletService.importFromPrivateKey(t.home.myWallet, trimmedPrivateKey, password);
+            } catch (syncError) {
+              console.warn('CreateWallet: failed to sync wallet record', syncError);
+            }
         }
         // App.tsx will switch screen
       } catch (error) {
