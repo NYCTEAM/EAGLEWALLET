@@ -39,12 +39,11 @@ export const zh: TranslationStrings = {
     receive: '接收',
     biometrics: '生物识别',
     verifyBiometrics: '验证生物识别',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: '人脸识别',
+    touchId: '触摸 ID',
     verifyDescription: '请验证您的身份以继续',
     quickSubmit: '快速提交',
   },
-
   home: {
     myWallet: '我的钱包',
     totalBalance: '总余额',
@@ -63,7 +62,6 @@ export const zh: TranslationStrings = {
     hideSmallBalances: '隐藏小额余额',
     showSmallBalances: '显示小额余额',
   },
-
   wallet: {
     createWallet: '创建钱包',
     importWallet: '导入钱包',
@@ -101,7 +99,6 @@ export const zh: TranslationStrings = {
     poweredBy: '由 Eagle Network 提供支持',
     privateKeyName: '私钥',
   },
-
   send: {
     send: '发送',
     sendTo: '发送至',
@@ -122,7 +119,7 @@ export const zh: TranslationStrings = {
     custom: '自定义',
     gasPrice: 'Gas价格',
     gasLimit: 'Gas限制',
-    nonce: 'Nonce',
+    nonce: '随机数',
     data: '数据',
     sendConfirmation: '发送确认',
     confirmTransaction: '确认交易',
@@ -144,7 +141,6 @@ export const zh: TranslationStrings = {
     invalidAddress: '地址无效',
     invalidAmount: '金额无效',
   },
-
   receive: {
     receive: '接收',
     myAddress: '我的地址',
@@ -157,7 +153,6 @@ export const zh: TranslationStrings = {
     warningMessage: '请确保发送方使用正确的网络',
     network: '网络',
   },
-
   swap: {
     swap: '兑换',
     from: '从',
@@ -195,7 +190,6 @@ export const zh: TranslationStrings = {
     approve: '授权',
     approving: '授权中...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: '我的NFT',
@@ -221,7 +215,6 @@ export const zh: TranslationStrings = {
     standard: '标准',
     unknownCollection: '未知集合',
   },
-
   transaction: {
     transactions: '交易',
     history: '历史',
@@ -245,7 +238,7 @@ export const zh: TranslationStrings = {
     time: '时间',
     block: '区块',
     hash: '哈希',
-    nonce: 'Nonce',
+    nonce: '随机数',
     gasPrice: 'Gas价格',
     gasUsed: '已用Gas',
     gasLimit: 'Gas限制',
@@ -260,7 +253,6 @@ export const zh: TranslationStrings = {
     confirming: '确认中...',
     confirmed: '已确认',
   },
-
   token: {
     tokens: '代币',
     token: '代币',
@@ -294,7 +286,6 @@ export const zh: TranslationStrings = {
     viewOnExplorer: '在浏览器查看',
     importToken: '导入代币',
   },
-
   dapp: {
     dappBrowser: 'DApp浏览器',
     share: '分享',
@@ -331,7 +322,6 @@ export const zh: TranslationStrings = {
     pancakeDesc: 'BSC上的领先DEX',
     uniswapDesc: '去中心化交易所',
   },
-
   settings: {
     settings: '设置',
     back: '返回',
@@ -392,7 +382,6 @@ export const zh: TranslationStrings = {
     resetAppSubtitle: '重置为默认设置',
     advancedWarning: '⚠️ 高级设置仅供有经验的用户使用',
   },
-
   network: {
     network: '网络',
     networks: '网络',
@@ -423,12 +412,10 @@ export const zh: TranslationStrings = {
     rpcNode: 'RPC节点',
     selected: '已选择',
   },
-
   priceAlert: {
     above: '高于',
     below: '低于',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: '询问关于加密货币的任何问题...',
@@ -452,7 +439,6 @@ export const zh: TranslationStrings = {
     buyEagle: '购买 EAGLE',
     buyNft: '购买 NFT',
   },
-
   errors: {
     walletNameRequired: '请输入钱包名称',
     passwordRequired: '请输入密码',

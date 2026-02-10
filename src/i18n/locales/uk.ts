@@ -44,7 +44,6 @@ export const uk: TranslationStrings = {
     verifyDescription: 'Будь ласка, підтвердьте свою особу',
     quickSubmit: 'Швидке відправлення',
   },
-
   home: {
     myWallet: 'Мій гаманець',
     totalBalance: 'Загальний баланс',
@@ -63,7 +62,6 @@ export const uk: TranslationStrings = {
     hideSmallBalances: 'Приховати дрібні баланси',
     showSmallBalances: 'Показати дрібні баланси',
   },
-
   wallet: {
     createWallet: 'Створити гаманець',
     importWallet: 'Імпортувати гаманець',
@@ -101,7 +99,6 @@ export const uk: TranslationStrings = {
     poweredBy: 'За підтримки Eagle Network',
     privateKeyName: 'Приватний ключ',
   },
-
   send: {
     send: 'Надіслати',
     sendTo: 'Надіслати до',
@@ -122,7 +119,7 @@ export const uk: TranslationStrings = {
     custom: 'Власна',
     gasPrice: 'Ціна газу',
     gasLimit: 'Ліміт газу',
-    nonce: 'Nonce',
+    nonce: 'Один раз',
     data: 'Дані',
     sendConfirmation: 'Підтвердження надсилання',
     confirmTransaction: 'Підтвердити транзакцію',
@@ -144,7 +141,6 @@ export const uk: TranslationStrings = {
     invalidAddress: 'Недійсна адреса',
     invalidAmount: 'Недійсна сума',
   },
-
   receive: {
     receive: 'Отримати',
     myAddress: 'Моя адреса',
@@ -157,7 +153,6 @@ export const uk: TranslationStrings = {
     warningMessage: 'Переконайтеся, що відправник використовує правильну мережу',
     network: 'Мережа',
   },
-
   swap: {
     swap: 'Обмін',
     from: 'Від',
@@ -195,7 +190,6 @@ export const uk: TranslationStrings = {
     approve: 'Схвалити',
     approving: 'Схвалення...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Мої NFT',
@@ -221,7 +215,6 @@ export const uk: TranslationStrings = {
     standard: 'Стандарт',
     unknownCollection: 'Невідома колекція',
   },
-
   transaction: {
     transactions: 'Транзакції',
     history: 'Історія',
@@ -245,7 +238,7 @@ export const uk: TranslationStrings = {
     time: 'Час',
     block: 'Блок',
     hash: 'Хеш',
-    nonce: 'Nonce',
+    nonce: 'Один раз',
     gasPrice: 'Ціна газу',
     gasUsed: 'Використано газу',
     gasLimit: 'Ліміт газу',
@@ -260,7 +253,6 @@ export const uk: TranslationStrings = {
     confirming: 'Підтвердження...',
     confirmed: 'Підтверджено',
   },
-
   token: {
     tokens: 'Токени',
     token: 'Токен',
@@ -294,7 +286,6 @@ export const uk: TranslationStrings = {
     viewOnExplorer: 'Дивитися в Explorer',
     importToken: 'Імпорт токена',
   },
-
   dapp: {
     dappBrowser: 'DApp Браузер',
     share: 'Поділитися',
@@ -331,12 +322,9 @@ export const uk: TranslationStrings = {
     pancakeDesc: 'Провідний DEX на BSC',
     uniswapDesc: 'Децентралізована біржа',
   },
-
   settings: {
     settings: 'Налаштування',
     back: 'Назад',
-    
-    // Sections
     walletManagement: 'Керування гаманцем',
     network: 'Мережа',
     security: 'Безпека',
@@ -344,19 +332,13 @@ export const uk: TranslationStrings = {
     preferences: 'Налаштування',
     about: 'Про додаток',
     dangerZone: 'Небезпечна зона',
-    
-    // Wallet Management
     myWallets: 'Мої гаманці',
     myWalletsSubtitle: 'Керування кількома гаманцями',
     addCustomToken: 'Додати токен',
     addCustomTokenSubtitle: 'Додати ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Поточна мережа',
     rpcNodes: 'RPC вузли',
     rpcNodesSubtitle: 'Перевірка швидкості',
-    
-    // Security
     biometricAuth: 'Біометрія',
     biometricAuthSubtitle: 'Використовувати відбиток або Face ID',
     exportPrivateKey: 'Експорт ключа',
@@ -365,29 +347,19 @@ export const uk: TranslationStrings = {
     backupWalletSubtitle: 'Показати фразу',
     changePassword: 'Змінити пароль',
     changePasswordSubtitle: 'Оновити пароль гаманця',
-    
-    // Advanced
     priceAlerts: 'Сповіщення ціни',
     priceAlertsSubtitle: 'Налаштувати сповіщення',
     advancedSettings: 'Розширені налаштування',
     advancedSettingsSubtitle: 'Опції розробника',
-    
-    // Preferences
     language: 'Мова',
     currency: 'Валюта',
-    
-    // About
     version: 'Версія',
     termsOfService: 'Умови використання',
     privacyPolicy: 'Політика конфіденційності',
     support: 'Підтримка',
     supportSubtitle: 'Отримати допомогу',
-    
-    // Danger Zone
     deleteWallet: 'Видалити гаманець',
     deleteWalletSubtitle: 'Видалити назавжди',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Експорт ключа',
     exportPrivateKeyMessage: 'Приватний ключ дає повний доступ. Нікому не передавайте!',
     backupWalletTitle: 'Резервна копія',
@@ -410,7 +382,6 @@ export const uk: TranslationStrings = {
     resetAppSubtitle: 'Скинути налаштування',
     advancedWarning: '⚠️ Тільки для досвідчених',
   },
-
   network: {
     network: 'Мережа',
     networks: 'Мережі',
@@ -419,9 +390,9 @@ export const uk: TranslationStrings = {
     addNetwork: 'Додати мережу',
     networkName: 'Назва мережі',
     rpcUrl: 'RPC URL',
-    chainId: 'Chain ID',
+    chainId: 'ID ланцюга',
     symbol: 'Символ',
-    blockExplorer: 'Block Explorer',
+    blockExplorer: 'Провідник блоків',
     networkAdded: 'Мережу додано',
     networkRemoved: 'Мережу видалено',
     invalidRpcUrl: 'Недійсний RPC URL',
@@ -432,7 +403,7 @@ export const uk: TranslationStrings = {
     fast: 'Швидко',
     normal: 'Звичайна',
     slow: 'Повільно',
-    mainnet: 'Mainnet',
+    mainnet: 'Основна мережа',
     testnet: 'Testnet',
     nodesAvailable: 'вузлів доступно',
     hiddenUrl: 'URL приховано',
@@ -441,12 +412,10 @@ export const uk: TranslationStrings = {
     rpcNode: 'RPC вузол',
     selected: 'вибрано',
   },
-
   priceAlert: {
     above: 'Вище',
     below: 'Нижче',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Запитайте мене про крипту...',
@@ -458,8 +427,18 @@ export const uk: TranslationStrings = {
     marketAnalysis: 'Аналіз ринку',
     securityCheck: 'Перевірка безпеки',
     pricePrediction: 'Прогноз цін',
+    dailyLimit: 'Денний ліміт',
+    upgrade: 'Оновити',
+    currentTier: 'Поточний рівень',
+    free: 'Безкоштовно',
+    holder: 'Власник',
+    vip: 'NFT VIP',
+    pro: 'Pro підписка',
+    tokensRemaining: 'токенів залишилось',
+    upgradePrompt: 'Оновіть для збільшення ліміту',
+    buyEagle: 'Купити EAGLE',
+    buyNft: 'Купити NFT',
   },
-
   errors: {
     walletNameRequired: 'Введіть назву',
     passwordRequired: 'Введіть пароль',

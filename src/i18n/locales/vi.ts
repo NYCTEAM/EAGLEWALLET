@@ -18,7 +18,7 @@ export const vi: TranslationStrings = {
     success: 'Thành công',
     error: 'Lỗi',
     warning: 'Cảnh báo',
-    ok: 'OK',
+    ok: 'ĐƯỢC RỒI',
     yes: 'Có',
     no: 'Không',
     search: 'Tìm kiếm',
@@ -39,12 +39,11 @@ export const vi: TranslationStrings = {
     receive: 'Nhận',
     biometrics: 'Sinh trắc học',
     verifyBiometrics: 'Xác minh sinh trắc học',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'ID khuôn mặt',
+    touchId: 'ID cảm ứng',
     verifyDescription: 'Vui lòng xác minh danh tính của bạn để tiếp tục',
     quickSubmit: 'Gửi nhanh',
   },
-
   home: {
     myWallet: 'Ví của tôi',
     totalBalance: 'Tổng số dư',
@@ -63,7 +62,6 @@ export const vi: TranslationStrings = {
     hideSmallBalances: 'Ẩn số dư nhỏ',
     showSmallBalances: 'Hiện số dư nhỏ',
   },
-
   wallet: {
     createWallet: 'Tạo ví',
     importWallet: 'Nhập ví',
@@ -101,7 +99,6 @@ export const vi: TranslationStrings = {
     poweredBy: 'Được hỗ trợ bởi Eagle Network',
     privateKeyName: 'Khóa riêng tư',
   },
-
   send: {
     send: 'Gửi',
     sendTo: 'Gửi đến',
@@ -144,7 +141,6 @@ export const vi: TranslationStrings = {
     invalidAddress: 'Địa chỉ không hợp lệ',
     invalidAmount: 'Số tiền không hợp lệ',
   },
-
   receive: {
     receive: 'Nhận',
     myAddress: 'Địa chỉ của tôi',
@@ -157,7 +153,6 @@ export const vi: TranslationStrings = {
     warningMessage: 'Đảm bảo người gửi đang sử dụng đúng mạng',
     network: 'Mạng',
   },
-
   swap: {
     swap: 'Hoán đổi',
     from: 'Từ',
@@ -195,13 +190,12 @@ export const vi: TranslationStrings = {
     approve: 'Phê duyệt',
     approving: 'Đang phê duyệt...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'NFT của tôi',
     collection: 'Bộ sưu tập',
     collections: 'Bộ sưu tập',
-    tokenId: 'Token ID',
+    tokenId: 'ID mã thông báo',
     owner: 'Chủ sở hữu',
     contract: 'Hợp đồng',
     description: 'Mô tả',
@@ -221,7 +215,6 @@ export const vi: TranslationStrings = {
     standard: 'Tiêu chuẩn',
     unknownCollection: 'Bộ sưu tập không xác định',
   },
-
   transaction: {
     transactions: 'Giao dịch',
     history: 'Lịch sử',
@@ -244,7 +237,7 @@ export const vi: TranslationStrings = {
     total: 'Tổng cộng',
     time: 'Thời gian',
     block: 'Khối',
-    hash: 'Hash',
+    hash: 'Băm',
     nonce: 'Nonce',
     gasPrice: 'Giá Gas',
     gasUsed: 'Gas đã dùng',
@@ -260,10 +253,9 @@ export const vi: TranslationStrings = {
     confirming: 'Đang xác nhận...',
     confirmed: 'Đã xác nhận',
   },
-
   token: {
     tokens: 'Token',
-    token: 'Token',
+    token: 'Mã thông báo',
     addToken: 'Thêm Token',
     customToken: 'Token tùy chỉnh',
     searchToken: 'Tìm kiếm token',
@@ -294,7 +286,6 @@ export const vi: TranslationStrings = {
     viewOnExplorer: 'Xem trên trình khám phá',
     importToken: 'Nhập token',
   },
-
   dapp: {
     dappBrowser: 'Trình duyệt DApp',
     share: 'Chia sẻ',
@@ -331,12 +322,9 @@ export const vi: TranslationStrings = {
     pancakeDesc: 'Sàn DEX hàng đầu trên BSC',
     uniswapDesc: 'Sàn giao dịch phi tập trung',
   },
-
   settings: {
     settings: 'Cài đặt',
     back: 'Quay lại',
-    
-    // Sections
     walletManagement: 'Quản lý ví',
     network: 'Mạng',
     security: 'Bảo mật',
@@ -344,19 +332,13 @@ export const vi: TranslationStrings = {
     preferences: 'Tùy chọn',
     about: 'Giới thiệu',
     dangerZone: 'Vùng nguy hiểm',
-    
-    // Wallet Management
     myWallets: 'Ví của tôi',
     myWalletsSubtitle: 'Quản lý nhiều ví',
     addCustomToken: 'Thêm token tùy chỉnh',
     addCustomTokenSubtitle: 'Thêm token ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Mạng hiện tại',
     rpcNodes: 'Nút RPC',
     rpcNodesSubtitle: 'Xem và kiểm tra tốc độ kết nối',
-    
-    // Security
     biometricAuth: 'Xác thực sinh trắc học',
     biometricAuthSubtitle: 'Sử dụng vân tay hoặc Face ID',
     exportPrivateKey: 'Xuất khóa riêng tư',
@@ -365,29 +347,19 @@ export const vi: TranslationStrings = {
     backupWalletSubtitle: 'Xem cụm từ khôi phục',
     changePassword: 'Đổi mật khẩu',
     changePasswordSubtitle: 'Cập nhật mật khẩu ví',
-    
-    // Advanced
     priceAlerts: 'Cảnh báo giá',
     priceAlertsSubtitle: 'Thiết lập thông báo giá',
     advancedSettings: 'Cài đặt nâng cao',
     advancedSettingsSubtitle: 'Tùy chọn nhà phát triển',
-    
-    // Preferences
     language: 'Ngôn ngữ',
     currency: 'Tiền tệ',
-    
-    // About
     version: 'Phiên bản',
     termsOfService: 'Điều khoản dịch vụ',
     privacyPolicy: 'Chính sách bảo mật',
     support: 'Hỗ trợ',
     supportSubtitle: 'Nhận trợ giúp',
-    
-    // Danger Zone
     deleteWallet: 'Xóa ví',
     deleteWalletSubtitle: 'Xóa vĩnh viễn ví',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Xuất khóa riêng tư',
     exportPrivateKeyMessage: 'Khóa riêng tư cho phép truy cập toàn bộ ví của bạn. Đừng chia sẻ nó với bất kỳ ai!',
     backupWalletTitle: 'Sao lưu ví',
@@ -410,7 +382,6 @@ export const vi: TranslationStrings = {
     resetAppSubtitle: 'Đặt lại về cài đặt mặc định',
     advancedWarning: '⚠️ Cài đặt nâng cao chỉ dành cho người dùng có kinh nghiệm',
   },
-
   network: {
     network: 'Mạng',
     networks: 'Mạng',
@@ -419,7 +390,7 @@ export const vi: TranslationStrings = {
     addNetwork: 'Thêm mạng',
     networkName: 'Tên mạng',
     rpcUrl: 'URL RPC',
-    chainId: 'Chain ID',
+    chainId: 'ID chuỗi',
     symbol: 'Ký hiệu',
     blockExplorer: 'Trình khám phá khối',
     networkAdded: 'Đã thêm mạng',
@@ -441,12 +412,10 @@ export const vi: TranslationStrings = {
     rpcNode: 'Nút RPC',
     selected: 'đã chọn',
   },
-
   priceAlert: {
     above: 'Trên',
     below: 'Dưới',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Hỏi tôi bất cứ điều gì về tiền điện tử...',
@@ -470,7 +439,6 @@ export const vi: TranslationStrings = {
     buyEagle: 'Mua EAGLE',
     buyNft: 'Mua NFT',
   },
-
   errors: {
     walletNameRequired: 'Vui lòng nhập tên ví',
     passwordRequired: 'Vui lòng nhập mật khẩu',

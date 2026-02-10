@@ -18,7 +18,7 @@ export const es: TranslationStrings = {
     success: 'Éxito',
     error: 'Error',
     warning: 'Advertencia',
-    ok: 'OK',
+    ok: 'DE ACUERDO',
     yes: 'Sí',
     no: 'No',
     search: 'Buscar',
@@ -39,19 +39,18 @@ export const es: TranslationStrings = {
     receive: 'Recibir',
     biometrics: 'Biometría',
     verifyBiometrics: 'Verificar Biometría',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'identificación facial',
+    touchId: 'Identificación táctil',
     verifyDescription: 'Por favor verifique su identidad para continuar',
     quickSubmit: 'Envío Rápido',
   },
-
   home: {
     myWallet: 'Mi Billetera',
     totalBalance: 'Saldo Total',
     send: 'Enviar',
     receive: 'Recibir',
     swap: 'Canjear',
-    tokens: 'Tokens',
+    tokens: 'Fichas',
     nft: 'NFT',
     activity: 'Actividad',
     selectWallet: 'Seleccionar Billetera',
@@ -63,7 +62,6 @@ export const es: TranslationStrings = {
     hideSmallBalances: 'Ocultar balances pequeños',
     showSmallBalances: 'Mostrar balances pequeños',
   },
-
   wallet: {
     createWallet: 'Crear Billetera',
     importWallet: 'Importar Billetera',
@@ -101,7 +99,6 @@ export const es: TranslationStrings = {
     poweredBy: 'Desarrollado por Eagle Network',
     privateKeyName: 'Clave Privada',
   },
-
   send: {
     send: 'Enviar',
     sendTo: 'Enviar a',
@@ -122,7 +119,7 @@ export const es: TranslationStrings = {
     custom: 'Personalizado',
     gasPrice: 'Precio del Gas',
     gasLimit: 'Límite de Gas',
-    nonce: 'Nonce',
+    nonce: 'Mientras tanto',
     data: 'Datos',
     sendConfirmation: 'Confirmar Envío',
     confirmTransaction: 'Confirmar Transacción',
@@ -144,7 +141,6 @@ export const es: TranslationStrings = {
     invalidAddress: 'Dirección Inválida',
     invalidAmount: 'Cantidad Inválida',
   },
-
   receive: {
     receive: 'Recibir',
     myAddress: 'Mi Dirección',
@@ -157,7 +153,6 @@ export const es: TranslationStrings = {
     warningMessage: 'Asegúrese de que el remitente use la red correcta',
     network: 'Red',
   },
-
   swap: {
     swap: 'Canjear',
     from: 'De',
@@ -174,7 +169,7 @@ export const es: TranslationStrings = {
     slippageTolerance: 'Tolerancia de Deslizamiento',
     transactionFee: 'Tarifa de Transacción',
     route: 'Ruta',
-    pool: 'Pool',
+    pool: 'Piscina',
     swapRoute: 'Ruta de Canje',
     priceReference: 'Precio de Referencia',
     price: 'Precio',
@@ -195,13 +190,12 @@ export const es: TranslationStrings = {
     approve: 'Aprobar',
     approving: 'Aprobando...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Mis NFTs',
     collection: 'Colección',
     collections: 'Colecciones',
-    tokenId: 'Token ID',
+    tokenId: 'ID de token',
     owner: 'Propietario',
     contract: 'Contrato',
     description: 'Descripción',
@@ -221,7 +215,6 @@ export const es: TranslationStrings = {
     standard: 'Estándar',
     unknownCollection: 'Colección Desconocida',
   },
-
   transaction: {
     transactions: 'Transacciones',
     history: 'Historial',
@@ -244,8 +237,8 @@ export const es: TranslationStrings = {
     total: 'Total',
     time: 'Hora',
     block: 'Bloque',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'Picadillo',
+    nonce: 'Mientras tanto',
     gasPrice: 'Precio del Gas',
     gasUsed: 'Gas Usado',
     gasLimit: 'Límite de Gas',
@@ -260,10 +253,9 @@ export const es: TranslationStrings = {
     confirming: 'Confirmando...',
     confirmed: 'Confirmado',
   },
-
   token: {
-    tokens: 'Tokens',
-    token: 'Token',
+    tokens: 'Fichas',
+    token: 'Simbólico',
     addToken: 'Añadir Token',
     customToken: 'Token Personalizado',
     searchToken: 'Buscar Token',
@@ -294,7 +286,6 @@ export const es: TranslationStrings = {
     viewOnExplorer: 'Ver en Explorador',
     importToken: 'Importar Token',
   },
-
   dapp: {
     dappBrowser: 'Navegador DApp',
     share: 'Compartir',
@@ -331,12 +322,9 @@ export const es: TranslationStrings = {
     pancakeDesc: 'DEX líder en BSC',
     uniswapDesc: 'Intercambio descentralizado',
   },
-
   settings: {
     settings: 'Configuración',
     back: 'Atrás',
-    
-    // Sections
     walletManagement: 'Gestión de Billeteras',
     network: 'Red',
     security: 'Seguridad',
@@ -344,19 +332,13 @@ export const es: TranslationStrings = {
     preferences: 'Preferencias',
     about: 'Acerca de',
     dangerZone: 'Zona de Peligro',
-    
-    // Wallet Management
     myWallets: 'Mis Billeteras',
     myWalletsSubtitle: 'Gestionar múltiples billeteras',
     addCustomToken: 'Añadir Token Personalizado',
     addCustomTokenSubtitle: 'Añadir ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Red Actual',
     rpcNodes: 'Nodos RPC',
     rpcNodesSubtitle: 'Verificar velocidad',
-    
-    // Security
     biometricAuth: 'Autenticación Biométrica',
     biometricAuthSubtitle: 'Usar Huella o Face ID',
     exportPrivateKey: 'Exportar Clave Privada',
@@ -365,29 +347,19 @@ export const es: TranslationStrings = {
     backupWalletSubtitle: 'Ver frase de recuperación',
     changePassword: 'Cambiar Contraseña',
     changePasswordSubtitle: 'Actualizar contraseña',
-    
-    // Advanced
     priceAlerts: 'Alertas de Precio',
     priceAlertsSubtitle: 'Configurar notificaciones',
     advancedSettings: 'Configuración Avanzada',
     advancedSettingsSubtitle: 'Opciones de desarrollador',
-    
-    // Preferences
     language: 'Idioma',
     currency: 'Moneda',
-    
-    // About
     version: 'Versión',
     termsOfService: 'Términos de Servicio',
     privacyPolicy: 'Política de Privacidad',
     support: 'Soporte',
     supportSubtitle: 'Obtener ayuda',
-    
-    // Danger Zone
     deleteWallet: 'Eliminar Billetera',
     deleteWalletSubtitle: 'Eliminar permanentemente',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Exportar Clave Privada',
     exportPrivateKeyMessage: 'La clave privada da acceso total. ¡No la comparta!',
     backupWalletTitle: 'Respaldar Billetera',
@@ -410,7 +382,6 @@ export const es: TranslationStrings = {
     resetAppSubtitle: 'Restablecer valores',
     advancedWarning: '⚠️ Solo usuarios avanzados',
   },
-
   network: {
     network: 'Red',
     networks: 'Redes',
@@ -441,12 +412,10 @@ export const es: TranslationStrings = {
     rpcNode: 'Nodo RPC',
     selected: 'seleccionado',
   },
-
   priceAlert: {
     above: 'Por encima',
     below: 'Por debajo',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Pregúntame cualquier cosa sobre cripto...',
@@ -463,14 +432,13 @@ export const es: TranslationStrings = {
     currentTier: 'Nivel actual',
     free: 'Gratis',
     holder: 'Titular',
-    vip: 'NFT VIP',
+    vip: 'VIP NFT',
     pro: 'Suscripción Pro',
     tokensRemaining: 'tokens restantes',
     upgradePrompt: 'Actualiza para aumentar el límite',
     buyEagle: 'Comprar EAGLE',
     buyNft: 'Comprar NFT',
   },
-
   errors: {
     walletNameRequired: 'Nombre requerido',
     passwordRequired: 'Contraseña requerida',

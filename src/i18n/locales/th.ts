@@ -39,12 +39,11 @@ export const th: TranslationStrings = {
     receive: 'รับ',
     biometrics: 'ไบโอเมตริกซ์',
     verifyBiometrics: 'ยืนยันไบโอเมตริกซ์',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'รหัสใบหน้า',
+    touchId: 'แตะ ID',
     verifyDescription: 'โปรดยืนยันตัวตนเพื่อดำเนินการต่อ',
     quickSubmit: 'ส่งด่วน',
   },
-
   home: {
     myWallet: 'กระเป๋าเงินของฉัน',
     totalBalance: 'ยอดรวม',
@@ -63,7 +62,6 @@ export const th: TranslationStrings = {
     hideSmallBalances: 'ซ่อนยอดเงินคงเหลือเล็กน้อย',
     showSmallBalances: 'แสดงยอดเงินคงเหลือเล็กน้อย',
   },
-
   wallet: {
     createWallet: 'สร้างกระเป๋าเงิน',
     importWallet: 'นำเข้ากระเป๋าเงิน',
@@ -101,7 +99,6 @@ export const th: TranslationStrings = {
     poweredBy: 'ขับเคลื่อนโดย Eagle Network',
     privateKeyName: 'คีย์ส่วนตัว',
   },
-
   send: {
     send: 'ส่ง',
     sendTo: 'ส่งถึง',
@@ -122,7 +119,7 @@ export const th: TranslationStrings = {
     custom: 'กำหนดเอง',
     gasPrice: 'ราคา Gas',
     gasLimit: 'ลิมิต Gas',
-    nonce: 'Nonce',
+    nonce: 'โน๊นซ์',
     data: 'ข้อมูล',
     sendConfirmation: 'ยืนยันการส่ง',
     confirmTransaction: 'ยืนยันธุรกรรม',
@@ -144,11 +141,10 @@ export const th: TranslationStrings = {
     invalidAddress: 'ที่อยู่ไม่ถูกต้อง',
     invalidAmount: 'จำนวนไม่ถูกต้อง',
   },
-
   receive: {
     receive: 'รับ',
     myAddress: 'ที่อยู่ของฉัน',
-    qrCode: 'QR Code',
+    qrCode: 'คิวอาร์โค้ด',
     copyAddress: 'คัดลอกที่อยู่',
     share: 'แชร์',
     addressCopied: 'คัดลอกที่อยู่ไปยังคลิปบอร์ดแล้ว',
@@ -157,7 +153,6 @@ export const th: TranslationStrings = {
     warningMessage: 'ตรวจสอบให้แน่ใจว่าผู้ส่งใช้เครือข่ายที่ถูกต้อง',
     network: 'เครือข่าย',
   },
-
   swap: {
     swap: 'แลกเปลี่ยน',
     from: 'จาก',
@@ -174,7 +169,7 @@ export const th: TranslationStrings = {
     slippageTolerance: 'ความคลาดเคลื่อนที่ยอมรับได้',
     transactionFee: 'ค่าธรรมเนียมธุรกรรม',
     route: 'เส้นทาง',
-    pool: 'Pool',
+    pool: 'สระน้ำ',
     swapRoute: 'เส้นทางแลกเปลี่ยน',
     priceReference: 'ราคาอ้างอิง',
     price: 'ราคา',
@@ -189,19 +184,18 @@ export const th: TranslationStrings = {
     reviewSwap: 'ตรวจสอบการแลกเปลี่ยน',
     confirmSwap: 'ยืนยันการแลกเปลี่ยน',
     swapSettings: 'ตั้งค่าการแลกเปลี่ยน',
-    slippage: 'Slippage',
+    slippage: 'การเลื่อนหลุด',
     deadline: 'เวลาหมดอายุ',
     minutes: 'นาที',
     approve: 'อนุมัติ',
     approving: 'กำลังอนุมัติ...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'NFT ของฉัน',
     collection: 'คอลเลกชัน',
     collections: 'คอลเลกชัน',
-    tokenId: 'Token ID',
+    tokenId: 'รหัสโทเค็น',
     owner: 'เจ้าของ',
     contract: 'สัญญา',
     description: 'คำอธิบาย',
@@ -221,7 +215,6 @@ export const th: TranslationStrings = {
     standard: 'มาตรฐาน',
     unknownCollection: 'คอลเลกชันที่ไม่รู้จัก',
   },
-
   transaction: {
     transactions: 'ธุรกรรม',
     history: 'ประวัติ',
@@ -244,8 +237,8 @@ export const th: TranslationStrings = {
     total: 'รวม',
     time: 'เวลา',
     block: 'บล็อก',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'กัญชา',
+    nonce: 'โน๊นซ์',
     gasPrice: 'ราคา Gas',
     gasUsed: 'Gas ที่ใช้',
     gasLimit: 'ลิมิต Gas',
@@ -260,7 +253,6 @@ export const th: TranslationStrings = {
     confirming: 'กำลังยืนยัน...',
     confirmed: 'ยืนยันแล้ว',
   },
-
   token: {
     tokens: 'โทเค็น',
     token: 'โทเค็น',
@@ -294,7 +286,6 @@ export const th: TranslationStrings = {
     viewOnExplorer: 'ดูใน Explorer',
     importToken: 'นำเข้าโทเค็น',
   },
-
   dapp: {
     dappBrowser: 'เบราว์เซอร์ DApp',
     share: 'แชร์',
@@ -331,12 +322,9 @@ export const th: TranslationStrings = {
     pancakeDesc: 'DEX ชั้นนำบน BSC',
     uniswapDesc: 'การแลกเปลี่ยนแบบกระจายศูนย์',
   },
-
   settings: {
     settings: 'การตั้งค่า',
     back: 'ย้อนกลับ',
-    
-    // Sections
     walletManagement: 'จัดการกระเป๋าเงิน',
     network: 'เครือข่าย',
     security: 'ความปลอดภัย',
@@ -344,19 +332,13 @@ export const th: TranslationStrings = {
     preferences: 'การตั้งค่าทั่วไป',
     about: 'เกี่ยวกับ',
     dangerZone: 'โซนอันตราย',
-    
-    // Wallet Management
     myWallets: 'กระเป๋าเงินของฉัน',
     myWalletsSubtitle: 'จัดการหลายกระเป๋าเงิน',
     addCustomToken: 'เพิ่มโทเค็นกำหนดเอง',
     addCustomTokenSubtitle: 'เพิ่ม ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'เครือข่ายปัจจุบัน',
-    rpcNodes: 'RPC Nodes',
+    rpcNodes: 'โหนด RPC',
     rpcNodesSubtitle: 'ตรวจสอบความเร็ว',
-    
-    // Security
     biometricAuth: 'ยืนยันตัวตนด้วยไบโอเมตริกซ์',
     biometricAuthSubtitle: 'ใช้ลายนิ้วมือหรือ Face ID',
     exportPrivateKey: 'ส่งออกคีย์ส่วนตัว',
@@ -365,29 +347,19 @@ export const th: TranslationStrings = {
     backupWalletSubtitle: 'ดูวลีกู้คืน',
     changePassword: 'เปลี่ยนรหัสผ่าน',
     changePasswordSubtitle: 'อัปเดตรหัสผ่านกระเป๋าเงิน',
-    
-    // Advanced
     priceAlerts: 'แจ้งเตือนราคา',
     priceAlertsSubtitle: 'ตั้งค่าการแจ้งเตือน',
     advancedSettings: 'การตั้งค่าขั้นสูง',
     advancedSettingsSubtitle: 'ตัวเลือกสำหรับนักพัฒนา',
-    
-    // Preferences
     language: 'ภาษา',
     currency: 'สกุลเงิน',
-    
-    // About
     version: 'เวอร์ชัน',
     termsOfService: 'เงื่อนไขการให้บริการ',
     privacyPolicy: 'นโยบายความเป็นส่วนตัว',
     support: 'สนับสนุน',
     supportSubtitle: 'ขอความช่วยเหลือ',
-    
-    // Danger Zone
     deleteWallet: 'ลบกระเป๋าเงิน',
     deleteWalletSubtitle: 'ลบอย่างถาวร',
-    
-    // Alerts
     exportPrivateKeyTitle: 'ส่งออกคีย์ส่วนตัว',
     exportPrivateKeyMessage: 'คีย์ส่วนตัวให้สิทธิ์เข้าถึงกระเป๋าเงินของคุณอย่างเต็มที่ อย่าแชร์ให้ใครรู้!',
     backupWalletTitle: 'สำรองข้อมูลกระเป๋าเงิน',
@@ -410,7 +382,6 @@ export const th: TranslationStrings = {
     resetAppSubtitle: 'รีเซ็ตเป็นค่าเริ่มต้น',
     advancedWarning: '⚠️ สำหรับผู้ใช้ขั้นสูงเท่านั้น',
   },
-
   network: {
     network: 'เครือข่าย',
     networks: 'เครือข่าย',
@@ -418,10 +389,10 @@ export const th: TranslationStrings = {
     customNetwork: 'เครือข่ายกำหนดเอง',
     addNetwork: 'เพิ่มเครือข่าย',
     networkName: 'ชื่อเครือข่าย',
-    rpcUrl: 'RPC URL',
-    chainId: 'Chain ID',
+    rpcUrl: 'URL ของ RPC',
+    chainId: 'รหัสลูกโซ่',
     symbol: 'สัญลักษณ์',
-    blockExplorer: 'Block Explorer',
+    blockExplorer: 'บล็อกนักสำรวจ',
     networkAdded: 'เพิ่มเครือข่ายแล้ว',
     networkRemoved: 'ลบเครือข่ายแล้ว',
     invalidRpcUrl: 'RPC URL ไม่ถูกต้อง',
@@ -432,21 +403,19 @@ export const th: TranslationStrings = {
     fast: 'เร็ว',
     normal: 'ปกติ',
     slow: 'ช้า',
-    mainnet: 'Mainnet',
-    testnet: 'Testnet',
+    mainnet: 'เมนเน็ต',
+    testnet: 'เครือข่ายทดสอบ',
     nodesAvailable: 'โหนดที่ใช้ได้',
     hiddenUrl: 'ซ่อน URL',
     fastestNode: 'โหนดที่เร็วที่สุด',
     bsc: 'BSC',
-    rpcNode: 'RPC Node',
+    rpcNode: 'โหนด RPC',
     selected: 'เลือกแล้ว',
   },
-
   priceAlert: {
     above: 'สูงกว่า',
     below: 'ต่ำกว่า',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'ถามอะไรก็ได้เกี่ยวกับคริปโต...',
@@ -458,8 +427,18 @@ export const th: TranslationStrings = {
     marketAnalysis: 'วิเคราะห์ตลาด',
     securityCheck: 'ตรวจสอบความปลอดภัย',
     pricePrediction: 'ทำนายราคา',
+    dailyLimit: 'ลิมิตรายวัน',
+    upgrade: 'อัปเกรด',
+    currentTier: 'ระดับปัจจุบัน',
+    free: 'ฟรี',
+    holder: 'ผู้ถือ',
+    vip: 'NFT วีไอพี',
+    pro: 'สมาชิก Pro',
+    tokensRemaining: 'โทเค็นคงเหลือ',
+    upgradePrompt: 'อัปเกรดเพื่อเพิ่มลิมิต',
+    buyEagle: 'ซื้อ EAGLE',
+    buyNft: 'ซื้อ NFT',
   },
-
   errors: {
     walletNameRequired: 'กรุณาป้อนชื่อกระเป๋าเงิน',
     passwordRequired: 'กรุณาป้อนรหัสผ่าน',

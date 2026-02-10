@@ -1,24 +1,23 @@
 /**
  * Eagle Wallet - Receive Screen
  * Display QR code and address for receiving tokens
- * Refined UI based on user feedback (White theme, large QR, Clean layout)
  */
 
-import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../i18n/LanguageContext';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Alert,
-  Share,
-  Clipboard,
   Dimensions,
   SafeAreaView,
+  Share,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import WalletService from '../services/WalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -26,80 +25,69 @@ export default function ReceiveScreen({ route, navigation }: any) {
   const { t } = useLanguage();
   const token = route.params?.token;
   const [address, setAddress] = useState('');
-  const [network, setNetwork] = useState(WalletService.getCurrentNetwork());
-  
-  // Use token symbol if available, otherwise network symbol
+  const [network] = useState(WalletService.getCurrentNetwork());
+
   const displaySymbol = token?.symbol || network.symbol;
 
   useEffect(() => {
+    const loadAddress = async () => {
+      const addr = await WalletService.getAddress();
+      if (addr) {
+        setAddress(addr);
+      }
+    };
     loadAddress();
   }, []);
-
-  const loadAddress = async () => {
-    const addr = await WalletService.getAddress();
-    if (addr) {
-      setAddress(addr);
-    }
-  };
 
   const copyAddress = () => {
     Clipboard.setString(address);
     Alert.alert(t.common.copied, t.receive.addressCopied);
   };
 
-  const handleSetAmount = () => {
-    Alert.alert(t.common.comingSoon, "Set amount feature coming soon");
+  const shareAddress = () => {
+    Share.share({
+      title: t.receive.shareAddress,
+      message: `${displaySymbol} (${network.name})\n${address}`,
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-          <Text style={styles.closeIcon}>✕</Text>
+          <Text style={styles.closeIcon}>X</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
-        {/* QR Code Section */}
         <View style={styles.qrSection}>
           <View style={styles.qrWrapper}>
-             {address ? (
-                <QRCode
-                  value={address}
-                  size={220}
-                  backgroundColor="white"
-                  color="black"
-                  // logo={require('../assets/logo.png')} // Uncomment if logo exists
-                  // logoSize={40}
-                  // logoBackgroundColor='white'
-                />
-              ) : (
-                <View style={[styles.qrPlaceholder, { width: 220, height: 220 }]} />
-              )}
+            {address ? (
+              <QRCode value={address} size={220} backgroundColor="white" color="black" />
+            ) : (
+              <View style={[styles.qrPlaceholder, { width: 220, height: 220 }]} />
+            )}
           </View>
-          
+
           <Text style={styles.networkWarning}>
             {t.receive.onlyReceive.replace('{symbol}', `${network.name} (${network.symbol})`)}
           </Text>
         </View>
 
-        {/* Address Info Section */}
         <View style={styles.addressSection}>
-            <View style={styles.addressInfoLeft}>
-                <Text style={styles.tokenSymbol}>{displaySymbol}</Text>
-                <Text style={styles.addressText}>{address}</Text>
-            </View>
-            <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
-                <Text style={styles.copyButtonText}>{t.common.copy}</Text>
-            </TouchableOpacity>
+          <View style={styles.addressInfoLeft}>
+            <Text style={styles.tokenSymbol}>{displaySymbol}</Text>
+            <Text style={styles.addressText}>{address}</Text>
+          </View>
+          <TouchableOpacity style={styles.copyButton} onPress={copyAddress}>
+            <Text style={styles.copyButtonText}>{t.common.copy}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Bottom Actions */}
         <View style={styles.bottomActions}>
-            <TouchableOpacity style={styles.setAmountButton} onPress={handleSetAmount}>
-                <Text style={styles.setAmountText}>{t.receive.setAmount || 'Set Amount'}</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.setAmountButton} onPress={shareAddress}>
+            <Text style={styles.setAmountText}>{t.receive.share}</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -122,7 +110,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   closeIcon: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#000',
     fontWeight: 'bold',
   },
@@ -148,13 +136,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+    width: Math.min(width - 80, 320),
   },
   addressSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 'auto', // Push bottom actions down
+    marginBottom: 'auto',
   },
   addressInfoLeft: {
     flex: 1,

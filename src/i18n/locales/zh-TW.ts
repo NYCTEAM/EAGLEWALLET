@@ -39,12 +39,11 @@ export const zhTW: TranslationStrings = {
     receive: '接收',
     biometrics: '生物識別',
     verifyBiometrics: '驗證生物識別',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: '人臉識別',
+    touchId: '觸摸 ID',
     verifyDescription: '請驗證您的身份以繼續',
     quickSubmit: '快速提交',
   },
-
   home: {
     myWallet: '我的錢包',
     totalBalance: '總餘額',
@@ -63,7 +62,6 @@ export const zhTW: TranslationStrings = {
     hideSmallBalances: '隱藏小額餘額',
     showSmallBalances: '顯示小額餘額',
   },
-
   wallet: {
     createWallet: '建立錢包',
     importWallet: '匯入錢包',
@@ -101,7 +99,6 @@ export const zhTW: TranslationStrings = {
     poweredBy: '由 Eagle Network 提供支援',
     privateKeyName: '私鑰',
   },
-
   send: {
     send: '發送',
     sendTo: '發送至',
@@ -122,7 +119,7 @@ export const zhTW: TranslationStrings = {
     custom: '自訂',
     gasPrice: 'Gas價格',
     gasLimit: 'Gas限制',
-    nonce: 'Nonce',
+    nonce: '隨機數',
     data: '數據',
     sendConfirmation: '發送確認',
     confirmTransaction: '確認交易',
@@ -144,7 +141,6 @@ export const zhTW: TranslationStrings = {
     invalidAddress: '地址無效',
     invalidAmount: '金額無效',
   },
-
   receive: {
     receive: '接收',
     myAddress: '我的地址',
@@ -157,7 +153,6 @@ export const zhTW: TranslationStrings = {
     warningMessage: '請確保發送方使用正確的網路',
     network: '網路',
   },
-
   swap: {
     swap: '兌換',
     from: '從',
@@ -195,7 +190,6 @@ export const zhTW: TranslationStrings = {
     approve: '授權',
     approving: '授權中...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: '我的NFT',
@@ -221,7 +215,6 @@ export const zhTW: TranslationStrings = {
     standard: '標準',
     unknownCollection: '未知集合',
   },
-
   transaction: {
     transactions: '交易',
     history: '歷史',
@@ -245,7 +238,7 @@ export const zhTW: TranslationStrings = {
     time: '時間',
     block: '區塊',
     hash: '哈希',
-    nonce: 'Nonce',
+    nonce: '隨機數',
     gasPrice: 'Gas價格',
     gasUsed: '已用Gas',
     gasLimit: 'Gas限制',
@@ -260,7 +253,6 @@ export const zhTW: TranslationStrings = {
     confirming: '確認中...',
     confirmed: '已確認',
   },
-
   token: {
     tokens: '代幣',
     token: '代幣',
@@ -294,7 +286,6 @@ export const zhTW: TranslationStrings = {
     viewOnExplorer: '在瀏覽器查看',
     importToken: '匯入代幣',
   },
-
   dapp: {
     dappBrowser: 'DApp瀏覽器',
     share: '分享',
@@ -331,7 +322,6 @@ export const zhTW: TranslationStrings = {
     pancakeDesc: 'BSC上的領先DEX',
     uniswapDesc: '去中心化交易所',
   },
-
   settings: {
     settings: '設定',
     back: '返回',
@@ -392,7 +382,6 @@ export const zhTW: TranslationStrings = {
     resetAppSubtitle: '重置為預設設定',
     advancedWarning: '⚠️ 進階設定僅供有經驗的用戶使用',
   },
-
   network: {
     network: '網路',
     networks: '網路',
@@ -423,12 +412,10 @@ export const zhTW: TranslationStrings = {
     rpcNode: 'RPC節點',
     selected: '已選擇',
   },
-
   priceAlert: {
     above: '高於',
     below: '低於',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: '詢問關於加密貨幣的任何問題...',
@@ -452,7 +439,6 @@ export const zhTW: TranslationStrings = {
     buyEagle: '購買 EAGLE',
     buyNft: '購買 NFT',
   },
-
   errors: {
     walletNameRequired: '請輸入錢包名稱',
     passwordRequired: '請輸入密碼',
@@ -481,4 +467,3 @@ export const zhTW: TranslationStrings = {
     alreadyExists: '已存在',
   },
 };
-

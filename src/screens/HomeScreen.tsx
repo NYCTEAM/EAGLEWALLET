@@ -25,6 +25,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { NETWORKS } from '../config/networks';
 import { getChainTokens, TokenConfig } from '../config/tokenConfig';
 import NFTService, { NFT } from '../services/NFTService';
+import CustomTokenService from '../services/CustomTokenService';
 import { ethers } from 'ethers';
 
 const { width } = Dimensions.get('window');
@@ -76,9 +77,31 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         console.log(`✅ Loaded ${userNFTs.length} NFTs`);
       }
 
-      // Load predefined mainstream tokens for current chain
+      // Load predefined + custom ERC20 tokens for current chain
       const chainTokens = getChainTokens(currentNet.chainId);
-      console.log(`📦 Loading ${chainTokens.length} predefined tokens for ${currentNet.name}`);
+      const customTokens = (await CustomTokenService.getCustomTokensByChain(currentNet.chainId))
+        .filter((token) => token.type === 'ERC20')
+        .map((token) => ({
+          symbol: token.symbol,
+          name: token.name,
+          address: token.address,
+          decimals: token.decimals,
+          logo: token.logo || token.symbol.toLowerCase(),
+          color: '#4C6FFF',
+          isCustom: true,
+        }));
+
+      // Deduplicate by contract address to avoid duplicate list entries
+      const mergedTokensMap = new Map<string, any>();
+      [...chainTokens, ...customTokens].forEach((token) => {
+        const key = token.address.toLowerCase();
+        if (!mergedTokensMap.has(key)) {
+          mergedTokensMap.set(key, token);
+        }
+      });
+      const mergedTokens = Array.from(mergedTokensMap.values());
+
+      console.log(`📦 Loading ${mergedTokens.length} tokens for ${currentNet.name} (${chainTokens.length} predefined + ${customTokens.length} custom)`);
       
       // Get provider for balance queries
       const provider = await WalletService.getProvider();
@@ -94,7 +117,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           address: 'native',
           logo: currentNet.symbol.toLowerCase(),
         },
-        ...chainTokens.map(token => ({
+        ...mergedTokens.map(token => ({
           symbol: token.symbol,
           name: token.name,
           balance: '0.0000',
@@ -110,11 +133,11 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       // Render immediately with initial list
       setTokens(initialTokenList);
       
-      // Load balances for predefined tokens in background
+      // Load balances for all ERC20 tokens in background
       const updatedListWithBalances = [...initialTokenList];
       
       // We can fetch balances in parallel to speed up
-      const balancePromises = chainTokens.map(async (token, index) => {
+      const balancePromises = mergedTokens.map(async (token, index) => {
         let balance = '0.0000';
         try {
           // ERC20 ABI for balanceOf
@@ -135,7 +158,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       
       await Promise.all(balancePromises);
       setTokens([...updatedListWithBalances]);
-      console.log(`✅ Loaded balances for ${chainTokens.length} tokens`);
+      console.log(`✅ Loaded balances for ${mergedTokens.length} tokens`);
       
       // Fetch prices for all tokens using contract addresses
       console.log('💰 Fetching token prices...');

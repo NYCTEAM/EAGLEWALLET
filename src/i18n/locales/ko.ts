@@ -39,12 +39,11 @@ export const ko: TranslationStrings = {
     receive: '받기',
     biometrics: '생체 인증',
     verifyBiometrics: '생체 인증 확인',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: '페이스ID',
+    touchId: '터치 ID',
     verifyDescription: '계속하려면 신원을 확인하세요',
     quickSubmit: '빠른 제출',
   },
-
   home: {
     myWallet: '내 지갑',
     totalBalance: '총 잔액',
@@ -63,7 +62,6 @@ export const ko: TranslationStrings = {
     hideSmallBalances: '소액 잔액 숨기기',
     showSmallBalances: '소액 잔액 표시',
   },
-
   wallet: {
     createWallet: '지갑 생성',
     importWallet: '지갑 가져오기',
@@ -98,10 +96,9 @@ export const ko: TranslationStrings = {
     passwordHint: '이 비밀번호는 이 기기의 개인 키를 암호화하는 데 사용됩니다.',
     generating: '보안 지갑 생성 중...',
     appSubtitle: '안전한 멀티체인 암호화폐 지갑',
-    poweredBy: 'Powered by Eagle Network',
+    poweredBy: '이글 네트워크 제공',
     privateKeyName: '개인 키',
   },
-
   send: {
     send: '보내기',
     sendTo: '받는 사람',
@@ -122,7 +119,7 @@ export const ko: TranslationStrings = {
     custom: '사용자 지정',
     gasPrice: '가스 가격',
     gasLimit: '가스 한도',
-    nonce: 'Nonce',
+    nonce: '목하',
     data: '데이터',
     sendConfirmation: '전송 확인',
     confirmTransaction: '거래 확인',
@@ -144,7 +141,6 @@ export const ko: TranslationStrings = {
     invalidAddress: '유효하지 않은 주소',
     invalidAmount: '유효하지 않은 금액',
   },
-
   receive: {
     receive: '받기',
     myAddress: '내 주소',
@@ -157,7 +153,6 @@ export const ko: TranslationStrings = {
     warningMessage: '발신자가 올바른 네트워크를 사용하고 있는지 확인하세요',
     network: '네트워크',
   },
-
   swap: {
     swap: '스왑',
     from: '보내는 코인',
@@ -195,7 +190,6 @@ export const ko: TranslationStrings = {
     approve: '승인',
     approving: '승인 중...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: '내 NFT',
@@ -221,7 +215,6 @@ export const ko: TranslationStrings = {
     standard: '표준',
     unknownCollection: '알 수 없는 컬렉션',
   },
-
   transaction: {
     transactions: '거래',
     history: '기록',
@@ -245,7 +238,7 @@ export const ko: TranslationStrings = {
     time: '시간',
     block: '블록',
     hash: '해시',
-    nonce: 'Nonce',
+    nonce: '목하',
     gasPrice: '가스 가격',
     gasUsed: '사용된 가스',
     gasLimit: '가스 한도',
@@ -260,7 +253,6 @@ export const ko: TranslationStrings = {
     confirming: '확인 중...',
     confirmed: '확인됨',
   },
-
   token: {
     tokens: '토큰',
     token: '토큰',
@@ -294,7 +286,6 @@ export const ko: TranslationStrings = {
     viewOnExplorer: '탐색기에서 보기',
     importToken: '토큰 가져오기',
   },
-
   dapp: {
     dappBrowser: 'DApp 브라우저',
     share: '공유',
@@ -331,12 +322,9 @@ export const ko: TranslationStrings = {
     pancakeDesc: 'BSC의 주요 DEX',
     uniswapDesc: '탈중앙화 거래소',
   },
-
   settings: {
     settings: '설정',
     back: '뒤로',
-    
-    // Sections
     walletManagement: '지갑 관리',
     network: '네트워크',
     security: '보안',
@@ -344,19 +332,13 @@ export const ko: TranslationStrings = {
     preferences: '환경 설정',
     about: '정보',
     dangerZone: '위험 구역',
-    
-    // Wallet Management
     myWallets: '내 지갑',
     myWalletsSubtitle: '여러 지갑 관리',
     addCustomToken: '사용자 지정 토큰 추가',
     addCustomTokenSubtitle: 'ERC20/721/1155 토큰 추가',
-    
-    // Network
     currentNetwork: '현재 네트워크',
     rpcNodes: 'RPC 노드',
     rpcNodesSubtitle: '연결 속도 확인 및 테스트',
-    
-    // Security
     biometricAuth: '생체 인증',
     biometricAuthSubtitle: '지문 또는 Face ID 사용',
     exportPrivateKey: '개인 키 내보내기',
@@ -365,29 +347,19 @@ export const ko: TranslationStrings = {
     backupWalletSubtitle: '니모닉 문구 보기',
     changePassword: '비밀번호 변경',
     changePasswordSubtitle: '지갑 비밀번호 업데이트',
-    
-    // Advanced
     priceAlerts: '가격 알림',
     priceAlertsSubtitle: '가격 알림 설정',
     advancedSettings: '고급 설정',
     advancedSettingsSubtitle: '개발자 옵션',
-    
-    // Preferences
     language: '언어',
     currency: '통화',
-    
-    // About
     version: '버전',
     termsOfService: '서비스 약관',
     privacyPolicy: '개인정보 처리방침',
     support: '지원',
     supportSubtitle: '도움말 얻기',
-    
-    // Danger Zone
     deleteWallet: '지갑 삭제',
     deleteWalletSubtitle: '지갑 영구 삭제',
-    
-    // Alerts
     exportPrivateKeyTitle: '개인 키 내보내기',
     exportPrivateKeyMessage: '개인 키가 있으면 지갑에 완전히 액세스할 수 있습니다. 누구와도 공유하지 마세요!',
     backupWalletTitle: '지갑 백업',
@@ -410,7 +382,6 @@ export const ko: TranslationStrings = {
     resetAppSubtitle: '기본 설정으로 재설정',
     advancedWarning: '⚠️ 고급 설정은 숙련된 사용자 전용입니다',
   },
-
   network: {
     network: '네트워크',
     networks: '네트워크',
@@ -441,12 +412,10 @@ export const ko: TranslationStrings = {
     rpcNode: 'RPC 노드',
     selected: '선택됨',
   },
-
   priceAlert: {
     above: '이상',
     below: '이하',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: '암호화폐에 대해 무엇이든 물어보세요...',
@@ -458,8 +427,18 @@ export const ko: TranslationStrings = {
     marketAnalysis: '시장 분석',
     securityCheck: '보안 검사',
     pricePrediction: '가격 예측',
+    dailyLimit: '일일 한도',
+    upgrade: '업그레이드',
+    currentTier: '현재 등급',
+    free: '무료',
+    holder: '홀더',
+    vip: 'NFT VIP',
+    pro: 'Pro 구독',
+    tokensRemaining: '토큰 남음',
+    upgradePrompt: '업그레이드하여 한도를 늘리세요',
+    buyEagle: 'EAGLE 구매',
+    buyNft: 'NFT 구매',
   },
-
   errors: {
     walletNameRequired: '지갑 이름을 입력하세요',
     passwordRequired: '비밀번호를 입력하세요',

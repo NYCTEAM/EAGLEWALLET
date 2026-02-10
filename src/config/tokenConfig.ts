@@ -1,6 +1,6 @@
 /**
  * Eagle Wallet - Token Configuration
- * Predefined mainstream tokens with logos for BSC and XLAYER
+ * Predefined mainstream tokens for BSC Mainnet only.
  */
 
 export interface TokenConfig {
@@ -10,7 +10,7 @@ export interface TokenConfig {
   decimals: number;
   icon: string;
   color: string;
-  logo?: string; // Local asset path
+  logo?: string;
   chainId: number;
 }
 
@@ -21,7 +21,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'EAGLE',
     name: 'Eagle Token',
     decimals: 18,
-    icon: '🦅',
+    icon: 'E',
     color: '#F3BA2F',
     logo: 'eagle',
     chainId: 56,
@@ -31,7 +31,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'USDT',
     name: 'Tether USD',
     decimals: 18,
-    icon: '₮',
+    icon: 'U',
     color: '#26A17B',
     logo: 'usdt',
     chainId: 56,
@@ -41,7 +41,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'USDC',
     name: 'USD Coin',
     decimals: 18,
-    icon: '$',
+    icon: 'U',
     color: '#2775CA',
     logo: 'usdc',
     chainId: 56,
@@ -51,7 +51,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'BUSD',
     name: 'Binance USD',
     decimals: 18,
-    icon: '$',
+    icon: 'B',
     color: '#F0B90B',
     logo: 'busd',
     chainId: 56,
@@ -61,7 +61,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'DAI',
     name: 'Dai Stablecoin',
     decimals: 18,
-    icon: '◈',
+    icon: 'D',
     color: '#F5AC37',
     logo: 'dai',
     chainId: 56,
@@ -71,7 +71,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'ETH',
     name: 'Ethereum',
     decimals: 18,
-    icon: 'Ξ',
+    icon: 'E',
     color: '#627EEA',
     logo: 'eth',
     chainId: 56,
@@ -81,7 +81,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'BTCB',
     name: 'Bitcoin BEP2',
     decimals: 18,
-    icon: '₿',
+    icon: 'B',
     color: '#F7931A',
     logo: 'btcb',
     chainId: 56,
@@ -101,7 +101,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'CAKE',
     name: 'PancakeSwap Token',
     decimals: 18,
-    icon: '🥞',
+    icon: 'C',
     color: '#D1884F',
     logo: 'cake',
     chainId: 56,
@@ -111,7 +111,7 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'USD1',
     name: 'USD1 Token',
     decimals: 18,
-    icon: '$',
+    icon: 'U',
     color: '#00D395',
     logo: 'usd1',
     chainId: 56,
@@ -121,91 +121,27 @@ export const BSC_TOKENS: TokenConfig[] = [
     symbol: 'USDS',
     name: 'Sperax USD',
     decimals: 18,
-    icon: '$',
+    icon: 'U',
     color: '#FFFFFF',
     logo: 'usds',
     chainId: 56,
   },
 ];
 
-// XLAYER Mainnet (196) - Mainstream Tokens
-export const XLAYER_TOKENS: TokenConfig[] = [
-  {
-    address: '0x5a746ee9933627ed79822d35a3fe812eddd5ba37',
-    symbol: 'EAGLE',
-    name: 'Eagle Token',
-    decimals: 18,
-    icon: '🦅',
-    color: '#F3BA2F',
-    logo: 'eagle',
-    chainId: 196,
-  },
-  {
-    address: '0x779ded0c9e1022225f8e0630b35a9b54be713736',
-    symbol: 'USDT0',
-    name: 'Tether USD (Old)',
-    decimals: 6,
-    icon: '₮',
-    color: '#26A17B',
-    logo: 'usdt0',
-    chainId: 196,
-  },
-  {
-    address: '0x1e4a5963abfd975d8c9021ce480b42188849d41d',
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-    icon: '₮',
-    color: '#26A17B',
-    logo: 'usdt',
-    chainId: 196,
-  },
-  {
-    address: '0xe538905cf8410324e03A5A23C1c177a474D59b2b',
-    symbol: 'WOKB',
-    name: 'Wrapped OKB',
-    decimals: 18,
-    icon: 'W',
-    color: '#000000',
-    logo: 'wokb',
-    chainId: 196,
-  },
-  {
-    address: '0x5A77f1443D16ee5761d310e38b62f77f726bC71c',
-    symbol: 'WETH',
-    name: 'Wrapped Ethereum',
-    decimals: 18,
-    icon: 'Ξ',
-    color: '#627EEA',
-    logo: 'weth',
-    chainId: 196,
-  },
-];
-
-// All tokens by chain ID
+// All tokens by chain ID (BSC only)
 export const TOKENS_BY_CHAIN: Record<number, TokenConfig[]> = {
   56: BSC_TOKENS,
-  196: XLAYER_TOKENS,
 };
 
-/**
- * Get token config by address and chain
- */
 export function getTokenConfig(address: string, chainId: number): TokenConfig | undefined {
   const tokens = TOKENS_BY_CHAIN[chainId] || [];
-  return tokens.find(t => t.address.toLowerCase() === address.toLowerCase());
+  return tokens.find((token) => token.address.toLowerCase() === address.toLowerCase());
 }
 
-/**
- * Get all tokens for a chain
- */
 export function getChainTokens(chainId: number): TokenConfig[] {
   return TOKENS_BY_CHAIN[chainId] || [];
 }
 
-/**
- * Check if token is in predefined list
- */
 export function isKnownToken(address: string, chainId: number): boolean {
   return !!getTokenConfig(address, chainId);
 }

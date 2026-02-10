@@ -29,7 +29,6 @@ interface Message {
 type Tier = 'free' | 'holder' | 'vip' | 'pro';
 
 const API_URL = 'https://ai.eagleswaps.com/api';
-const APP_SECRET = 'eagle_wallet_secret_123';
 const DEVICE_ID_KEY = 'EAGLE_DEVICE_ID';
 
 // Official Contracts
@@ -150,15 +149,11 @@ export default function AIScreen({ navigation }: any) {
       
       if (!responseText) {
         // Call Backend AI
-        console.log('📤 Calling AI API:', API_URL);
-        console.log('Device ID:', deviceId);
-        console.log('Wallet:', walletAddress || 'Not connected');
-        
         const res = await fetch(`${API_URL}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-app-secret': APP_SECRET
+                'x-device-id': deviceId
             },
             body: JSON.stringify({
                 message: userMessage.text,
@@ -168,10 +163,7 @@ export default function AIScreen({ navigation }: any) {
             })
         });
         
-        console.log('📥 Response status:', res.status);
-        
         const data = await res.json();
-        console.log('📥 Response data:', data);
         
         if (!res.ok || data.error) {
             throw new Error(data.error || `HTTP ${res.status}: ${res.statusText}`);
@@ -197,7 +189,6 @@ export default function AIScreen({ navigation }: any) {
       setMessages((prev) => [...prev, aiResponse]);
       
     } catch (error) {
-      console.error('❌ AI Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -264,7 +255,7 @@ export default function AIScreen({ navigation }: any) {
 
   const handleSubscribe = async () => {
     if (!walletAddress) {
-        Alert.alert('Error', 'Please create or import a wallet first.');
+        Alert.alert(t.common.error, t.errors.importWalletFailed);
         return;
     }
 
@@ -293,8 +284,7 @@ export default function AIScreen({ navigation }: any) {
         const amount = ethers.parseUnits("200", 18);
         
         const tx = await contract.transfer(PAYMENT_ADDRESS, amount);
-        console.log('Tx sent:', tx.hash);
-        
+          
         // Wait for confirmation? Backend checks chain anyway.
         // Let's verify immediately.
         
@@ -302,7 +292,7 @@ export default function AIScreen({ navigation }: any) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-app-secret': APP_SECRET
+                'x-device-id': deviceId
             },
             body: JSON.stringify({
                 txHash: tx.hash,
@@ -313,16 +303,16 @@ export default function AIScreen({ navigation }: any) {
         const verifyData = await verifyRes.json();
         
         if (verifyData.success) {
-            Alert.alert('Success', 'Subscription activated! You are now a Pro user.');
+            Alert.alert(t.common.success, t.ai.pro);
             setShowUpgradeModal(false);
             fetchBackendStatus(deviceId, walletAddress);
         } else {
-            Alert.alert('Processing', 'Payment sent. Please wait a moment for the network to confirm, then restart the app.');
+            Alert.alert(t.common.success, t.transaction.confirming);
         }
 
     } catch (error) {
         console.error(error);
-        Alert.alert('Payment Failed', 'Please ensure you have enough BNB for gas and 200 EAGLE tokens.');
+        Alert.alert(t.common.error, t.errors.transactionFailed);
     } finally {
         setIsLoading(false);
     }
@@ -374,21 +364,43 @@ export default function AIScreen({ navigation }: any) {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>{t.ai.upgrade}</Text>
           
-          <TouchableOpacity style={styles.tierOption} onPress={() => { setCurrentTier('holder'); setShowUpgradeModal(false); }}>
+          <TouchableOpacity style={styles.tierOption} onPress={async () => {
+            try {
+              setIsLoading(true);
+              await fetchBackendStatus(deviceId, walletAddress);
+              setShowUpgradeModal(false);
+              Alert.alert(t.common.success, t.ai.upgradePrompt);
+            } catch (e) {
+              Alert.alert(t.common.error, String(e));
+            } finally {
+              setIsLoading(false);
+            }
+          }}>
             <View style={styles.tierHeader}>
               <Icon name="wallet-membership" size={24} color="#F3BA2F" />
               <Text style={styles.tierName}>{t.ai.holder}</Text>
             </View>
-            <Text style={styles.tierDesc}>Hold 50+ EAGLE</Text>
+            <Text style={styles.tierDesc}>{t.ai.buyEagle} (50+ EAGLE)</Text>
             <Text style={styles.tierLimit}>10,000 Tokens/Day</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.tierOption} onPress={() => { setCurrentTier('vip'); setShowUpgradeModal(false); }}>
+          <TouchableOpacity style={styles.tierOption} onPress={async () => {
+            try {
+              setIsLoading(true);
+              await fetchBackendStatus(deviceId, walletAddress);
+              setShowUpgradeModal(false);
+              Alert.alert(t.common.success, t.ai.upgradePrompt);
+            } catch (e) {
+              Alert.alert(t.common.error, String(e));
+            } finally {
+              setIsLoading(false);
+            }
+          }}>
             <View style={styles.tierHeader}>
               <Icon name="crown" size={24} color="#9C27B0" />
               <Text style={styles.tierName}>{t.ai.vip}</Text>
             </View>
-            <Text style={styles.tierDesc}>Hold Eagle NFT</Text>
+            <Text style={styles.tierDesc}>{t.ai.buyNft} (Eagle NFT)</Text>
             <Text style={styles.tierLimit}>50,000 Tokens/Day</Text>
           </TouchableOpacity>
 
@@ -397,7 +409,7 @@ export default function AIScreen({ navigation }: any) {
               <Icon name="star" size={24} color="#2196F3" />
               <Text style={styles.tierName}>{t.ai.pro}</Text>
             </View>
-            <Text style={styles.tierDesc}>Subscribe (200 EAGLE/Mo)</Text>
+            <Text style={styles.tierDesc}>{t.ai.pro} (200 EAGLE/Mo)</Text>
             <Text style={styles.tierLimit}>100,000+ Tokens/Day</Text>
           </TouchableOpacity>
 

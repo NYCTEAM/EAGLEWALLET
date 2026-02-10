@@ -336,7 +336,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   const getButtonLabel = () => {
     if (!amount) return t.swap.enterAmount || 'Enter Amount';
-    if (hasInsufficientBalance()) return t.swap.insufficientBalance || 'Insufficient Balance'; 
+    if (hasInsufficientBalance()) return t.errors.insufficientBalance || 'Insufficient Balance';
     if (loading && !quote) return 'Getting Quote...';
     if (needsApproval) return approving ? (t.swap.approving || 'Approving...') : `${t.swap.approve || 'Approve'} ${fromToken?.symbol}`;
     if (!quote) return t.swap.reviewSwap; 
@@ -362,7 +362,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           <TouchableOpacity style={styles.iconButton} onPress={() => handleGetQuote()}>
             <Text style={styles.headerIcon}>↻</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={handleSwitchTokens}>
             <Text style={styles.headerIcon}>🕒</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowSlippageModal(true)} style={styles.iconButton}>

@@ -81,7 +81,6 @@ export enum DEX {
 // Aggregator contract addresses by chain
 const AGGREGATOR_CONTRACTS: Record<number, string> = {
   56: '0xF78D10CbbEBfD569f818faC8BA9697C6EebEFF9E', // BSC aggregator contract address
-  196: '0x...', // XLAYER aggregator contract address
 };
 
 export interface LiquidityResult {
@@ -104,6 +103,11 @@ export interface SwapRouteResult {
 }
 
 class SwapService {
+  isSwapSupported(chainId: number): boolean {
+    const contractAddress = AGGREGATOR_CONTRACTS[chainId];
+    return !!contractAddress && ethers.isAddress(contractAddress);
+  }
+
   /**
    * Helper: Query Subgraph
    */
@@ -146,24 +150,35 @@ class SwapService {
   /**
    * Get Best Quote using Subgraph (Direct & Multi-hop)
    */
-  async getBestQuote(tokenIn: string, tokenOut: string, amountInStr: string, decimalsIn: number, decimalsOut: number): Promise<SwapRouteResult | null> {
+  async getBestQuote(
+    tokenIn: string,
+    tokenOut: string,
+    amountInStr: string,
+    decimalsIn: number,
+    decimalsOut: number,
+    chainId: number = 56
+  ): Promise<SwapRouteResult | null> {
+    if (!this.isSwapSupported(chainId)) {
+      return null;
+    }
+
     const amountIn = ethers.parseUnits(amountInStr, decimalsIn);
     
     // Map native token to wrapped token for subgraph query
-    const WBNB = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
-    const WOKB = '0xe538905cf8410324e03a5a23c1c177a474d59b2b'; // Assuming WOKB address for XLAYER if needed, or update based on chain
+    const wrappedNativeByChain: Record<number, string> = {
+      56: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c',
+    };
+    const wrappedNative = (wrappedNativeByChain[chainId] || WBNB_ADDRESS).toLowerCase();
 
     let queryTokenIn = tokenIn.toLowerCase();
     let queryTokenOut = tokenOut.toLowerCase();
 
     // Handle Native Token (Zero Address) -> Wrapped Token
     if (queryTokenIn === ethers.ZeroAddress.toLowerCase()) {
-        // We assume BSC for now as per previous context, or we could pass chainId.
-        // Given the hardcoded aggregator address is BSC, we use WBNB.
-        queryTokenIn = WBNB.toLowerCase();
+        queryTokenIn = wrappedNative;
     }
     if (queryTokenOut === ethers.ZeroAddress.toLowerCase()) {
-        queryTokenOut = WBNB.toLowerCase();
+        queryTokenOut = wrappedNative;
     }
 
     // 1. Check Direct Pools
@@ -242,7 +257,7 @@ class SwapService {
 
     // 2. Multi-hop via WBNB (Intermediate)
     // If input/output is already WBNB/Native, we don't need to hop via WBNB again.
-    const isNativeOrWrapped = (addr: string) => addr === WBNB_ADDRESS.toLowerCase() || addr === ethers.ZeroAddress.toLowerCase();
+    const isNativeOrWrapped = (addr: string) => addr === wrappedNative || addr === ethers.ZeroAddress.toLowerCase();
     
     // Check if Direct V2 failed (fallback to RPC)
     if (!bestQuote) {
@@ -288,15 +303,15 @@ class SwapService {
     if (!isNativeOrWrapped(tokenIn.toLowerCase()) && !isNativeOrWrapped(tokenOut.toLowerCase())) {
         // Find TokenIn -> WBNB
         // Note: We use original tokenIn for recursive call, but target WBNB address
-        const hop1 = await this.getBestQuote(tokenIn, WBNB_ADDRESS, amountInStr, decimalsIn, 18);
+        const hop1 = await this.getBestQuote(tokenIn, wrappedNative, amountInStr, decimalsIn, 18, chainId);
         if (hop1 && parseFloat(hop1.amountOut) > 0) {
             // Find WBNB -> TokenOut
-            const hop2 = await this.getBestQuote(WBNB_ADDRESS, tokenOut, hop1.amountOut, 18, decimalsOut);
+            const hop2 = await this.getBestQuote(wrappedNative, tokenOut, hop1.amountOut, 18, decimalsOut, chainId);
             if (hop2 && parseFloat(hop2.amountOut) > 0) {
                  return {
                     quoteType: (hop1.quoteType === 'V2' && hop2.quoteType === 'V2') ? 'V2' : 'V3',
                     amountOut: hop2.amountOut,
-                    path: [tokenIn, WBNB_ADDRESS, tokenOut], // Contract handles WBNB in path
+                    path: [tokenIn, wrappedNative, tokenOut], // Contract handles wrapped native in path
                     fees: hop1.fees + hop2.fees,
                     priceImpact: '0.00'
                  };
@@ -467,7 +482,7 @@ class SwapService {
    */
   private async getAggregatorContract(chainId: number): Promise<ethers.Contract> {
     const contractAddress = AGGREGATOR_CONTRACTS[chainId];
-    if (!contractAddress) {
+    if (!contractAddress || !ethers.isAddress(contractAddress)) {
       throw new Error('Aggregator not supported on this chain');
     }
 
@@ -609,7 +624,7 @@ class SwapService {
    */
   async executeSwap(
     quote: SwapQuote,
-    wallet: ethers.Wallet,
+    wallet: ethers.Wallet | ethers.HDNodeWallet,
     chainId: number
   ): Promise<string> {
     try {
@@ -617,6 +632,9 @@ class SwapService {
       const connectedWallet = wallet.connect(provider);
       
       const aggregatorAddress = AGGREGATOR_CONTRACTS[chainId];
+      if (!aggregatorAddress || !ethers.isAddress(aggregatorAddress)) {
+        throw new Error('Aggregator not supported on this chain');
+      }
       const routerV2 = '0x10ED43C718714eb63d5aA57B78B54704E256024E'; // PancakeSwap V2 Router
       const routerV3 = '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4'; // PancakeSwap V3 Router (Universal)
 
@@ -756,7 +774,7 @@ class SwapService {
     tokenAddress: string,
     spenderAddress: string,
     amount: string,
-    wallet: ethers.Wallet
+    wallet: ethers.Wallet | ethers.HDNodeWallet
   ): Promise<string> {
     try {
       const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
@@ -826,10 +844,6 @@ class SwapService {
         '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB
         '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
         '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', // CAKE
-      ],
-      196: [
-        ethers.ZeroAddress, // OKB
-        '0x1e4a5963abfd975d8c9021ce480b42188849d41d', // USDT
       ],
     };
 

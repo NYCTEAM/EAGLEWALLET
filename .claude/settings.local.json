@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//g/WALLET/EagleWallet/src/i18n/locales/**)"
+    ]
+  }
+}

@@ -14,17 +14,17 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
-  Modal,
-  FlatList,
 } from 'react-native';
+import { ethers } from 'ethers';
 import WalletService from '../services/WalletService';
 import MultiWalletService from '../services/MultiWalletService';
-import { NETWORKS } from '../config/networks';
+import NFTService from '../services/NFTService';
 import { useLanguage } from '../i18n/LanguageContext';
 import { NFT } from '../services/NFTService';
 
 export default function SendScreen({ navigation, route }: any) {
   const { t } = useLanguage();
+  const sendToken = route.params?.token;
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [gasPrice, setGasPrice] = useState('5');
@@ -43,9 +43,13 @@ export default function SendScreen({ navigation, route }: any) {
     }
     loadBalance();
     loadWallets();
-  }, [initialAddress]);
+  }, [initialAddress, sendToken]);
 
   const loadBalance = async () => {
+    if (sendToken?.balance !== undefined && sendToken?.balance !== null) {
+      setBalance(String(sendToken.balance));
+      return;
+    }
     const bal = await WalletService.getBalance();
     setBalance(bal);
   };
@@ -58,7 +62,9 @@ export default function SendScreen({ navigation, route }: any) {
   const network = WalletService.getCurrentNetwork();
 
   const handleSend = async () => {
-    if (!recipientAddress) {
+    const to = recipientAddress.trim();
+
+    if (!to || !ethers.isAddress(to)) {
       Alert.alert(t.common.error, t.errors.invalidAddress);
       return;
     }
@@ -73,9 +79,10 @@ export default function SendScreen({ navigation, route }: any) {
       return;
     }
 
-    const message = nft 
-      ? `Send NFT ${nft.name} (#${nft.tokenId}) to ${formatAddress(recipientAddress)}?`
-      : `${t.send.to}: ${formatAddress(recipientAddress)}\n${t.send.amount}: ${amount} ${network.symbol}\n${t.send.gasFee}: ~0.0001 ${network.symbol}`;
+    const symbol = sendToken?.symbol || network.symbol;
+    const message = nft
+      ? `${t.nft.send}: ${nft.name} (#${nft.tokenId})\n${t.send.to}: ${formatAddress(to)}`
+      : `${t.send.to}: ${formatAddress(to)}\n${t.send.amount}: ${amount} ${symbol}\n${t.send.gasFee}: ~0.0001 ${network.symbol}`;
 
     Alert.alert(
       t.send.confirmTransaction,
@@ -90,12 +97,31 @@ export default function SendScreen({ navigation, route }: any) {
           onPress: async () => {
             try {
               setSending(true);
-              // Simulate sending transaction
-              await new Promise(resolve => setTimeout(resolve, 2000));
-              
+              let txHash = '';
+
+              if (nft) {
+                const wallet = await WalletService.getWallet();
+                txHash = await NFTService.transferNFT(
+                  wallet,
+                  nft.contractAddress,
+                  nft.tokenId,
+                  to,
+                  network.chainId
+                );
+              } else if (sendToken && sendToken.address && sendToken.address !== 'native' && sendToken.address !== ethers.ZeroAddress) {
+                txHash = await WalletService.sendToken(
+                  sendToken.address,
+                  to,
+                  String(amount),
+                  sendToken.decimals || 18
+                );
+              } else {
+                txHash = await WalletService.sendTransaction(to, String(amount), gasPrice);
+              }
+               
               Alert.alert(
                 t.common.success,
-                t.transaction.sent,
+                `${t.transaction.sent}${txHash ? `\n${txHash}` : ''}`,
                 [
                   {
                     text: t.common.done,
@@ -131,14 +157,18 @@ export default function SendScreen({ navigation, route }: any) {
     setShowWalletSelector(false);
   };
 
+  const handleScanQRCode = () => {
+    navigation.navigate('ScanQRCode', { sourceRouteKey: route.key });
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← {t.common.cancel}</Text>
+          <Text style={styles.backButton}>{`< ${t.common.back}`}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{nft ? 'Send NFT' : `${t.send.send} ${network.symbol}`}</Text>
+        <Text style={styles.title}>{nft ? t.nft.sendNFT : `${t.send.send} ${sendToken?.symbol || network.symbol}`}</Text>
         <View style={{ width: 60 }} />
       </View>
 
@@ -157,7 +187,7 @@ export default function SendScreen({ navigation, route }: any) {
           <View style={styles.balanceCard}>
             <Text style={styles.balanceLabel}>{t.send.available}</Text>
             <Text style={styles.balanceAmount}>
-              {parseFloat(balance).toFixed(6)} {network.symbol}
+              {parseFloat(balance).toFixed(6)} {sendToken?.symbol || network.symbol}
             </Text>
             <Text style={styles.balanceNetwork}>{network.name}</Text>
           </View>
@@ -176,14 +206,16 @@ export default function SendScreen({ navigation, route }: any) {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <TouchableOpacity style={styles.scanButton}>
-            <Text style={styles.scanButtonText}>📷 {t.send.scanQRCode}</Text>
+          <TouchableOpacity style={styles.scanButton} onPress={handleScanQRCode}>
+            <Text style={styles.scanButtonText}>{t.send.scanQRCode}</Text>
           </TouchableOpacity>
 
           {/* My Wallets Selector (Below Input) */}
           <View style={styles.myWalletSection}>
             <TouchableOpacity onPress={() => setShowWalletSelector(!showWalletSelector)} style={styles.myWalletTrigger}>
-              <Text style={styles.myWalletLink}>📂 {showWalletSelector ? t.common.cancel : 'Select from My Wallets'}</Text>
+              <Text style={styles.myWalletLink}>
+                {showWalletSelector ? t.common.cancel : `${t.common.select} ${t.send.myWallets}`}
+              </Text>
             </TouchableOpacity>
 
             {showWalletSelector && (
@@ -223,7 +255,7 @@ export default function SendScreen({ navigation, route }: any) {
                 onChangeText={setAmount}
                 keyboardType="decimal-pad"
               />
-              <Text style={styles.amountSymbol}>{network.symbol}</Text>
+              <Text style={styles.amountSymbol}>{sendToken?.symbol || network.symbol}</Text>
             </View>
           </View>
         )}
@@ -238,7 +270,7 @@ export default function SendScreen({ navigation, route }: any) {
             onChangeText={setGasPrice}
             keyboardType="numeric"
           />
-          <Text style={styles.hint}>Higher gas = faster transaction</Text>
+          <Text style={styles.hint}>{`${t.send.fast} / ${t.send.normal} / ${t.send.slow}`}</Text>
         </View>
 
         {/* Transaction Summary */}
@@ -248,7 +280,7 @@ export default function SendScreen({ navigation, route }: any) {
           {!nft && (
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t.send.amount}</Text>
-              <Text style={styles.summaryValue}>{amount || '0'} {network.symbol}</Text>
+              <Text style={styles.summaryValue}>{amount || '0'} {sendToken?.symbol || network.symbol}</Text>
             </View>
           )}
 
@@ -261,7 +293,7 @@ export default function SendScreen({ navigation, route }: any) {
             <View style={[styles.summaryRow, styles.summaryTotal]}>
               <Text style={styles.summaryLabelBold}>{t.send.total}</Text>
               <Text style={styles.summaryValueBold}>
-                {(parseFloat(amount || '0') + 0.0001).toFixed(6)} {network.symbol}
+                {(parseFloat(amount || '0') + 0.0001).toFixed(6)} {sendToken?.symbol || network.symbol}
               </Text>
             </View>
           )}
@@ -283,7 +315,7 @@ export default function SendScreen({ navigation, route }: any) {
         {/* Warning */}
         <View style={styles.warningBox}>
           <Text style={styles.warningText}>
-            ⚠️ Double-check the recipient address. Transactions cannot be reversed.
+            {t.receive.warningMessage}
           </Text>
         </View>
       </ScrollView>

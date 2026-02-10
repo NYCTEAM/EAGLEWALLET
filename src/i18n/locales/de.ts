@@ -39,12 +39,11 @@ export const de: TranslationStrings = {
     receive: 'Empfangen',
     biometrics: 'Biometrie',
     verifyBiometrics: 'Biometrie bestätigen',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'Gesichtserkennung',
+    touchId: 'Touch-ID',
     verifyDescription: 'Bitte bestätigen Sie Ihre Identität',
     quickSubmit: 'Schnellversand',
   },
-
   home: {
     myWallet: 'Mein Wallet',
     totalBalance: 'Gesamtguthaben',
@@ -63,7 +62,6 @@ export const de: TranslationStrings = {
     hideSmallBalances: 'Kleine Guthaben ausblenden',
     showSmallBalances: 'Kleine Guthaben anzeigen',
   },
-
   wallet: {
     createWallet: 'Wallet erstellen',
     importWallet: 'Wallet importieren',
@@ -98,10 +96,9 @@ export const de: TranslationStrings = {
     passwordHint: 'Dieses Passwort verschlüsselt Ihren privaten Schlüssel auf diesem Gerät.',
     generating: 'Erstelle sicheres Wallet...',
     appSubtitle: 'Sicheres Multi-Chain Krypto-Wallet',
-    poweredBy: 'Powered by Eagle Network',
+    poweredBy: 'Unterstützt von Eagle Network',
     privateKeyName: 'Privater Schlüssel',
   },
-
   send: {
     send: 'Senden',
     sendTo: 'Senden an',
@@ -144,7 +141,6 @@ export const de: TranslationStrings = {
     invalidAddress: 'Ungültige Adresse',
     invalidAmount: 'Ungültiger Betrag',
   },
-
   receive: {
     receive: 'Empfangen',
     myAddress: 'Meine Adresse',
@@ -157,7 +153,6 @@ export const de: TranslationStrings = {
     warningMessage: 'Stellen Sie sicher, dass der Sender das richtige Netzwerk nutzt',
     network: 'Netzwerk',
   },
-
   swap: {
     swap: 'Tauschen',
     from: 'Von',
@@ -179,7 +174,7 @@ export const de: TranslationStrings = {
     priceReference: 'Referenzpreis',
     price: 'Preis',
     fee: 'Gebühr',
-    wallet: 'Wallet',
+    wallet: 'Geldbörse',
     swapping: 'Tauschen...',
     swapSuccess: 'Tausch erfolgreich',
     swapFailed: 'Tausch fehlgeschlagen',
@@ -189,13 +184,12 @@ export const de: TranslationStrings = {
     reviewSwap: 'Tausch prüfen',
     confirmSwap: 'Tausch bestätigen',
     swapSettings: 'Tausch-Einstellungen',
-    slippage: 'Slippage',
+    slippage: 'Schlupf',
     deadline: 'Frist',
     minutes: 'Min',
     approve: 'Genehmigen',
     approving: 'Genehmigen...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Meine NFTs',
@@ -206,7 +200,7 @@ export const de: TranslationStrings = {
     contract: 'Vertrag',
     description: 'Beschreibung',
     properties: 'Eigenschaften',
-    details: 'Details',
+    details: 'Einzelheiten',
     send: 'Senden',
     viewOnExplorer: 'Im Explorer ansehen',
     refresh: 'Aktualisieren',
@@ -221,7 +215,6 @@ export const de: TranslationStrings = {
     standard: 'Standard',
     unknownCollection: 'Unbekannte Sammlung',
   },
-
   transaction: {
     transactions: 'Transaktionen',
     history: 'Verlauf',
@@ -260,7 +253,6 @@ export const de: TranslationStrings = {
     confirming: 'Bestätigen...',
     confirmed: 'Bestätigt',
   },
-
   token: {
     tokens: 'Token',
     token: 'Token',
@@ -294,7 +286,6 @@ export const de: TranslationStrings = {
     viewOnExplorer: 'Im Explorer ansehen',
     importToken: 'Token importieren',
   },
-
   dapp: {
     dappBrowser: 'DApp-Browser',
     share: 'Teilen',
@@ -331,12 +322,9 @@ export const de: TranslationStrings = {
     pancakeDesc: 'Führende DEX auf BSC',
     uniswapDesc: 'Dezentrale Börse',
   },
-
   settings: {
     settings: 'Einstellungen',
     back: 'Zurück',
-    
-    // Sections
     walletManagement: 'Wallet-Verwaltung',
     network: 'Netzwerk',
     security: 'Sicherheit',
@@ -344,19 +332,13 @@ export const de: TranslationStrings = {
     preferences: 'Präferenzen',
     about: 'Über',
     dangerZone: 'Gefahrenzone',
-    
-    // Wallet Management
     myWallets: 'Meine Wallets',
     myWalletsSubtitle: 'Wallets verwalten',
     addCustomToken: 'Benutzerdef. Token',
     addCustomTokenSubtitle: 'ERC20/721/1155 hinzufügen',
-    
-    // Network
     currentNetwork: 'Aktuelles Netzwerk',
     rpcNodes: 'RPC-Knoten',
     rpcNodesSubtitle: 'Geschwindigkeit testen',
-    
-    // Security
     biometricAuth: 'Biometrische Auth',
     biometricAuthSubtitle: 'Fingerabdruck oder Face ID',
     exportPrivateKey: 'Privaten Schlüssel exportieren',
@@ -365,29 +347,19 @@ export const de: TranslationStrings = {
     backupWalletSubtitle: 'Phrase ansehen',
     changePassword: 'Passwort ändern',
     changePasswordSubtitle: 'Passwort aktualisieren',
-    
-    // Advanced
     priceAlerts: 'Preisalarme',
     priceAlertsSubtitle: 'Benachrichtigungen',
     advancedSettings: 'Erweiterte Einstellungen',
     advancedSettingsSubtitle: 'Entwickleroptionen',
-    
-    // Preferences
     language: 'Sprache',
     currency: 'Währung',
-    
-    // About
     version: 'Version',
     termsOfService: 'Nutzungsbedingungen',
     privacyPolicy: 'Datenschutz',
-    support: 'Support',
+    support: 'Unterstützung',
     supportSubtitle: 'Hilfe erhalten',
-    
-    // Danger Zone
     deleteWallet: 'Wallet löschen',
     deleteWalletSubtitle: 'Dauerhaft löschen',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Schlüssel exportieren',
     exportPrivateKeyMessage: 'Der Schlüssel gibt vollen Zugriff. Niemals teilen!',
     backupWalletTitle: 'Wallet sichern',
@@ -410,7 +382,6 @@ export const de: TranslationStrings = {
     resetAppSubtitle: 'Auf Standard zurücksetzen',
     advancedWarning: '⚠️ Nur für Experten',
   },
-
   network: {
     network: 'Netzwerk',
     networks: 'Netzwerke',
@@ -433,7 +404,7 @@ export const de: TranslationStrings = {
     normal: 'Normal',
     slow: 'Langsam',
     mainnet: 'Mainnet',
-    testnet: 'Testnet',
+    testnet: 'Testnetz',
     nodesAvailable: 'Knoten verfügbar',
     hiddenUrl: 'URL ausgeblendet',
     fastestNode: 'Schnellster Knoten',
@@ -441,12 +412,10 @@ export const de: TranslationStrings = {
     rpcNode: 'RPC-Knoten',
     selected: 'ausgewählt',
   },
-
   priceAlert: {
     above: 'Über',
     below: 'Unter',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Frag mich alles über Krypto...',
@@ -458,8 +427,18 @@ export const de: TranslationStrings = {
     marketAnalysis: 'Marktanalyse',
     securityCheck: 'Sicherheitscheck',
     pricePrediction: 'Preisvorhersage',
+    dailyLimit: 'Tageslimit',
+    upgrade: 'Upgraden',
+    currentTier: 'Aktuelle Stufe',
+    free: 'Kostenlos',
+    holder: 'Halter',
+    vip: 'NFT-VIP',
+    pro: 'Pro-Abonnement',
+    tokensRemaining: 'Token verbleibend',
+    upgradePrompt: 'Upgraden um Limit zu erhöhen',
+    buyEagle: 'EAGLE kaufen',
+    buyNft: 'NFT kaufen',
   },
-
   errors: {
     walletNameRequired: 'Name erforderlich',
     passwordRequired: 'Passwort erforderlich',

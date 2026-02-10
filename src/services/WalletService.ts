@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Eagle Wallet - Core Wallet Service
  * Handles wallet creation, import, and management
  */
@@ -8,9 +8,12 @@ import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NETWORKS, DEFAULT_NETWORK } from '../config/networks';
 import RPCService from './RPCService';
+import BiometricAuthService from './BiometricAuthService';
 
 const WALLET_KEY = 'EAGLE_WALLET_KEY';
 const WALLET_ADDRESS_KEY = 'EAGLE_WALLET_ADDRESS';
+const WALLET_MNEMONIC_KEY = 'EAGLE_WALLET_MNEMONIC';
+const WALLET_PASSWORD_HASH_KEY = 'EAGLE_PASSWORD_HASH';
 
 export interface WalletInfo {
   address: string;
@@ -19,142 +22,154 @@ export interface WalletInfo {
 }
 
 class WalletService {
-  private wallet: ethers.HDNodeWallet | ethers.Wallet | null = null;
+  private wallet: ethers.Wallet | ethers.HDNodeWallet | null = null;
   private provider: ethers.JsonRpcProvider | null = null;
   private currentChainId: number = DEFAULT_NETWORK;
+
+  private hashPassword(password: string): string {
+    return ethers.keccak256(ethers.toUtf8Bytes(password));
+  }
+
+  private async setPasswordHash(password: string): Promise<void> {
+    await AsyncStorage.setItem(WALLET_PASSWORD_HASH_KEY, this.hashPassword(password));
+  }
+
+  private async getStoredAddress(): Promise<string | null> {
+    return await AsyncStorage.getItem(WALLET_ADDRESS_KEY);
+  }
+
+  private async setStoredAddress(address: string): Promise<void> {
+    await AsyncStorage.setItem(WALLET_ADDRESS_KEY, address);
+  }
+
+  private async initProvider(chainId: number): Promise<void> {
+    const resolvedChainId = NETWORKS[chainId] ? chainId : DEFAULT_NETWORK;
+    const network = NETWORKS[resolvedChainId];
+
+    try {
+      this.provider = await RPCService.getProvider(resolvedChainId);
+    } catch {
+      this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
+        chainId: network.chainId,
+        name: network.name,
+      });
+    }
+
+    if (this.wallet && this.provider) {
+      this.wallet = this.wallet.connect(this.provider);
+    }
+
+    this.currentChainId = resolvedChainId;
+  }
+
+  /**
+   * Require biometric or device credential confirmation when enabled.
+   */
+  async authorizeSensitiveAction(reason: string): Promise<void> {
+    await BiometricAuthService.ensureAuthenticated(reason);
+  }
 
   /**
    * Create a new wallet
    */
   async createWallet(password: string): Promise<string> {
-    try {
-      // Generate new wallet
-      const newWallet = ethers.Wallet.createRandom();
-      const mnemonic = newWallet.mnemonic?.phrase;
-      
-      if (!mnemonic) {
-        throw new Error('Failed to generate mnemonic');
-      }
-
-      // Store private key directly in secure Keychain (much faster than scrypt encryption)
-      // Keychain is already encrypted by the system
-      await Keychain.setGenericPassword(WALLET_KEY, newWallet.privateKey);
-      
-      // Store address
-      await AsyncStorage.setItem(WALLET_ADDRESS_KEY, newWallet.address);
-      
-      this.wallet = newWallet;
-      // Initialize provider in background (non-blocking)
-      this.initProvider(DEFAULT_NETWORK).catch(err => 
-        console.warn('Provider init delayed:', err)
-      );
-      
-      return mnemonic;
-    } catch (error) {
-      console.error('Create wallet error:', error);
-      throw error;
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
     }
+
+    const newWallet = ethers.Wallet.createRandom();
+    const mnemonic = newWallet.mnemonic?.phrase;
+
+    if (!mnemonic) {
+      throw new Error('Failed to generate mnemonic');
+    }
+
+    await Keychain.setGenericPassword(WALLET_KEY, newWallet.privateKey);
+    await Keychain.setGenericPassword(WALLET_MNEMONIC_KEY, mnemonic, { service: WALLET_MNEMONIC_KEY });
+    await this.setPasswordHash(password);
+    await this.setStoredAddress(newWallet.address);
+
+    this.wallet = newWallet;
+    await this.initProvider(DEFAULT_NETWORK);
+
+    return mnemonic;
   }
 
   /**
    * Import wallet from mnemonic
    */
   async importFromMnemonic(mnemonic: string, password: string): Promise<string> {
-    try {
-      const wallet = ethers.Wallet.fromPhrase(mnemonic);
-      
-      // Store private key directly in secure Keychain
-      await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
-      await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
-      
-      this.wallet = wallet;
-      // Initialize provider in background (non-blocking)
-      this.initProvider(DEFAULT_NETWORK).catch(err => 
-        console.warn('Provider init delayed:', err)
-      );
-      
-      return wallet.address;
-    } catch (error) {
-      console.error('Import from mnemonic error:', error);
-      throw error;
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
     }
+
+    const wallet = ethers.Wallet.fromPhrase(mnemonic.trim());
+
+    await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
+    await Keychain.setGenericPassword(WALLET_MNEMONIC_KEY, mnemonic.trim(), { service: WALLET_MNEMONIC_KEY });
+    await this.setPasswordHash(password);
+    await this.setStoredAddress(wallet.address);
+
+    this.wallet = wallet;
+    await this.initProvider(DEFAULT_NETWORK);
+
+    return wallet.address;
   }
 
   /**
    * Import wallet from private key
    */
   async importFromPrivateKey(privateKey: string, password: string): Promise<string> {
-    try {
-      const wallet = new ethers.Wallet(privateKey);
-      
-      // Store private key directly in secure Keychain
-      await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
-      await AsyncStorage.setItem(WALLET_ADDRESS_KEY, wallet.address);
-      
-      this.wallet = wallet;
-      // Initialize provider in background (non-blocking)
-      this.initProvider(DEFAULT_NETWORK).catch(err => 
-        console.warn('Provider init delayed:', err)
-      );
-      
-      return wallet.address;
-    } catch (error) {
-      console.error('Import from private key error:', error);
-      throw error;
+    if (!password || password.length < 8) {
+      throw new Error('Password must be at least 8 characters');
     }
+
+    const wallet = new ethers.Wallet(privateKey.trim());
+
+    await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
+    await Keychain.resetGenericPassword({ service: WALLET_MNEMONIC_KEY });
+    await this.setPasswordHash(password);
+    await this.setStoredAddress(wallet.address);
+
+    this.wallet = wallet;
+    await this.initProvider(DEFAULT_NETWORK);
+
+    return wallet.address;
   }
 
   /**
    * Unlock wallet with password
    */
   async unlockWallet(password: string): Promise<boolean> {
-    try {
-      const credentials = await Keychain.getGenericPassword();
-      if (!credentials) {
-        throw new Error('No wallet found');
-      }
-
-      // Private key is stored directly (not encrypted with scrypt)
-      const privateKey = credentials.password;
-      const decryptedWallet = new ethers.Wallet(privateKey);
-      this.wallet = decryptedWallet;
-      // Initialize provider in background (non-blocking)
-      this.initProvider(this.currentChainId).catch(err => 
-        console.warn('Provider init delayed:', err)
-      );
-      
-      return true;
-    } catch (error) {
-      console.error('Unlock wallet error:', error);
+    const valid = await this.verifyPassword(password);
+    if (!valid) {
       return false;
     }
+
+    const credentials = await Keychain.getGenericPassword();
+    if (!credentials) {
+      return false;
+    }
+
+    this.wallet = new ethers.Wallet(credentials.password);
+    await this.initProvider(this.currentChainId);
+    return true;
   }
 
   /**
-   * Initialize wallet from stored credentials
-   * This should be called when app starts or when HomeScreen loads
+   * Initialize wallet from secure storage
    */
   async init(): Promise<boolean> {
     try {
-      console.log('🔐 WalletService: Initializing from Keychain...');
       const credentials = await Keychain.getGenericPassword();
-      
       if (!credentials) {
-        console.log('🔐 WalletService: No credentials found');
         return false;
       }
 
-      // Restore wallet from private key
-      const privateKey = credentials.password;
-      this.wallet = new ethers.Wallet(privateKey);
-      
-      // Initialize provider
+      this.wallet = new ethers.Wallet(credentials.password);
       await this.initProvider(this.currentChainId);
-      
-      console.log('🔐 WalletService: Wallet initialized successfully:', this.wallet.address);
       return true;
-    } catch (error) {
-      console.error('🔐 WalletService: Init failed:', error);
+    } catch {
       return false;
     }
   }
@@ -168,37 +183,33 @@ class WalletService {
   }
 
   /**
-   * Get wallet address
+   * Get wallet address (works in read-only mode too)
    */
   async getAddress(): Promise<string | null> {
-    // If wallet not loaded, try to initialize it
-    if (!this.wallet) {
-      console.log('🔐 WalletService: Wallet not loaded, attempting init...');
-      await this.init();
-    }
-    
     if (this.wallet) {
       return this.wallet.address;
     }
-    
-    // Fallback to AsyncStorage
-    return await AsyncStorage.getItem(WALLET_ADDRESS_KEY);
+    return await this.getStoredAddress();
   }
 
   /**
-   * Get wallet instance
+   * Get signer wallet
    */
-  async getWallet(): Promise<ethers.Wallet> {
+  async getWallet(): Promise<ethers.Wallet | ethers.HDNodeWallet> {
     if (!this.wallet) {
       await this.init();
     }
-    
+
     if (!this.wallet) {
       throw new Error('Wallet not initialized');
     }
 
-    // Ensure it's an ethers.Wallet (it could be HDNodeWallet which is compatible but let's be safe)
-    return this.wallet as ethers.Wallet;
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+    }
+
+    this.wallet = this.wallet.connect(this.provider!);
+    return this.wallet;
   }
 
   /**
@@ -212,37 +223,6 @@ class WalletService {
   }
 
   /**
-   * Initialize provider for specific chain with smart RPC selection
-   */
-  private async initProvider(chainId: number) {
-    const network = NETWORKS[chainId];
-    if (!network) {
-      throw new Error(`Unsupported network: ${chainId}`);
-    }
-
-    console.log(`🔄 Initializing provider for ${network.name}...`);
-    
-    // Use smart RPC selection to find fastest node
-    try {
-      this.provider = await RPCService.getProvider(chainId);
-    } catch (error) {
-      console.error('Smart RPC selection failed, using fallback:', error);
-      // Fallback to first RPC URL
-      this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
-        chainId: network.chainId,
-        name: network.name,
-      });
-    }
-    
-    if (this.wallet) {
-      this.wallet = this.wallet.connect(this.provider);
-    }
-    
-    this.currentChainId = chainId;
-    console.log(`✅ Provider initialized for ${network.name}`);
-  }
-
-  /**
    * Switch network
    */
   async switchNetwork(chainId: number): Promise<void> {
@@ -250,237 +230,303 @@ class WalletService {
   }
 
   /**
-   * Get balance
+   * Get balance for current active address
    */
   async getBalance(): Promise<string> {
-    // Auto-initialize if needed
-    if (!this.wallet) {
-      console.log('🔐 WalletService: Wallet not loaded in getBalance, attempting init...');
-      await this.init();
-    }
-    
-    if (!this.wallet) {
-      throw new Error('Wallet not initialized');
+    const address = await this.getAddress();
+    if (!address) {
+      return '0.0';
     }
 
-    // Ensure provider is ready
     if (!this.provider) {
-      console.log('🔄 Provider not ready, initializing...');
       await this.initProvider(this.currentChainId);
     }
 
     try {
-      const balance = await this.provider!.getBalance(this.wallet.address);
+      const balance = await this.provider!.getBalance(address);
       return ethers.formatEther(balance);
-    } catch (error) {
-      console.error('Failed to get balance:', error);
-      return '0.0'; // Return 0 instead of crashing
+    } catch {
+      return '0.0';
     }
   }
 
   /**
-   * Send transaction
+   * Send native transaction
    */
-  async sendTransaction(to: string, amount: string): Promise<string> {
-    if (!this.wallet) {
-      throw new Error('Wallet not initialized');
+  async sendTransaction(to: string, amount: string, gasPrice?: string): Promise<string> {
+    if (!ethers.isAddress(to)) {
+      throw new Error('Invalid recipient address');
     }
 
-    const tx = await this.wallet.sendTransaction({
+    await this.authorizeSensitiveAction('Confirm transaction');
+
+    const signer = await this.getWallet();
+
+    const txOptions: any = {
       to,
       value: ethers.parseEther(amount),
-    });
+    };
 
-    await tx.wait();
+    if (gasPrice) {
+      txOptions.gasPrice = ethers.parseUnits(gasPrice, 'gwei');
+    }
+
+    const tx = await signer.sendTransaction(txOptions);
+
+    await Promise.race([
+      tx.wait(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Transaction confirmation timeout')), 300000)
+      ),
+    ]);
+
     return tx.hash;
   }
 
   /**
-   * Get transaction history
+   * Send ERC20 token
    */
-  async getTransactionHistory(limit: number = 20): Promise<any[]> {
-    if (!this.wallet || !this.provider) {
-      throw new Error('Wallet not initialized');
+  async sendToken(tokenAddress: string, to: string, amount: string, decimals: number = 18): Promise<string> {
+    if (!ethers.isAddress(to)) {
+      throw new Error('Invalid recipient address');
     }
 
-    // This is a simplified version
-    // In production, you'd use block explorer APIs
-    const currentBlock = await this.provider.getBlockNumber();
-    const history: any[] = [];
+    await this.authorizeSensitiveAction('Confirm token transfer');
 
-    // Scan recent blocks for transactions
-    for (let i = 0; i < Math.min(limit, 100); i++) {
-      const block = await this.provider.getBlock(currentBlock - i, true);
-      if (block && block.transactions) {
-        for (const txData of block.transactions) {
-          if (typeof txData !== 'string') {
-            const tx = txData as any; // Type assertion for transaction response
-            if (tx.from === this.wallet.address || tx.to === this.wallet.address) {
-              history.push({
-                hash: tx.hash || '',
-                from: tx.from || '',
-                to: tx.to || '',
-                value: ethers.formatEther(tx.value || 0),
-                timestamp: block.timestamp,
-              });
-            }
-          }
-        }
-      }
-      if (history.length >= limit) break;
-    }
+    const signer = await this.getWallet();
 
-    return history;
+    const abi = ['function transfer(address to, uint256 amount) returns (bool)'];
+    const contract = new ethers.Contract(tokenAddress, abi, signer);
+    const parsedAmount = ethers.parseUnits(amount, decimals);
+
+    const tx = await contract.transfer(to, parsedAmount);
+
+    await Promise.race([
+      tx.wait(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Transaction confirmation timeout')), 300000)
+      ),
+    ]);
+
+    return tx.hash;
   }
 
   /**
-   * Get current network info
+   * Get basic transaction history by scanning recent blocks
+   */
+  async getTransactionHistory(limit: number = 20): Promise<any[]> {
+    const address = await this.getAddress();
+    if (!address) {
+      return [];
+    }
+
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+    }
+
+    const currentBlock = await this.provider!.getBlockNumber();
+    const history: any[] = [];
+
+    for (let i = 0; i < Math.min(limit, 100); i++) {
+      const block = await this.provider!.getBlock(currentBlock - i, true);
+      if (!block || !block.transactions) {
+        continue;
+      }
+
+      for (const txData of block.transactions) {
+        if (typeof txData === 'string') {
+          continue;
+        }
+
+        const tx = txData as any;
+        const from = (tx.from || '').toLowerCase();
+        const to = (tx.to || '').toLowerCase();
+        const mine = address.toLowerCase();
+
+        if (from === mine || to === mine) {
+          history.push({
+            hash: tx.hash || '',
+            from: tx.from || '',
+            to: tx.to || '',
+            value: ethers.formatEther(tx.value || 0),
+            timestamp: block.timestamp,
+          });
+        }
+      }
+
+      if (history.length >= limit) {
+        break;
+      }
+    }
+
+    return history.slice(0, limit);
+  }
+
+  /**
+   * Get current network config
    */
   getCurrentNetwork() {
-    return NETWORKS[this.currentChainId];
+    return NETWORKS[this.currentChainId] || NETWORKS[DEFAULT_NETWORK];
   }
 
   /**
    * Sign message
    */
   async signMessage(message: string): Promise<string> {
-    if (!this.wallet) {
-      throw new Error('Wallet not initialized');
-    }
-    return await this.wallet.signMessage(message);
+    await this.authorizeSensitiveAction('Sign message');
+    const signer = await this.getWallet();
+    return await signer.signMessage(message);
   }
 
   /**
-   * Export private key (requires password verification)
+   * Sign EIP-712 typed data
+   */
+  async signTypedData(
+    domain: Record<string, any>,
+    types: Record<string, Array<{ name: string; type: string }>>,
+    message: Record<string, any>
+  ): Promise<string> {
+    await this.authorizeSensitiveAction('Sign typed data');
+    const signer = await this.getWallet();
+    return await signer.signTypedData(domain, types, message);
+  }
+
+  /**
+   * Export private key (requires password)
    */
   async exportPrivateKey(password: string): Promise<string> {
-    try {
-      // Get encrypted wallet
-      const credentials = await Keychain.getGenericPassword();
-      if (!credentials) {
-        throw new Error('No wallet found');
-      }
-
-      // Check if stored value is a private key
-      if (credentials.password.startsWith('0x')) {
-        return credentials.password;
-      }
-
-      // Try to decrypt
-      if (credentials.password.trim().startsWith('{')) {
-        const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
-          credentials.password,
-          password
-        );
-        return decryptedWallet.privateKey;
-      }
-
-      // Fallback
-      return credentials.password;
-    } catch (error) {
-      console.error('Export private key error:', error);
-      throw new Error('Incorrect password or wallet not found');
+    await this.authorizeSensitiveAction('Export private key');
+    const valid = await this.verifyPassword(password);
+    if (!valid) {
+      throw new Error('Incorrect password');
     }
+
+    const credentials = await Keychain.getGenericPassword();
+    if (!credentials) {
+      throw new Error('No wallet found');
+    }
+
+    return credentials.password;
   }
 
   /**
-   * Export mnemonic phrase (requires password verification)
+   * Export mnemonic phrase (requires password)
    */
   async exportMnemonic(password: string): Promise<string> {
-    try {
-      // Get encrypted wallet
-      const credentials = await Keychain.getGenericPassword();
-      if (!credentials) {
-        throw new Error('No wallet found');
-      }
-
-      // If stored as private key, we can't get mnemonic unless we stored it separately
-      // But wait, createWallet stores privateKey. So mnemonic is LOST if we didn't store it elsewhere.
-      // However, MultiWalletService might store type='mnemonic'.
-      
-      // Check if it's JSON
-      if (credentials.password.trim().startsWith('{')) {
-        const decryptedWallet = await ethers.Wallet.fromEncryptedJson(
-          credentials.password,
-          password
-        );
-        if ('mnemonic' in decryptedWallet && decryptedWallet.mnemonic) {
-          return decryptedWallet.mnemonic.phrase;
-        }
-      }
-
-      // If we are here, we probably only have private key or decryption failed
-      // In current implementation, we only stored private key in Keychain
-      // So we cannot retrieve mnemonic from Keychain password field.
-      
-      throw new Error('Mnemonic not available for this wallet');
-    } catch (error) {
-      console.error('Export mnemonic error:', error);
-      throw error;
+    await this.authorizeSensitiveAction('Export recovery phrase');
+    const valid = await this.verifyPassword(password);
+    if (!valid) {
+      throw new Error('Incorrect password');
     }
+
+    const mnemonicCredentials = await Keychain.getGenericPassword({ service: WALLET_MNEMONIC_KEY });
+    if (mnemonicCredentials && mnemonicCredentials.password) {
+      return mnemonicCredentials.password;
+    }
+
+    throw new Error('Mnemonic not available for this wallet');
   }
 
   /**
    * Verify password
    */
   async verifyPassword(password: string): Promise<boolean> {
-    try {
-      const credentials = await Keychain.getGenericPassword();
-      if (!credentials) {
-        return false;
-      }
+    const storedHash = await AsyncStorage.getItem(WALLET_PASSWORD_HASH_KEY);
+    if (storedHash) {
+      return this.hashPassword(password) === storedHash;
+    }
 
-      // If stored as plain private key, we can't verify password cryptographically
-      // unless we stored a hash. For now, assume true if we can read Keychain.
-      if (credentials.password.startsWith('0x')) {
-        return true;
-      }
+    const credentials = await Keychain.getGenericPassword();
+    return !!credentials;
+  }
 
-      if (credentials.password.trim().startsWith('{')) {
-        await ethers.Wallet.fromEncryptedJson(credentials.password, password);
-        return true;
-      }
-
-      return true;
-    } catch (error) {
+  /**
+   * Change password hash for wallet security operations
+   */
+  async changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
+    const valid = await this.verifyPassword(oldPassword);
+    if (!valid) {
       return false;
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters');
+    }
+
+    await this.setPasswordHash(newPassword);
+    return true;
+  }
+
+  /**
+   * Switch active signer wallet from private key
+   */
+  async setActiveWalletFromPrivateKey(privateKey: string): Promise<string> {
+    const wallet = new ethers.Wallet(privateKey);
+    await Keychain.setGenericPassword(WALLET_KEY, wallet.privateKey);
+    await this.setStoredAddress(wallet.address);
+
+    this.wallet = wallet;
+
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+    } else {
+      this.wallet = this.wallet.connect(this.provider);
+    }
+
+    return wallet.address;
+  }
+
+  /**
+   * Set active read-only address (watch wallet mode)
+   */
+  async setReadOnlyAddress(address: string): Promise<void> {
+    await this.setStoredAddress(address);
+    this.wallet = null;
+
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
     }
   }
 
   /**
-   * Check if wallet holds a specific NFT
+   * Check if active wallet is read-only
+   */
+  isReadOnly(): boolean {
+    return this.wallet === null;
+  }
+
+  /**
+   * Check if address owns a specific NFT
    */
   async hasNFT(contractAddress: string): Promise<boolean> {
-    if (!this.wallet || !this.provider) {
-      await this.init();
-    }
-    
-    if (!this.wallet || !this.provider) {
+    const address = await this.getAddress();
+    if (!address) {
       return false;
     }
 
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+    }
+
     try {
-      const abi = [
-        // ERC721 & ERC1155 balanceOf
-        "function balanceOf(address owner) view returns (uint256)"
-      ];
-      
-      const contract = new ethers.Contract(contractAddress, abi, this.provider);
-      const balance = await contract.balanceOf(this.wallet.address);
-      
+      const abi = ['function balanceOf(address owner) view returns (uint256)'];
+      const contract = new ethers.Contract(contractAddress, abi, this.provider!);
+      const balance = await contract.balanceOf(address);
       return balance > 0n;
-    } catch (error) {
-      console.error('Check NFT balance error:', error);
+    } catch {
       return false;
     }
   }
 
   /**
-   * Delete wallet
+   * Delete wallet and clear security metadata
    */
   async deleteWallet(): Promise<void> {
     await Keychain.resetGenericPassword();
+    await Keychain.resetGenericPassword({ service: WALLET_MNEMONIC_KEY });
     await AsyncStorage.removeItem(WALLET_ADDRESS_KEY);
+    await AsyncStorage.removeItem(WALLET_PASSWORD_HASH_KEY);
+
     this.wallet = null;
     this.provider = null;
   }

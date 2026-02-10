@@ -32,7 +32,7 @@ class WalletConnectService {
   /**
    * Connect to DApp via URI
    */
-  async connect(uri: string, wallet: ethers.Wallet): Promise<WCSession> {
+  async connect(uri: string, wallet: ethers.Wallet | ethers.HDNodeWallet): Promise<WCSession> {
     try {
       // Parse WalletConnect URI
       const params = this.parseURI(uri);
@@ -79,7 +79,7 @@ class WalletConnectService {
    */
   async handleSignRequest(
     request: WCRequest,
-    wallet: ethers.Wallet
+    wallet: ethers.Wallet | ethers.HDNodeWallet
   ): Promise<string> {
     try {
       const { method, params } = request;
@@ -110,7 +110,7 @@ class WalletConnectService {
    */
   async handleTransactionRequest(
     request: WCRequest,
-    wallet: ethers.Wallet
+    wallet: ethers.Wallet | ethers.HDNodeWallet
   ): Promise<string> {
     try {
       const tx = request.params[0];
@@ -126,12 +126,12 @@ class WalletConnectService {
    * Parse WalletConnect URI
    */
   private parseURI(uri: string): any {
-    // Simple URI parsing (in production, use @walletconnect/utils)
+    // Simple URI parsing for wc:<topic>@<version>?...
     const params: any = {};
     
     if (uri.startsWith('wc:')) {
       const parts = uri.split('@');
-      params.key = parts[0].replace('wc:', '');
+      params.key = parts[0].replace('wc:', '').trim();
       
       if (parts[1]) {
         const queryParts = parts[1].split('?');
@@ -139,10 +139,14 @@ class WalletConnectService {
         
         if (queryParts[1]) {
           const query = new URLSearchParams(queryParts[1]);
-          params.bridge = query.get('bridge');
-          params.key = query.get('key');
+          params.bridge = query.get('bridge') || query.get('relay-protocol') || '';
+          params.sessionKey = query.get('key') || query.get('symKey') || '';
         }
       }
+    }
+
+    if (!params.key) {
+      throw new Error('Invalid WalletConnect URI');
     }
     
     return params;
@@ -151,7 +155,7 @@ class WalletConnectService {
   /**
    * Sign typed data
    */
-  private async signTypedData(wallet: ethers.Wallet, data: string): Promise<string> {
+  private async signTypedData(wallet: ethers.Wallet | ethers.HDNodeWallet, data: string): Promise<string> {
     try {
       const typedData = JSON.parse(data);
       // Implement EIP-712 signing

@@ -44,7 +44,6 @@ export const hi: TranslationStrings = {
     verifyDescription: 'जारी रखने के लिए अपनी पहचान सत्यापित करें',
     quickSubmit: 'त्वरित सबमिट',
   },
-
   home: {
     myWallet: 'मेरा वॉलेट',
     totalBalance: 'कुल शेष',
@@ -63,7 +62,6 @@ export const hi: TranslationStrings = {
     hideSmallBalances: 'छोटे शेष छुपाएं',
     showSmallBalances: 'छोटे शेष दिखाएं',
   },
-
   wallet: {
     createWallet: 'वॉलेट बनाएं',
     importWallet: 'वॉलेट आयात करें',
@@ -101,7 +99,6 @@ export const hi: TranslationStrings = {
     poweredBy: 'ईगल नेटवर्क द्वारा संचालित',
     privateKeyName: 'निजी कुंजी',
   },
-
   send: {
     send: 'भेजें',
     sendTo: 'को भेजें',
@@ -144,7 +141,6 @@ export const hi: TranslationStrings = {
     invalidAddress: 'अमान्य पता',
     invalidAmount: 'अमान्य राशि',
   },
-
   receive: {
     receive: 'प्राप्त करें',
     myAddress: 'मेरा पता',
@@ -157,7 +153,6 @@ export const hi: TranslationStrings = {
     warningMessage: 'सुनिश्चित करें कि भेजने वाला सही नेटवर्क का उपयोग कर रहा है',
     network: 'नेटवर्क',
   },
-
   swap: {
     swap: 'स्वैप',
     from: 'से',
@@ -195,7 +190,6 @@ export const hi: TranslationStrings = {
     approve: 'अनुमोदन',
     approving: 'अनुमोदन हो रहा है...',
   },
-
   nft: {
     nft: 'एनएफटी',
     myNFTs: 'मेरे एनएफटी',
@@ -221,7 +215,6 @@ export const hi: TranslationStrings = {
     standard: 'मानक',
     unknownCollection: 'अज्ञात संग्रह',
   },
-
   transaction: {
     transactions: 'लेनदेन',
     history: 'इतिहास',
@@ -260,7 +253,6 @@ export const hi: TranslationStrings = {
     confirming: 'पुष्टि हो रही है...',
     confirmed: 'पुष्टि की गई',
   },
-
   token: {
     tokens: 'टोकन',
     token: 'टोकन',
@@ -294,7 +286,6 @@ export const hi: TranslationStrings = {
     viewOnExplorer: 'एक्सप्लोरर पर देखें',
     importToken: 'टोकन आयात करें',
   },
-
   dapp: {
     dappBrowser: 'DApp ब्राउज़र',
     share: 'साझा करें',
@@ -321,7 +312,7 @@ export const hi: TranslationStrings = {
     recentlyVisited: 'हाल ही में देखे गए',
     addDApp: 'DApp जोड़ें',
     dappName: 'DApp का नाम',
-    dappUrl: 'DApp URL',
+    dappUrl: 'डीएपी यूआरएल',
     dappAdded: 'DApp जोड़ा गया',
     removeDApp: 'DApp हटाएं',
     openInBrowser: 'ब्राउज़र में खोलें',
@@ -331,12 +322,9 @@ export const hi: TranslationStrings = {
     pancakeDesc: 'BSC पर अग्रणी DEX',
     uniswapDesc: 'विकेंद्रीकृत एक्सचेंज',
   },
-
   settings: {
     settings: 'सेटिंग्स',
     back: 'वापस',
-    
-    // Sections
     walletManagement: 'वॉलेट प्रबंधन',
     network: 'नेटवर्क',
     security: 'सुरक्षा',
@@ -344,19 +332,13 @@ export const hi: TranslationStrings = {
     preferences: 'पसंद',
     about: 'के बारे में',
     dangerZone: 'खतरा क्षेत्र',
-    
-    // Wallet Management
     myWallets: 'मेरे वॉलेट',
     myWalletsSubtitle: 'एकाधिक वॉलेट प्रबंधित करें',
     addCustomToken: 'कस्टम टोकन जोड़ें',
     addCustomTokenSubtitle: 'ERC20/721/1155 जोड़ें',
-    
-    // Network
     currentNetwork: 'वर्तमान नेटवर्क',
     rpcNodes: 'RPC नोड्स',
     rpcNodesSubtitle: 'गति जांचें',
-    
-    // Security
     biometricAuth: 'बायोमेट्रिक प्रमाणीकरण',
     biometricAuthSubtitle: 'फिंगरप्रिंट या फेस आईडी का उपयोग करें',
     exportPrivateKey: 'निजी कुंजी निर्यात करें',
@@ -365,29 +347,19 @@ export const hi: TranslationStrings = {
     backupWalletSubtitle: 'रिकवरी वाक्यांश देखें',
     changePassword: 'पासवर्ड बदलें',
     changePasswordSubtitle: 'वॉलेट पासवर्ड अपडेट करें',
-    
-    // Advanced
     priceAlerts: 'मूल्य अलर्ट',
     priceAlertsSubtitle: 'सूचनाएं सेट करें',
     advancedSettings: 'उन्नत सेटिंग्स',
     advancedSettingsSubtitle: 'डेवलपर विकल्प',
-    
-    // Preferences
     language: 'भाषा',
     currency: 'मुद्रा',
-    
-    // About
     version: 'संस्करण',
     termsOfService: 'सेवा की शर्तें',
     privacyPolicy: 'गोपनीयता नीति',
     support: 'समर्थन',
     supportSubtitle: 'मदद प्राप्त करें',
-    
-    // Danger Zone
     deleteWallet: 'वॉलेट हटाएं',
     deleteWalletSubtitle: 'स्थायी रूप से हटाएं',
-    
-    // Alerts
     exportPrivateKeyTitle: 'निजी कुंजी निर्यात करें',
     exportPrivateKeyMessage: 'निजी कुंजी पूर्ण पहुंच प्रदान करती है। इसे कभी साझा न करें!',
     backupWalletTitle: 'वॉलेट बैकअप',
@@ -410,7 +382,6 @@ export const hi: TranslationStrings = {
     resetAppSubtitle: 'डिफ़ॉल्ट पर रीसेट करें',
     advancedWarning: '⚠️ केवल उन्नत उपयोगकर्ताओं के लिए',
   },
-
   network: {
     network: 'नेटवर्क',
     networks: 'नेटवर्क',
@@ -418,7 +389,7 @@ export const hi: TranslationStrings = {
     customNetwork: 'कस्टम नेटवर्क',
     addNetwork: 'नेटवर्क जोड़ें',
     networkName: 'नेटवर्क का नाम',
-    rpcUrl: 'RPC URL',
+    rpcUrl: 'आरपीसी यूआरएल',
     chainId: 'चेन आईडी',
     symbol: 'प्रतीक',
     blockExplorer: 'ब्लॉक एक्सप्लोरर',
@@ -441,12 +412,10 @@ export const hi: TranslationStrings = {
     rpcNode: 'RPC नोड',
     selected: 'चयनित',
   },
-
   priceAlert: {
     above: 'ऊपर',
     below: 'नीचे',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'मुझसे क्रिप्टो के बारे में कुछ भी पूछें...',
@@ -458,8 +427,18 @@ export const hi: TranslationStrings = {
     marketAnalysis: 'बाज़ार विश्लेषण',
     securityCheck: 'सुरक्षा जाँच',
     pricePrediction: 'मूल्य भविष्यवाणी',
+    dailyLimit: 'दैनिक सीमा',
+    upgrade: 'अपग्रेड',
+    currentTier: 'वर्तमान स्तर',
+    free: 'मुफ़्त',
+    holder: 'होल्डर',
+    vip: 'एनएफटी वीआईपी',
+    pro: 'Pro सदस्यता',
+    tokensRemaining: 'टोकन शेष',
+    upgradePrompt: 'सीमा बढ़ाने के लिए अपग्रेड करें',
+    buyEagle: 'EAGLE खरीदें',
+    buyNft: 'NFT खरीदें',
   },
-
   errors: {
     walletNameRequired: 'नाम आवश्यक है',
     passwordRequired: 'पासवर्ड आवश्यक है',

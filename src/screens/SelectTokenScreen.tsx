@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -17,6 +18,7 @@ import {
 import { getChainTokens, TokenConfig } from '../config/tokenConfig';
 import WalletService from '../services/WalletService';
 import TokenLogoService from '../services/TokenLogoService';
+import CustomTokenService from '../services/CustomTokenService';
 import { ethers } from 'ethers';
 
 export default function SelectTokenScreen({ route, navigation }: any) {
@@ -25,6 +27,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [tokens, setTokens] = useState<any[]>([]);
   const [networkName, setNetworkName] = useState('BNB Chain');
+  const [importingCustom, setImportingCustom] = useState(false);
 
   useEffect(() => {
     loadTokens();
@@ -34,9 +37,30 @@ export default function SelectTokenScreen({ route, navigation }: any) {
     const network = WalletService.getCurrentNetwork();
     setNetworkName(network.name);
     
-    // Get predefined tokens
+    // Get predefined + custom ERC20 tokens
     const chainTokens = getChainTokens(network.chainId);
+    const customTokens = (await CustomTokenService.getCustomTokensByChain(network.chainId))
+      .filter((token) => token.type === 'ERC20')
+      .map((token) => ({
+        address: token.address,
+        symbol: token.symbol,
+        name: token.name,
+        decimals: token.decimals,
+        logo: token.logo || token.symbol.toLowerCase(),
+        color: '#4C6FFF',
+        isCustom: true,
+      }));
     const address = await WalletService.getAddress();
+    const provider = await WalletService.getProvider();
+
+    const mergedTokensMap = new Map<string, any>();
+    [...chainTokens, ...customTokens].forEach((token) => {
+      const key = token.address.toLowerCase();
+      if (!mergedTokensMap.has(key)) {
+        mergedTokensMap.set(key, token);
+      }
+    });
+    const mergedTokens = Array.from(mergedTokensMap.values());
     
     // Add native token
     const nativeToken = {
@@ -50,13 +74,30 @@ export default function SelectTokenScreen({ route, navigation }: any) {
         color: '#F3BA2F'
     };
     
-    // Load balances (simplified, maybe optimize later)
-    // For now just load list to show UI
-    const formattedTokens = chainTokens.map(token => ({
-        ...token,
-        balance: '0.00', // Placeholder
-        value: '$0.00'
-    }));
+    const formattedTokens = await Promise.all(
+      mergedTokens.map(async (token) => {
+        let tokenBalance = '0.00';
+        if (address) {
+          try {
+            const erc20 = new ethers.Contract(
+              token.address,
+              ['function balanceOf(address owner) view returns (uint256)'],
+              provider
+            );
+            const raw = await erc20.balanceOf(address);
+            tokenBalance = parseFloat(ethers.formatUnits(raw, token.decimals ?? 18)).toFixed(4);
+          } catch {
+            tokenBalance = '0.00';
+          }
+        }
+
+        return {
+          ...token,
+          balance: tokenBalance,
+          value: '$0.00',
+        };
+      })
+    );
     
     setTokens([nativeToken, ...formattedTokens]);
   };
@@ -93,18 +134,60 @@ export default function SelectTokenScreen({ route, navigation }: any) {
     }
   };
 
-  const handleImportCustom = () => {
-      // Create a temporary custom token object
-      // In a real app, we would fetch metadata (symbol, decimals) from chain
-      const customToken = {
-          symbol: 'UNKNOWN',
-          name: 'Custom Token',
-          address: searchQuery,
-          decimals: 18,
-          logo: null,
-          isCustom: true
-      };
-      handleSelectToken(customToken);
+  const handleImportCustom = async () => {
+      if (!isAddress(searchQuery)) {
+        return;
+      }
+
+      setImportingCustom(true);
+      try {
+        const network = WalletService.getCurrentNetwork();
+        const provider = await WalletService.getProvider();
+        const token = await CustomTokenService.getTokenInfo(searchQuery.trim(), network.chainId, provider);
+
+        if (token.type !== 'ERC20') {
+          throw new Error(t.token.invalidTokenAddress);
+        }
+
+        try {
+          await CustomTokenService.addCustomToken(token);
+        } catch (error: any) {
+          const message = String(error?.message || '');
+          if (!message.toLowerCase().includes('already added')) {
+            throw error;
+          }
+        }
+
+        const selectedToken = {
+          ...token,
+          balance: '0.00',
+          value: '$0.00',
+          color: '#4C6FFF',
+        };
+
+        // Update in-memory list immediately for current session
+        setTokens((prev) => {
+          const exists = prev.some((item) => item.address.toLowerCase() === selectedToken.address.toLowerCase());
+          if (exists) {
+            return prev;
+          }
+          // Keep native token at index 0
+          if (prev.length > 0 && prev[0].address === 'native') {
+            return [prev[0], selectedToken, ...prev.slice(1)];
+          }
+          return [selectedToken, ...prev];
+        });
+
+        handleSelectToken(selectedToken);
+      } catch (error: any) {
+        const message = error?.message || t.errors.unknownError;
+        const mapped = String(message).toLowerCase().includes('already added')
+          ? t.token.tokenAlreadyAdded
+          : message;
+        Alert.alert(t.common.error, mapped);
+      } finally {
+        setImportingCustom(false);
+      }
   };
 
   const renderTokenIcon = (token: any) => {
@@ -158,7 +241,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
                     <Text style={styles.tokenIconText}>?</Text>
                 </View>
                 <View style={styles.tokenInfo}>
-                    <Text style={styles.tokenSymbol}>Import Token</Text>
+                    <Text style={styles.tokenSymbol}>{importingCustom ? t.common.loading : t.token.importToken}</Text>
                     <Text style={styles.tokenName}>{searchQuery}</Text>
                 </View>
              </TouchableOpacity>

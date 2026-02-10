@@ -39,12 +39,11 @@ export const ru: TranslationStrings = {
     receive: 'Получить',
     biometrics: 'Биометрия',
     verifyBiometrics: 'Подтвердите биометрию',
-    faceId: 'Face ID',
+    faceId: 'Идентификатор лица',
     touchId: 'Touch ID',
     verifyDescription: 'Пожалуйста, подтвердите свою личность',
     quickSubmit: 'Быстрая отправка',
   },
-
   home: {
     myWallet: 'Мой кошелек',
     totalBalance: 'Общий баланс',
@@ -63,7 +62,6 @@ export const ru: TranslationStrings = {
     hideSmallBalances: 'Скрыть мелкие балансы',
     showSmallBalances: 'Показать мелкие балансы',
   },
-
   wallet: {
     createWallet: 'Создать кошелек',
     importWallet: 'Импортировать кошелек',
@@ -101,7 +99,6 @@ export const ru: TranslationStrings = {
     poweredBy: 'При поддержке Eagle Network',
     privateKeyName: 'Приватный ключ',
   },
-
   send: {
     send: 'Отправить',
     sendTo: 'Отправить',
@@ -122,7 +119,7 @@ export const ru: TranslationStrings = {
     custom: 'Свой',
     gasPrice: 'Цена газа',
     gasLimit: 'Лимит газа',
-    nonce: 'Nonce',
+    nonce: 'одноразовый',
     data: 'Данные',
     sendConfirmation: 'Подтверждение отправки',
     confirmTransaction: 'Подтвердить транзакцию',
@@ -144,7 +141,6 @@ export const ru: TranslationStrings = {
     invalidAddress: 'Неверный адрес',
     invalidAmount: 'Неверная сумма',
   },
-
   receive: {
     receive: 'Получить',
     myAddress: 'Мой адрес',
@@ -157,7 +153,6 @@ export const ru: TranslationStrings = {
     warningMessage: 'Убедитесь, что отправитель использует правильную сеть',
     network: 'Сеть',
   },
-
   swap: {
     swap: 'Обмен',
     from: 'От',
@@ -195,7 +190,6 @@ export const ru: TranslationStrings = {
     approve: 'Одобрить',
     approving: 'Одобрение...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Мои NFT',
@@ -221,7 +215,6 @@ export const ru: TranslationStrings = {
     standard: 'Стандарт',
     unknownCollection: 'Неизвестная коллекция',
   },
-
   transaction: {
     transactions: 'Транзакции',
     history: 'История',
@@ -245,7 +238,7 @@ export const ru: TranslationStrings = {
     time: 'Время',
     block: 'Блок',
     hash: 'Хеш',
-    nonce: 'Nonce',
+    nonce: 'одноразовый',
     gasPrice: 'Цена газа',
     gasUsed: 'Использовано газа',
     gasLimit: 'Лимит газа',
@@ -260,7 +253,6 @@ export const ru: TranslationStrings = {
     confirming: 'Подтверждение...',
     confirmed: 'Подтверждено',
   },
-
   token: {
     tokens: 'Токены',
     token: 'Токен',
@@ -294,7 +286,6 @@ export const ru: TranslationStrings = {
     viewOnExplorer: 'Смотреть в обозревателе',
     importToken: 'Импорт токена',
   },
-
   dapp: {
     dappBrowser: 'DApp Браузер',
     share: 'Поделиться',
@@ -331,12 +322,9 @@ export const ru: TranslationStrings = {
     pancakeDesc: 'Ведущая DEX на BSC',
     uniswapDesc: 'Децентрализованная биржа',
   },
-
   settings: {
     settings: 'Настройки',
     back: 'Назад',
-    
-    // Sections
     walletManagement: 'Управление кошельком',
     network: 'Сеть',
     security: 'Безопасность',
@@ -344,19 +332,13 @@ export const ru: TranslationStrings = {
     preferences: 'Предпочтения',
     about: 'О приложении',
     dangerZone: 'Опасная зона',
-    
-    // Wallet Management
     myWallets: 'Мои кошельки',
     myWalletsSubtitle: 'Управление кошельками',
     addCustomToken: 'Добавить свой токен',
     addCustomTokenSubtitle: 'Добавить ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Текущая сеть',
     rpcNodes: 'RPC узлы',
     rpcNodesSubtitle: 'Проверка скорости соединения',
-    
-    // Security
     biometricAuth: 'Биометрия',
     biometricAuthSubtitle: 'Использовать отпечаток или лицо',
     exportPrivateKey: 'Экспорт ключа',
@@ -365,29 +347,19 @@ export const ru: TranslationStrings = {
     backupWalletSubtitle: 'Показать фразу',
     changePassword: 'Сменить пароль',
     changePasswordSubtitle: 'Обновить пароль кошелька',
-    
-    // Advanced
     priceAlerts: 'Уведомления о ценах',
     priceAlertsSubtitle: 'Настроить уведомления',
     advancedSettings: 'Расширенные настройки',
     advancedSettingsSubtitle: 'Для разработчиков',
-    
-    // Preferences
     language: 'Язык',
     currency: 'Валюта',
-    
-    // About
     version: 'Версия',
     termsOfService: 'Условия использования',
     privacyPolicy: 'Политика конфиденциальности',
     support: 'Поддержка',
     supportSubtitle: 'Получить помощь',
-    
-    // Danger Zone
     deleteWallet: 'Удалить кошелек',
     deleteWalletSubtitle: 'Удалить безвозвратно',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Экспорт ключа',
     exportPrivateKeyMessage: 'Приватный ключ дает полный доступ к кошельку. Никому не сообщайте его!',
     backupWalletTitle: 'Резервная копия',
@@ -410,7 +382,6 @@ export const ru: TranslationStrings = {
     resetAppSubtitle: 'Сброс настроек',
     advancedWarning: '⚠️ Только для опытных пользователей',
   },
-
   network: {
     network: 'Сеть',
     networks: 'Сети',
@@ -418,7 +389,7 @@ export const ru: TranslationStrings = {
     customNetwork: 'Своя сеть',
     addNetwork: 'Добавить сеть',
     networkName: 'Имя сети',
-    rpcUrl: 'RPC URL',
+    rpcUrl: 'URL-адрес RPC',
     chainId: 'ID цепи',
     symbol: 'Символ',
     blockExplorer: 'Обозреватель блоков',
@@ -432,8 +403,8 @@ export const ru: TranslationStrings = {
     fast: 'Быстро',
     normal: 'Нормально',
     slow: 'Медленно',
-    mainnet: 'Mainnet',
-    testnet: 'Testnet',
+    mainnet: 'Основная сеть',
+    testnet: 'Тестовая сеть',
     nodesAvailable: 'узлов доступно',
     hiddenUrl: 'URL скрыт',
     fastestNode: 'Самый быстрый',
@@ -441,12 +412,10 @@ export const ru: TranslationStrings = {
     rpcNode: 'RPC узел',
     selected: 'выбран',
   },
-
   priceAlert: {
     above: 'Выше',
     below: 'Ниже',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Спросите меня о чем угодно...',
@@ -463,14 +432,13 @@ export const ru: TranslationStrings = {
     currentTier: 'Текущий уровень',
     free: 'Бесплатно',
     holder: 'Держатель',
-    vip: 'NFT VIP',
+    vip: 'НФТ VIP',
     pro: 'Подписка Pro',
     tokensRemaining: 'токенов осталось',
     upgradePrompt: 'Обновите для увеличения лимита',
     buyEagle: 'Купить EAGLE',
     buyNft: 'Купить NFT',
   },
-
   errors: {
     walletNameRequired: 'Введите имя кошелька',
     passwordRequired: 'Введите пароль',

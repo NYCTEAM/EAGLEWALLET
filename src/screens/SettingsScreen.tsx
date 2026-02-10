@@ -3,78 +3,94 @@
  * App settings including language, security, and wallet management
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   Alert,
+  ScrollView,
+  StyleSheet,
   Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
+import BiometricAuthService from '../services/BiometricAuthService';
+
+type ItemProps = {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  showArrow?: boolean;
+  rightElement?: React.ReactNode;
+};
 
 export default function SettingsScreen({ navigation, isTabScreen }: any) {
   const { t, language, availableLanguages } = useLanguage();
   const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [currency, setCurrency] = useState('USD');
   const network = WalletService.getCurrentNetwork();
-  
-  // Get current language display name
-  const currentLanguage = availableLanguages.find(lang => lang.code === language)?.nativeName || 'English';
+
+  const currentLanguage =
+    availableLanguages.find((lang) => lang.code === language)?.nativeName || 'English';
+
+  useEffect(() => {
+    const loadSecurityPreferences = async () => {
+      const [enabled, available] = await Promise.all([
+        BiometricAuthService.isEnabled(),
+        BiometricAuthService.isAvailable(),
+      ]);
+      setBiometricEnabled(enabled);
+      setBiometricAvailable(available);
+    };
+
+    loadSecurityPreferences();
+  }, []);
+
+  const handleToggleBiometric = async (value: boolean) => {
+    try {
+      await BiometricAuthService.setEnabled(value);
+      setBiometricEnabled(value);
+    } catch (error: any) {
+      Alert.alert(t.common.error, error?.message || t.errors.unknownError);
+    }
+  };
 
   const handleExportPrivateKey = () => {
-    Alert.alert(
-      t.settings.exportPrivateKeyTitle,
-      t.settings.exportPrivateKeyMessage,
-      [
-        { text: t.common.cancel, style: 'cancel' },
-        {
-          text: t.settings.show,
-          style: 'destructive',
-          onPress: () => {
-            // Navigate to export screen
-            navigation.navigate('ExportPrivateKey');
-          },
-        },
-      ]
-    );
+    Alert.alert(t.settings.exportPrivateKeyTitle, t.settings.exportPrivateKeyMessage, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.settings.show,
+        style: 'destructive',
+        onPress: () => navigation.navigate('ExportPrivateKey'),
+      },
+    ]);
   };
 
   const handleBackupWallet = () => {
-    Alert.alert(
-      t.settings.backupWalletTitle,
-      t.settings.backupWalletMessage,
-      [
-        { text: t.common.cancel, style: 'cancel' },
-        {
-          text: t.settings.showRecoveryPhrase,
-          onPress: () => {
-            navigation.navigate('BackupWallet');
-          },
-        },
-      ]
-    );
+    Alert.alert(t.settings.backupWalletTitle, t.settings.backupWalletMessage, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.settings.showRecoveryPhrase,
+        onPress: () => navigation.navigate('BackupWallet'),
+      },
+    ]);
   };
 
   const handleDeleteWallet = () => {
-    Alert.alert(
-      t.settings.deleteWalletTitle,
-      t.settings.deleteWalletMessage,
-      [
-        { text: t.common.cancel, style: 'cancel' },
-        {
-          text: t.common.delete,
-          style: 'destructive',
-          onPress: async () => {
-            await WalletService.deleteWallet();
-            navigation.replace('CreateWallet');
-          },
+    Alert.alert(t.settings.deleteWalletTitle, t.settings.deleteWalletMessage, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.common.delete,
+        style: 'destructive',
+        onPress: async () => {
+          await WalletService.deleteWallet();
+          navigation.replace('CreateWallet');
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const SettingItem = ({
@@ -84,28 +100,27 @@ export default function SettingsScreen({ navigation, isTabScreen }: any) {
     onPress,
     showArrow = true,
     rightElement,
-  }: any) => (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress}>
+  }: ItemProps) => (
+    <TouchableOpacity style={styles.settingItem} onPress={onPress} disabled={!onPress}>
       <View style={styles.settingLeft}>
         <Text style={styles.settingIcon}>{icon}</Text>
         <View style={styles.settingText}>
           <Text style={styles.settingTitle}>{title}</Text>
-          {subtitle && <Text style={styles.settingSubtitle}>{subtitle}</Text>}
+          {subtitle ? <Text style={styles.settingSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
-      {rightElement || (showArrow && <Text style={styles.settingArrow}>→</Text>)}
+      {rightElement || (showArrow && <Text style={styles.settingArrow}>{'>'}</Text>)}
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         {isTabScreen ? (
           <View style={{ width: 60 }} />
         ) : (
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← {t.settings.back}</Text>
+            <Text style={styles.backButton}>{`< ${t.settings.back}`}</Text>
           </TouchableOpacity>
         )}
         <Text style={styles.title}>{t.settings.settings}</Text>
@@ -113,113 +128,95 @@ export default function SettingsScreen({ navigation, isTabScreen }: any) {
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Wallet Management */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.walletManagement}</Text>
           <SettingItem
-            icon="👛"
+            icon="W"
             title={t.settings.myWallets}
             subtitle={t.settings.myWalletsSubtitle}
             onPress={() => navigation.navigate('Wallets')}
           />
           <SettingItem
-            icon="➕"
+            icon="+"
             title={t.settings.addCustomToken}
             subtitle={t.settings.addCustomTokenSubtitle}
             onPress={() => navigation.navigate('AddToken')}
           />
         </View>
 
-        {/* Network Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.network}</Text>
+          <SettingItem icon="N" title={t.settings.currentNetwork} subtitle={network.name} showArrow={false} />
           <SettingItem
-            icon="🌐"
-            title={t.settings.currentNetwork}
-            subtitle={network.name}
-            onPress={() => {}}
-            showArrow={false}
-          />
-          <SettingItem
-            icon="🔌"
+            icon="R"
             title={t.settings.rpcNodes}
             subtitle={t.settings.rpcNodesSubtitle}
             onPress={() => navigation.navigate('RPCNode', { chainId: network.chainId })}
           />
         </View>
 
-        {/* Security */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.security}</Text>
-          
           <SettingItem
-            icon="🔐"
+            icon="B"
             title={t.settings.biometricAuth}
-            subtitle={t.settings.biometricAuthSubtitle}
+            subtitle={biometricAvailable ? t.settings.biometricAuthSubtitle : 'Not available on this device'}
             showArrow={false}
             rightElement={
               <Switch
                 value={biometricEnabled}
-                onValueChange={setBiometricEnabled}
+                onValueChange={handleToggleBiometric}
+                disabled={!biometricAvailable}
                 trackColor={{ false: '#E0E0E0', true: '#F3BA2F' }}
               />
             }
           />
-          
           <SettingItem
-            icon="🔑"
+            icon="K"
             title={t.settings.exportPrivateKey}
             subtitle={t.settings.exportPrivateKeySubtitle}
             onPress={handleExportPrivateKey}
           />
-          
           <SettingItem
-            icon="📝"
+            icon="S"
             title={t.settings.backupWallet}
             subtitle={t.settings.backupWalletSubtitle}
             onPress={handleBackupWallet}
           />
-          
           <SettingItem
-            icon="🔒"
+            icon="P"
             title={t.settings.changePassword}
             subtitle={t.settings.changePasswordSubtitle}
             onPress={() => navigation.navigate('ChangePassword')}
           />
         </View>
 
-        {/* Advanced */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.advanced}</Text>
-          
           <SettingItem
-            icon="🔔"
+            icon="A"
             title={t.settings.priceAlerts}
             subtitle={t.settings.priceAlertsSubtitle}
             onPress={() => navigation.navigate('PriceAlert')}
           />
-          
           <SettingItem
-            icon="⚙️"
+            icon="D"
             title={t.settings.advancedSettings}
             subtitle={t.settings.advancedSettingsSubtitle}
             onPress={() => navigation.navigate('AdvancedSettings')}
           />
         </View>
 
-        {/* Preferences */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.preferences}</Text>
-          
           <SettingItem
-            icon="🌍"
+            icon="L"
             title={t.settings.language}
             subtitle={currentLanguage}
             onPress={() => navigation.navigate('LanguageSettings')}
           />
-          
           <SettingItem
-            icon="💱"
+            icon="$"
             title={t.settings.currency}
             subtitle={currency}
             onPress={() => {
@@ -233,59 +230,33 @@ export default function SettingsScreen({ navigation, isTabScreen }: any) {
           />
         </View>
 
-        {/* About */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.settings.about}</Text>
-          
+          <SettingItem icon="V" title={t.settings.version} subtitle="1.0.0" showArrow={false} />
+          <SettingItem icon="T" title={t.settings.termsOfService} showArrow={false} />
+          <SettingItem icon="P" title={t.settings.privacyPolicy} showArrow={false} />
           <SettingItem
-            icon="📱"
-            title={t.settings.version}
-            subtitle="1.0.0"
-            showArrow={false}
-          />
-          
-          <SettingItem
-            icon="📄"
-            title={t.settings.termsOfService}
-            onPress={() => {}}
-          />
-          
-          <SettingItem
-            icon="🔒"
-            title={t.settings.privacyPolicy}
-            onPress={() => {}}
-          />
-          
-          <SettingItem
-            icon="💬"
+            icon="H"
             title={t.settings.support}
             subtitle={t.settings.supportSubtitle}
-            onPress={() => {}}
+            showArrow={false}
           />
         </View>
 
-        {/* Danger Zone */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, styles.dangerTitle]}>{t.settings.dangerZone}</Text>
-          
-          <TouchableOpacity
-            style={styles.dangerButton}
-            onPress={handleDeleteWallet}
-          >
-            <Text style={styles.dangerIcon}>🗑️</Text>
+          <TouchableOpacity style={styles.dangerButton} onPress={handleDeleteWallet}>
+            <Text style={styles.dangerIcon}>!</Text>
             <View style={styles.dangerText}>
               <Text style={styles.dangerTitle2}>{t.settings.deleteWallet}</Text>
-              <Text style={styles.dangerSubtitle}>
-                {t.settings.deleteWalletSubtitle}
-              </Text>
+              <Text style={styles.dangerSubtitle}>{t.settings.deleteWalletSubtitle}</Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Eagle Wallet</Text>
-          <Text style={styles.footerSubtext}>Secure BSC & XLAYER Wallet</Text>
+          <Text style={styles.footerSubtext}>Secure BSC Wallet</Text>
         </View>
       </ScrollView>
     </View>
@@ -346,8 +317,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingIcon: {
-    fontSize: 24,
+    fontSize: 16,
+    fontWeight: '700',
     marginRight: 12,
+    color: '#2F3550',
+    width: 18,
+    textAlign: 'center',
   },
   settingText: {
     flex: 1,
@@ -380,7 +355,9 @@ const styles = StyleSheet.create({
   },
   dangerIcon: {
     fontSize: 24,
+    fontWeight: '800',
     marginRight: 12,
+    color: '#E53935',
   },
   dangerText: {
     flex: 1,

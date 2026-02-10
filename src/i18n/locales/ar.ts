@@ -44,7 +44,6 @@ export const ar: TranslationStrings = {
     verifyDescription: 'يرجى تأكيد هويتك للمتابعة',
     quickSubmit: 'إرسال سريع',
   },
-
   home: {
     myWallet: 'محفظتي',
     totalBalance: 'إجمالي الرصيد',
@@ -63,7 +62,6 @@ export const ar: TranslationStrings = {
     hideSmallBalances: 'إخفاء الأرصدة الصغيرة',
     showSmallBalances: 'إظهار الأرصدة الصغيرة',
   },
-
   wallet: {
     createWallet: 'إنشاء محفظة',
     importWallet: 'استيراد محفظة',
@@ -101,7 +99,6 @@ export const ar: TranslationStrings = {
     poweredBy: 'بدعم من Eagle Network',
     privateKeyName: 'المفتاح الخاص',
   },
-
   send: {
     send: 'إرسال',
     sendTo: 'إرسال إلى',
@@ -122,7 +119,7 @@ export const ar: TranslationStrings = {
     custom: 'مخصص',
     gasPrice: 'سعر الغاز',
     gasLimit: 'حد الغاز',
-    nonce: 'Nonce',
+    nonce: 'نونس',
     data: 'البيانات',
     sendConfirmation: 'تأكيد الإرسال',
     confirmTransaction: 'تأكيد المعاملة',
@@ -144,7 +141,6 @@ export const ar: TranslationStrings = {
     invalidAddress: 'عنوان غير صالح',
     invalidAmount: 'مبلغ غير صالح',
   },
-
   receive: {
     receive: 'استلام',
     myAddress: 'عنواني',
@@ -157,7 +153,6 @@ export const ar: TranslationStrings = {
     warningMessage: 'تأكد من أن المرسل يستخدم الشبكة الصحيحة',
     network: 'الشبكة',
   },
-
   swap: {
     swap: 'مبادلة',
     from: 'من',
@@ -195,7 +190,6 @@ export const ar: TranslationStrings = {
     approve: 'موافقة',
     approving: 'جاري الموافقة...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'NFTs الخاصة بي',
@@ -221,7 +215,6 @@ export const ar: TranslationStrings = {
     standard: 'قياسي',
     unknownCollection: 'مجموعة غير معروفة',
   },
-
   transaction: {
     transactions: 'المعاملات',
     history: 'السجل',
@@ -244,8 +237,8 @@ export const ar: TranslationStrings = {
     total: 'الإجمالي',
     time: 'الوقت',
     block: 'الكتلة',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'التجزئة',
+    nonce: 'نونس',
     gasPrice: 'سعر الغاز',
     gasUsed: 'الغاز المستخدم',
     gasLimit: 'حد الغاز',
@@ -260,7 +253,6 @@ export const ar: TranslationStrings = {
     confirming: 'جاري التأكيد...',
     confirmed: 'تم التأكيد',
   },
-
   token: {
     tokens: 'الرموز',
     token: 'رمز',
@@ -294,7 +286,6 @@ export const ar: TranslationStrings = {
     viewOnExplorer: 'عرض في المستكشف',
     importToken: 'استيراد رمز',
   },
-
   dapp: {
     dappBrowser: 'متصفح DApp',
     share: 'مشاركة',
@@ -331,12 +322,9 @@ export const ar: TranslationStrings = {
     pancakeDesc: 'أفضل DEX على BSC',
     uniswapDesc: 'منصة تبادل لامركزية',
   },
-
   settings: {
     settings: 'الإعدادات',
     back: 'رجوع',
-    
-    // Sections
     walletManagement: 'إدارة المحافظ',
     network: 'الشبكة',
     security: 'الأمان',
@@ -344,19 +332,13 @@ export const ar: TranslationStrings = {
     preferences: 'تفضيلات',
     about: 'حول',
     dangerZone: 'منطقة الخطر',
-    
-    // Wallet Management
     myWallets: 'محافظي',
     myWalletsSubtitle: 'إدارة محافظ متعددة',
     addCustomToken: 'إضافة رمز مخصص',
     addCustomTokenSubtitle: 'إضافة ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'الشبكة الحالية',
     rpcNodes: 'عقد RPC',
     rpcNodesSubtitle: 'عرض واختبار السرعة',
-    
-    // Security
     biometricAuth: 'المصادقة البيومترية',
     biometricAuthSubtitle: 'بصمة الإصبع أو الوجه',
     exportPrivateKey: 'تصدير المفتاح الخاص',
@@ -365,29 +347,19 @@ export const ar: TranslationStrings = {
     backupWalletSubtitle: 'عرض عبارة الاسترداد',
     changePassword: 'تغيير كلمة المرور',
     changePasswordSubtitle: 'تحديث كلمة مرور المحفظة',
-    
-    // Advanced
     priceAlerts: 'تنبيهات الأسعار',
     priceAlertsSubtitle: 'إعداد الإشعارات',
     advancedSettings: 'إعدادات متقدمة',
     advancedSettingsSubtitle: 'خيارات المطور',
-    
-    // Preferences
     language: 'اللغة',
     currency: 'العملة',
-    
-    // About
     version: 'الإصدار',
     termsOfService: 'شروط الخدمة',
     privacyPolicy: 'سياسة الخصوصية',
     support: 'الدعم',
     supportSubtitle: 'الحصول على مساعدة',
-    
-    // Danger Zone
     deleteWallet: 'حذف المحفظة',
     deleteWalletSubtitle: 'حذف نهائي',
-    
-    // Alerts
     exportPrivateKeyTitle: 'تصدير المفتاح الخاص',
     exportPrivateKeyMessage: 'يمنح المفتاح الخاص وصولاً كاملاً. لا تشاركه أبداً!',
     backupWalletTitle: 'نسخ احتياطي',
@@ -410,7 +382,6 @@ export const ar: TranslationStrings = {
     resetAppSubtitle: 'العودة للافتراضي',
     advancedWarning: '⚠️ للمستخدمين المتقدمين فقط',
   },
-
   network: {
     network: 'الشبكة',
     networks: 'الشبكات',
@@ -441,12 +412,10 @@ export const ar: TranslationStrings = {
     rpcNode: 'عقدة RPC',
     selected: 'محدد',
   },
-
   priceAlert: {
     above: 'فوق',
     below: 'تحت',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'اسألني أي شيء عن العملات المشفرة...',
@@ -458,8 +427,18 @@ export const ar: TranslationStrings = {
     marketAnalysis: 'تحليل السوق',
     securityCheck: 'فحص الأمان',
     pricePrediction: 'توقع السعر',
+    dailyLimit: 'الحد اليومي',
+    upgrade: 'ترقية',
+    currentTier: 'المستوى الحالي',
+    free: 'مجاني',
+    holder: 'حامل',
+    vip: 'إن إف تي VIP',
+    pro: 'اشتراك Pro',
+    tokensRemaining: 'رموز متبقية',
+    upgradePrompt: 'قم بالترقية لزيادة الحد',
+    buyEagle: 'شراء EAGLE',
+    buyNft: 'شراء NFT',
   },
-
   errors: {
     walletNameRequired: 'الاسم مطلوب',
     passwordRequired: 'كلمة المرور مطلوبة',

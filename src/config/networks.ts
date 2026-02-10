@@ -1,6 +1,6 @@
 /**
  * Eagle Wallet - Network Configuration
- * Only BSC and XLAYER Mainnet supported
+ * BSC Mainnet only
  */
 
 export interface RPCNode {
@@ -75,32 +75,11 @@ export const NETWORKS: Record<number, NetworkConfig> = {
     logo: 'bnb',
     color: '#F3BA2F',
   },
-  
-  // XLAYER Mainnet
-  196: {
-    chainId: 196,
-    name: 'X Layer',
-    symbol: 'OKB',
-    decimals: 18,
-    rpcUrls: [
-      'https://rpc.xlayer.tech',
-      'https://xlayerrpc.okx.com',
-      'https://rpc.ankr.com/xlayer',
-    ],
-    rpcNodes: [
-      { name: 'X Layer Official', url: 'https://rpc.xlayer.tech', region: 'Global' },
-      { name: 'OKX RPC', url: 'https://xlayerrpc.okx.com', region: 'Global' },
-      { name: 'Ankr X Layer', url: 'https://rpc.ankr.com/xlayer', region: 'Global' },
-    ],
-    blockExplorerUrl: 'https://www.oklink.com/xlayer',
-    logo: 'okx',
-    color: '#000000',
-  },
 };
 
 export const DEFAULT_NETWORK = 56; // BSC as default
 
-export const SUPPORTED_CHAIN_IDS = [56, 196];
+export const SUPPORTED_CHAIN_IDS = [56];
 
 export function getNetworkConfig(chainId: number): NetworkConfig | undefined {
   return NETWORKS[chainId];

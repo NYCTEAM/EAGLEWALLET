@@ -1,24 +1,484 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  Alert,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Linking,
+  Share,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+import { ethers } from 'ethers';
+import WalletService from '../services/WalletService';
+import { useLanguage } from '../i18n/LanguageContext';
 
-export default function PlaceholderScreen({ route }: any) {
-  const name = route.name || 'Screen';
+type BridgeRequest = {
+  type: string;
+  id: string;
+  method: string;
+  params?: any[];
+};
+
+const createInjectedProviderScript = (chainId: number) => `
+  (function() {
+    if (window.__EAGLE_PROVIDER__) return;
+
+    var pending = {};
+    var listeners = { accountsChanged: [], chainChanged: [], connect: [], disconnect: [] };
+
+    function emit(event, payload) {
+      var list = listeners[event] || [];
+      for (var i = 0; i < list.length; i++) {
+        try { list[i](payload); } catch (e) {}
+      }
+    }
+
+    function sendRequest(method, params) {
+      return new Promise(function(resolve, reject) {
+        var id = Date.now().toString() + Math.random().toString(16).slice(2);
+        pending[id] = { resolve: resolve, reject: reject };
+
+        if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'EAGLE_WALLET_REQUEST',
+            id: id,
+            method: method,
+            params: params || []
+          }));
+        } else {
+          reject(new Error('Wallet bridge unavailable'));
+        }
+      });
+    }
+
+    window.__eagleHandleResponse = function(raw) {
+      try {
+        var payload = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        var task = pending[payload.id];
+        if (!task) return;
+        if (payload.error) task.reject(new Error(payload.error));
+        else task.resolve(payload.result);
+        delete pending[payload.id];
+      } catch (e) {}
+    };
+
+    var provider = {
+      isMetaMask: true,
+      isEagleWallet: true,
+      selectedAddress: null,
+      chainId: '${ethers.toQuantity(chainId)}',
+      networkVersion: '${String(chainId)}',
+      request: function(args) {
+        return sendRequest(args.method, args.params || []);
+      },
+      enable: function() {
+        return sendRequest('eth_requestAccounts', []);
+      },
+      on: function(event, handler) {
+        if (!listeners[event]) listeners[event] = [];
+        listeners[event].push(handler);
+        return provider;
+      },
+      removeListener: function(event, handler) {
+        if (!listeners[event]) return provider;
+        listeners[event] = listeners[event].filter(function(fn) { return fn !== handler; });
+        return provider;
+      },
+      sendAsync: function(payload, callback) {
+        sendRequest(payload.method, payload.params || [])
+          .then(function(result) { callback(null, { id: payload.id, jsonrpc: '2.0', result: result }); })
+          .catch(function(err) { callback(err, null); });
+      },
+      send: function(methodOrPayload, params) {
+        if (typeof methodOrPayload === 'string') {
+          return sendRequest(methodOrPayload, params || []);
+        }
+        return sendRequest(methodOrPayload.method, methodOrPayload.params || []);
+      }
+    };
+
+    window.__eagleSetAddress = function(address) {
+      provider.selectedAddress = address || null;
+      emit('accountsChanged', address ? [address] : []);
+    };
+
+    window.__eagleSetChain = function(chainHex, chainDec) {
+      provider.chainId = chainHex;
+      provider.networkVersion = String(chainDec);
+      emit('chainChanged', chainHex);
+      emit('connect', { chainId: chainHex });
+    };
+
+    window.ethereum = provider;
+    window.__EAGLE_PROVIDER__ = provider;
+    window.dispatchEvent(new Event('ethereum#initialized'));
+    document.dispatchEvent(new Event('ethereum#initialized'));
+    emit('connect', { chainId: provider.chainId });
+  })();
+  true;
+`;
+
+function decodeSignMessage(value: any): string {
+  if (typeof value !== 'string') {
+    return String(value ?? '');
+  }
+  if (value.startsWith('0x')) {
+    try {
+      return ethers.toUtf8String(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
+function normalizeTypedData(raw: any): {
+  domain: any;
+  types: Record<string, Array<{ name: string; type: string }>>;
+  message: any;
+} {
+  const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  if (!parsed || !parsed.domain || !parsed.types || !parsed.message) {
+    throw new Error('Invalid typed data');
+  }
+
+  const types = { ...parsed.types };
+  delete (types as any).EIP712Domain;
+  return {
+    domain: parsed.domain,
+    types,
+    message: parsed.message,
+  };
+}
+
+export default function DAppWebViewScreen({ navigation, route }: any) {
+  const { t } = useLanguage();
+  const webviewRef = useRef<WebView>(null);
+  const approvedOriginsRef = useRef<Set<string>>(new Set());
+
+  const initialUrl = route.params?.url || 'https://pancakeswap.finance';
+  const title = route.params?.title || 'DApp';
+  const [currentUrl, setCurrentUrl] = useState(initialUrl);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const chainId = WalletService.getCurrentNetwork().chainId;
+
+  const parseOrigin = (url: string): string => {
+    try {
+      return new URL(url).origin;
+    } catch {
+      return url;
+    }
+  };
+
+  const askForApproval = (title: string, message: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      let resolved = false;
+      const finish = (result: boolean) => {
+        if (!resolved) {
+          resolved = true;
+          resolve(result);
+        }
+      };
+
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: t.common.cancel, style: 'cancel', onPress: () => finish(false) },
+          { text: t.common.confirm, onPress: () => finish(true) },
+        ],
+        {
+          cancelable: true,
+          onDismiss: () => finish(false),
+        }
+      );
+    });
+  };
+
+  const ensureDappConnected = async (origin: string): Promise<void> => {
+    if (approvedOriginsRef.current.has(origin)) {
+      return;
+    }
+
+    const approved = await askForApproval(
+      'Connect Wallet',
+      `${origin}\n\nThis site wants to connect to your wallet address.`
+    );
+
+    if (!approved) {
+      throw new Error('User rejected connection request');
+    }
+
+    approvedOriginsRef.current.add(origin);
+  };
+
+  const shareCurrentUrl = async () => {
+    await Share.share({ message: currentUrl });
+  };
+
+  const sendBridgeResponse = (id: string, result?: any, error?: string) => {
+    const payload = JSON.stringify({ id, result, error });
+    const script = `window.__eagleHandleResponse && window.__eagleHandleResponse(${JSON.stringify(payload)}); true;`;
+    webviewRef.current?.injectJavaScript(script);
+  };
+
+  const syncWalletState = async () => {
+    const address = await WalletService.getAddress();
+    const currentChainId = WalletService.getCurrentNetwork().chainId;
+    const chainHex = ethers.toQuantity(currentChainId);
+    const script = `
+      if (window.__eagleSetChain) window.__eagleSetChain(${JSON.stringify(chainHex)}, ${currentChainId});
+      if (window.__eagleSetAddress) window.__eagleSetAddress(${JSON.stringify(address || null)});
+      true;
+    `;
+    webviewRef.current?.injectJavaScript(script);
+  };
+
+  const handleBridgeRequest = async (request: BridgeRequest, origin: string) => {
+    const method = request.method;
+    const params = request.params || [];
+
+    switch (method) {
+      case 'eth_accounts': {
+        if (!approvedOriginsRef.current.has(origin)) {
+          return [];
+        }
+        const address = await WalletService.getAddress();
+        const accounts = address ? [address] : [];
+        await syncWalletState();
+        return accounts;
+      }
+
+      case 'eth_requestAccounts': {
+        await ensureDappConnected(origin);
+        const address = await WalletService.getAddress();
+        const accounts = address ? [address] : [];
+        await syncWalletState();
+        return accounts;
+      }
+
+      case 'eth_chainId':
+        return ethers.toQuantity(WalletService.getCurrentNetwork().chainId);
+
+      case 'net_version':
+        return String(WalletService.getCurrentNetwork().chainId);
+
+      case 'eth_coinbase': {
+        const address = await WalletService.getAddress();
+        return address || null;
+      }
+
+      case 'personal_sign': {
+        const raw = params[0] ?? '';
+        const message = decodeSignMessage(raw);
+        const preview = message.length > 180 ? `${message.slice(0, 180)}...` : message;
+        await ensureDappConnected(origin);
+        const approved = await askForApproval('Sign Message', `${origin}\n\n${preview}`);
+        if (!approved) {
+          throw new Error('User rejected signature request');
+        }
+        return WalletService.signMessage(message);
+      }
+
+      case 'eth_sign': {
+        const raw = params[1] ?? params[0] ?? '';
+        const message = decodeSignMessage(raw);
+        const preview = message.length > 180 ? `${message.slice(0, 180)}...` : message;
+        await ensureDappConnected(origin);
+        const approved = await askForApproval('Sign Message', `${origin}\n\n${preview}`);
+        if (!approved) {
+          throw new Error('User rejected signature request');
+        }
+        return WalletService.signMessage(message);
+      }
+
+      case 'eth_signTypedData':
+      case 'eth_signTypedData_v3':
+      case 'eth_signTypedData_v4': {
+        const raw = params[1] ?? params[0];
+        const typed = normalizeTypedData(raw);
+        await ensureDappConnected(origin);
+        const approved = await askForApproval(
+          'Sign Typed Data',
+          `${origin}\n\nA dApp requested EIP-712 signature.`
+        );
+        if (!approved) {
+          throw new Error('User rejected typed data signature');
+        }
+        return WalletService.signTypedData(typed.domain, typed.types, typed.message);
+      }
+
+      case 'eth_sendTransaction': {
+        const tx = params[0] || {};
+        if (!tx.to) {
+          throw new Error('Transaction missing recipient');
+        }
+
+        await ensureDappConnected(origin);
+        const txValue = tx.value != null ? ethers.formatEther(ethers.toBigInt(tx.value)) : '0';
+        const approved = await askForApproval(
+          'Send Transaction',
+          `${origin}\n\nTo: ${tx.to}\nValue: ${txValue}`
+        );
+        if (!approved) {
+          throw new Error('User rejected transaction request');
+        }
+
+        await WalletService.authorizeSensitiveAction('Approve dApp transaction');
+
+        const wallet = await WalletService.getWallet();
+        const requestTx: any = { to: tx.to };
+        if (tx.data) requestTx.data = tx.data;
+        if (tx.value != null) requestTx.value = ethers.toBigInt(tx.value);
+        if (tx.gas || tx.gasLimit) requestTx.gasLimit = ethers.toBigInt(tx.gas || tx.gasLimit);
+        if (tx.gasPrice) requestTx.gasPrice = ethers.toBigInt(tx.gasPrice);
+        if (tx.maxFeePerGas) requestTx.maxFeePerGas = ethers.toBigInt(tx.maxFeePerGas);
+        if (tx.maxPriorityFeePerGas) requestTx.maxPriorityFeePerGas = ethers.toBigInt(tx.maxPriorityFeePerGas);
+        if (tx.nonce != null) requestTx.nonce = Number(tx.nonce);
+
+        const sentTx = await wallet.sendTransaction(requestTx);
+        return sentTx.hash;
+      }
+
+      case 'wallet_switchEthereumChain': {
+        const chainParam = params[0]?.chainId ?? params[0];
+        const targetChainId = Number(ethers.toBigInt(chainParam));
+        if (targetChainId !== 56) {
+          throw new Error('Only BSC (56) is supported');
+        }
+        await ensureDappConnected(origin);
+        const approved = await askForApproval(
+          'Switch Network',
+          `${origin}\n\nSwitch network to chainId ${targetChainId}?`
+        );
+        if (!approved) {
+          throw new Error('User rejected network switch');
+        }
+        await WalletService.switchNetwork(targetChainId);
+        await syncWalletState();
+        return null;
+      }
+
+      case 'wallet_addEthereumChain':
+        return null;
+
+      default:
+        throw new Error(`Unsupported method: ${method}`);
+    }
+  };
+
+  const handleWebViewMessage = async (event: any) => {
+    let request: BridgeRequest | null = null;
+
+    try {
+      request = JSON.parse(event.nativeEvent.data);
+    } catch {
+      return;
+    }
+
+    if (!request || request.type !== 'EAGLE_WALLET_REQUEST' || !request.id || !request.method) {
+      return;
+    }
+
+    try {
+      const origin = parseOrigin(event.nativeEvent.url || currentUrl);
+      const result = await handleBridgeRequest(request, origin);
+      sendBridgeResponse(request.id, result, undefined);
+    } catch (error: any) {
+      sendBridgeResponse(request.id, undefined, error?.message || 'Wallet request failed');
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{name} (Coming Soon)</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => {
+            if (canGoBack) {
+              webviewRef.current?.goBack();
+            } else {
+              navigation.goBack();
+            }
+          }}
+        >
+          <Text style={styles.headerAction}>{t.common.back}</Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={styles.url} numberOfLines={1}>{currentUrl}</Text>
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => webviewRef.current?.reload()}>
+            <Text style={styles.headerAction}>{t.common.refresh}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Linking.openURL(currentUrl)}>
+            <Text style={styles.headerAction}>Open</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={shareCurrentUrl}>
+            <Text style={styles.headerAction}>{t.common.share}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <WebView
+        ref={webviewRef}
+        source={{ uri: initialUrl }}
+        javaScriptEnabled
+        domStorageEnabled
+        injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId)}
+        onMessage={handleWebViewMessage}
+        onLoadEnd={syncWalletState}
+        onNavigationStateChange={(state) => {
+          setCurrentUrl(state.url);
+          setCanGoBack(state.canGoBack);
+        }}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#0E1017',
   },
-  text: {
-    fontSize: 18,
-    color: '#333',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1F2535',
+    backgroundColor: '#131722',
+  },
+  headerCenter: {
+    flex: 1,
+    marginHorizontal: 10,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  url: {
+    color: '#95A0BC',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerAction: {
+    color: '#E9B949',
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 8,
   },
 });

@@ -39,12 +39,11 @@ export const tr: TranslationStrings = {
     receive: 'Al',
     biometrics: 'Biyometri',
     verifyBiometrics: 'Biyometriyi Doğrula',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'Yüz Kimliği',
+    touchId: 'Dokunmatik Kimlik',
     verifyDescription: 'Devam etmek için kimliğinizi doğrulayın',
     quickSubmit: 'Hızlı Gönder',
   },
-
   home: {
     myWallet: 'Cüzdanım',
     totalBalance: 'Toplam Bakiye',
@@ -63,7 +62,6 @@ export const tr: TranslationStrings = {
     hideSmallBalances: 'Küçük bakiyeleri gizle',
     showSmallBalances: 'Küçük bakiyeleri göster',
   },
-
   wallet: {
     createWallet: 'Cüzdan Oluştur',
     importWallet: 'Cüzdan İçe Aktar',
@@ -101,7 +99,6 @@ export const tr: TranslationStrings = {
     poweredBy: 'Eagle Network tarafından desteklenmektedir',
     privateKeyName: 'Özel Anahtar',
   },
-
   send: {
     send: 'Gönder',
     sendTo: 'Alıcı',
@@ -122,7 +119,7 @@ export const tr: TranslationStrings = {
     custom: 'Özel',
     gasPrice: 'Gas Fiyatı',
     gasLimit: 'Gas Limiti',
-    nonce: 'Nonce',
+    nonce: 'bir kez',
     data: 'Veri',
     sendConfirmation: 'Gönderim Onayı',
     confirmTransaction: 'İşlemi Onayla',
@@ -144,7 +141,6 @@ export const tr: TranslationStrings = {
     invalidAddress: 'Geçersiz adres',
     invalidAmount: 'Geçersiz miktar',
   },
-
   receive: {
     receive: 'Al',
     myAddress: 'Adresim',
@@ -157,7 +153,6 @@ export const tr: TranslationStrings = {
     warningMessage: 'Gönderenin doğru ağı kullandığından emin olun',
     network: 'Ağ',
   },
-
   swap: {
     swap: 'Takas',
     from: 'Gönderilen',
@@ -195,13 +190,12 @@ export const tr: TranslationStrings = {
     approve: 'Onayla',
     approving: 'Onaylanıyor...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'NFT\'lerim',
     collection: 'Koleksiyon',
     collections: 'Koleksiyonlar',
-    tokenId: 'Token ID',
+    tokenId: 'Jeton Kimliği',
     owner: 'Sahibi',
     contract: 'Sözleşme',
     description: 'Açıklama',
@@ -221,7 +215,6 @@ export const tr: TranslationStrings = {
     standard: 'Standart',
     unknownCollection: 'Bilinmeyen Koleksiyon',
   },
-
   transaction: {
     transactions: 'İşlemler',
     history: 'Geçmiş',
@@ -244,8 +237,8 @@ export const tr: TranslationStrings = {
     total: 'Toplam',
     time: 'Zaman',
     block: 'Blok',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'Doğramak',
+    nonce: 'bir kez',
     gasPrice: 'Gas Fiyatı',
     gasUsed: 'Kullanılan Gas',
     gasLimit: 'Gas Limiti',
@@ -260,10 +253,9 @@ export const tr: TranslationStrings = {
     confirming: 'Onaylanıyor...',
     confirmed: 'Onaylandı',
   },
-
   token: {
     tokens: 'Tokenlar',
-    token: 'Token',
+    token: 'Jeton',
     addToken: 'Token Ekle',
     customToken: 'Özel Token',
     searchToken: 'Token Ara',
@@ -294,7 +286,6 @@ export const tr: TranslationStrings = {
     viewOnExplorer: 'Gezginde Görüntüle',
     importToken: 'Token İçe Aktar',
   },
-
   dapp: {
     dappBrowser: 'DApp Tarayıcı',
     share: 'Paylaş',
@@ -321,7 +312,7 @@ export const tr: TranslationStrings = {
     recentlyVisited: 'Son Ziyaretler',
     addDApp: 'DApp Ekle',
     dappName: 'DApp Adı',
-    dappUrl: 'DApp URL',
+    dappUrl: 'DApp URL\'si',
     dappAdded: 'DApp Eklendi',
     removeDApp: 'DApp Kaldır',
     openInBrowser: 'Tarayıcıda Aç',
@@ -331,12 +322,9 @@ export const tr: TranslationStrings = {
     pancakeDesc: 'BSC\'de Lider DEX',
     uniswapDesc: 'Merkeziyetsiz Borsa',
   },
-
   settings: {
     settings: 'Ayarlar',
     back: 'Geri',
-    
-    // Sections
     walletManagement: 'Cüzdan Yönetimi',
     network: 'Ağ',
     security: 'Güvenlik',
@@ -344,19 +332,13 @@ export const tr: TranslationStrings = {
     preferences: 'Tercihler',
     about: 'Hakkında',
     dangerZone: 'Tehlike Bölgesi',
-    
-    // Wallet Management
     myWallets: 'Cüzdanlarım',
     myWalletsSubtitle: 'Cüzdanları yönet',
     addCustomToken: 'Özel Token Ekle',
     addCustomTokenSubtitle: 'ERC20/721/1155 Ekle',
-    
-    // Network
     currentNetwork: 'Mevcut Ağ',
     rpcNodes: 'RPC Düğümleri',
     rpcNodesSubtitle: 'Hızı test et',
-    
-    // Security
     biometricAuth: 'Biyometrik Kimlik',
     biometricAuthSubtitle: 'Parmak İzi veya Face ID',
     exportPrivateKey: 'Özel Anahtarı Dışa Aktar',
@@ -365,29 +347,19 @@ export const tr: TranslationStrings = {
     backupWalletSubtitle: 'Kurtarma ifadesini gör',
     changePassword: 'Şifre Değiştir',
     changePasswordSubtitle: 'Cüzdan şifresini güncelle',
-    
-    // Advanced
     priceAlerts: 'Fiyat Alarmları',
     priceAlertsSubtitle: 'Bildirim ayarla',
     advancedSettings: 'Gelişmiş Ayarlar',
     advancedSettingsSubtitle: 'Geliştirici seçenekleri',
-    
-    // Preferences
     language: 'Dil',
     currency: 'Para Birimi',
-    
-    // About
     version: 'Sürüm',
     termsOfService: 'Hizmet Şartları',
     privacyPolicy: 'Gizlilik Politikası',
     support: 'Destek',
     supportSubtitle: 'Yardım al',
-    
-    // Danger Zone
     deleteWallet: 'Cüzdanı Sil',
     deleteWalletSubtitle: 'Kalıcı olarak sil',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Anahtarı Dışa Aktar',
     exportPrivateKeyMessage: 'Özel anahtar tam erişim sağlar. Asla paylaşmayın!',
     backupWalletTitle: 'Cüzdanı Yedekle',
@@ -410,7 +382,6 @@ export const tr: TranslationStrings = {
     resetAppSubtitle: 'Varsayılana dön',
     advancedWarning: '⚠️ Sadece ileri düzey kullanıcılar',
   },
-
   network: {
     network: 'Ağ',
     networks: 'Ağlar',
@@ -418,7 +389,7 @@ export const tr: TranslationStrings = {
     customNetwork: 'Özel Ağ',
     addNetwork: 'Ağ Ekle',
     networkName: 'Ağ Adı',
-    rpcUrl: 'RPC URL',
+    rpcUrl: 'RPC URL\'si',
     chainId: 'Zincir ID',
     symbol: 'Sembol',
     blockExplorer: 'Blok Gezgini',
@@ -441,12 +412,10 @@ export const tr: TranslationStrings = {
     rpcNode: 'RPC Düğümü',
     selected: 'seçili',
   },
-
   priceAlert: {
     above: 'Üstünde',
     below: 'Altında',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Kripto hakkında her şeyi sor...',
@@ -458,8 +427,18 @@ export const tr: TranslationStrings = {
     marketAnalysis: 'Piyasa Analizi',
     securityCheck: 'Güvenlik Kontrolü',
     pricePrediction: 'Fiyat Tahmini',
+    dailyLimit: 'Günlük Limit',
+    upgrade: 'Yükselt',
+    currentTier: 'Mevcut Seviye',
+    free: 'Ücretsiz',
+    holder: 'Sahip',
+    vip: 'NFT VIP',
+    pro: 'Pro Abonelik',
+    tokensRemaining: 'token kaldı',
+    upgradePrompt: 'Limiti artırmak için yükseltin',
+    buyEagle: 'EAGLE Satın Al',
+    buyNft: 'NFT Satın Al',
   },
-
   errors: {
     walletNameRequired: 'İsim gerekli',
     passwordRequired: 'Şifre gerekli',

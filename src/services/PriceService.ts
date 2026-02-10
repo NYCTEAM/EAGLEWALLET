@@ -20,21 +20,11 @@ const TOKEN_ADDRESSES: Record<string, Record<string, string>> = {
     'CAKE': '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82',
     'DAI': '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
   },
-  // X Layer (196)
-  196: {
-    'OKB': '0xe538905cf8410324e03a5a23c1c177a474d59b2b', // Using WOKB as proxy for OKB price
-    'WOKB': '0xe538905cf8410324e03a5a23c1c177a474d59b2b',
-    'USDT': '0x1e4a5963abfd975d8c9021ce480b42188849d41d',
-    'USDT0': '0x779ded0c9e1022225f8e0630b35a9b54be713736',
-    'WETH': '0x5A77f1443D16ee5761d310e38b62f77f726bC71c',
-    'EAGLE': '0x5a746ee9933627ed79822d35a3fe812eddd5ba37',
-  },
 };
 
 // Network names for GeckoTerminal
 const NETWORK_NAMES: Record<number, string> = {
   56: 'bsc',
-  196: 'xlayer',
 };
 
 interface PriceData {
@@ -113,7 +103,6 @@ class PriceService {
         if (addr === 'native') {
           // Return Wrapped Token address for native currency
           if (chainId === 56) return '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // WBNB
-          if (chainId === 196) return '0xe538905cf8410324e03A5A23C1c177a474D59b2b'; // WOKB
         }
         return addr;
       }).filter(Boolean);
@@ -139,9 +128,6 @@ class PriceService {
         
         // If this address corresponds to a wrapped token, also cache it for 'native'
         if (chainId === 56 && address.toLowerCase() === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
-          prices['native'] = price;
-        }
-        if (chainId === 196 && address.toLowerCase() === '0xe538905cf8410324e03a5a23c1c177a474d59b2b') {
           prices['native'] = price;
         }
 
@@ -178,7 +164,6 @@ class PriceService {
         if (addr === 'native') {
           // Return Wrapped Token address for native currency
           if (chainId === 56) return '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; // WBNB
-          if (chainId === 196) return '0xe538905cf8410324e03A5A23C1c177a474D59b2b'; // WOKB
         }
         return addr;
       }).filter(Boolean);
@@ -208,9 +193,6 @@ class PriceService {
 
         // Handle wrapped token mapping for native
         if (chainId === 56 && address === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
-          results['native'] = { price, change24h, imageUrl };
-        }
-        if (chainId === 196 && address === '0xe538905cf8410324e03a5a23c1c177a474d59b2b') {
           results['native'] = { price, change24h, imageUrl };
         }
 
@@ -252,7 +234,7 @@ class PriceService {
     try {
       // Get all token addresses
       const addresses = tokens.map(t => t.address === 'native' 
-        ? TOKEN_ADDRESSES[chainId]?.['BNB'] || TOKEN_ADDRESSES[chainId]?.['OKB']
+        ? TOKEN_ADDRESSES[chainId]?.['BNB']
         : t.address
       ).filter(Boolean);
 
@@ -263,7 +245,7 @@ class PriceService {
       let totalValue = 0;
       for (const token of tokens) {
         const address = token.address === 'native'
-          ? TOKEN_ADDRESSES[chainId]?.['BNB'] || TOKEN_ADDRESSES[chainId]?.['OKB']
+          ? TOKEN_ADDRESSES[chainId]?.['BNB']
           : token.address;
 
         if (!address) continue;

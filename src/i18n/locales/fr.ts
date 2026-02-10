@@ -18,7 +18,7 @@ export const fr: TranslationStrings = {
     success: 'Succès',
     error: 'Erreur',
     warning: 'Avertissement',
-    ok: 'OK',
+    ok: 'D\'ACCORD',
     yes: 'Oui',
     no: 'Non',
     search: 'Rechercher',
@@ -39,12 +39,11 @@ export const fr: TranslationStrings = {
     receive: 'Recevoir',
     biometrics: 'Biométrie',
     verifyBiometrics: 'Vérifier Biométrie',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'Identification du visage',
+    touchId: 'Toucher l\'identification',
     verifyDescription: 'Veuillez vérifier votre identité pour continuer',
     quickSubmit: 'Envoi Rapide',
   },
-
   home: {
     myWallet: 'Mon Portefeuille',
     totalBalance: 'Solde Total',
@@ -63,7 +62,6 @@ export const fr: TranslationStrings = {
     hideSmallBalances: 'Masquer petits soldes',
     showSmallBalances: 'Afficher petits soldes',
   },
-
   wallet: {
     createWallet: 'Créer Portefeuille',
     importWallet: 'Importer Portefeuille',
@@ -101,7 +99,6 @@ export const fr: TranslationStrings = {
     poweredBy: 'Propulsé par Eagle Network',
     privateKeyName: 'Clé Privée',
   },
-
   send: {
     send: 'Envoyer',
     sendTo: 'Envoyer à',
@@ -110,19 +107,19 @@ export const fr: TranslationStrings = {
     recipientPlaceholder: 'Entrez adresse ou nom ENS',
     amount: 'Montant',
     amountPlaceholder: 'Entrez montant',
-    max: 'MAX',
+    max: 'MAXIMUM',
     balance: 'Solde',
     available: 'Disponible',
     gasFee: 'Frais de Gaz',
     total: 'Total',
     estimatedTime: 'Temps Estimé',
     fast: 'Rapide',
-    normal: 'Normal',
+    normal: 'Normale',
     slow: 'Lent',
     custom: 'Personnalisé',
     gasPrice: 'Prix du Gaz',
     gasLimit: 'Limite de Gaz',
-    nonce: 'Nonce',
+    nonce: 'Occasionnellement',
     data: 'Données',
     sendConfirmation: 'Confirmation d\'Envoi',
     confirmTransaction: 'Confirmer Transaction',
@@ -144,7 +141,6 @@ export const fr: TranslationStrings = {
     invalidAddress: 'Adresse invalide',
     invalidAmount: 'Montant invalide',
   },
-
   receive: {
     receive: 'Recevoir',
     myAddress: 'Mon Adresse',
@@ -157,7 +153,6 @@ export const fr: TranslationStrings = {
     warningMessage: 'Assurez-vous que l\'expéditeur utilise le bon réseau',
     network: 'Réseau',
   },
-
   swap: {
     swap: 'Échanger',
     from: 'De',
@@ -166,15 +161,15 @@ export const fr: TranslationStrings = {
     youReceive: 'Vous Recevez',
     selectToken: 'Choisir Jeton',
     balance: 'Solde',
-    max: 'MAX',
+    max: 'MAXIMUM',
     rate: 'Taux',
     priceImpact: 'Impact Prix',
     minimumReceived: 'Minimum Reçu',
     estimatedReceived: 'Estimé Reçu',
     slippageTolerance: 'Tolérance Glissement',
     transactionFee: 'Frais Transaction',
-    route: 'Route',
-    pool: 'Pool',
+    route: 'Itinéraire',
+    pool: 'Piscine',
     swapRoute: 'Route d\'Échange',
     priceReference: 'Prix Référence',
     price: 'Prix',
@@ -195,7 +190,6 @@ export const fr: TranslationStrings = {
     approve: 'Approuver',
     approving: 'Approbation...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Mes NFT',
@@ -221,7 +215,6 @@ export const fr: TranslationStrings = {
     standard: 'Standard',
     unknownCollection: 'Collection Inconnue',
   },
-
   transaction: {
     transactions: 'Transactions',
     history: 'Historique',
@@ -244,8 +237,8 @@ export const fr: TranslationStrings = {
     total: 'Total',
     time: 'Heure',
     block: 'Bloc',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'Hacher',
+    nonce: 'Occasionnellement',
     gasPrice: 'Prix Gaz',
     gasUsed: 'Gaz Utilisé',
     gasLimit: 'Limite Gaz',
@@ -260,7 +253,6 @@ export const fr: TranslationStrings = {
     confirming: 'Confirmation...',
     confirmed: 'Confirmé',
   },
-
   token: {
     tokens: 'Jetons',
     token: 'Jeton',
@@ -290,11 +282,10 @@ export const fr: TranslationStrings = {
     holders: 'Détenteurs',
     totalSupply: 'Offre Totale',
     activity: 'Activité',
-    info: 'Info',
+    info: 'Informations',
     viewOnExplorer: 'Voir sur Explorateur',
     importToken: 'Importer Jeton',
   },
-
   dapp: {
     dappBrowser: 'Navigateur DApp',
     share: 'Partager',
@@ -331,12 +322,9 @@ export const fr: TranslationStrings = {
     pancakeDesc: 'DEX leader sur BSC',
     uniswapDesc: 'Échange décentralisé',
   },
-
   settings: {
     settings: 'Paramètres',
     back: 'Retour',
-    
-    // Sections
     walletManagement: 'Gestion Portefeuilles',
     network: 'Réseau',
     security: 'Sécurité',
@@ -344,19 +332,13 @@ export const fr: TranslationStrings = {
     preferences: 'Préférences',
     about: 'À propos',
     dangerZone: 'Zone Danger',
-    
-    // Wallet Management
     myWallets: 'Mes Portefeuilles',
     myWalletsSubtitle: 'Gérer plusieurs portefeuilles',
     addCustomToken: 'Ajouter Jeton Perso',
     addCustomTokenSubtitle: 'Ajouter ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Réseau Actuel',
     rpcNodes: 'Noeuds RPC',
     rpcNodesSubtitle: 'Vérifier vitesse',
-    
-    // Security
     biometricAuth: 'Auth Biométrique',
     biometricAuthSubtitle: 'Empreinte ou Face ID',
     exportPrivateKey: 'Exporter Clé Privée',
@@ -365,29 +347,19 @@ export const fr: TranslationStrings = {
     backupWalletSubtitle: 'Voir phrase récupération',
     changePassword: 'Changer Mot de passe',
     changePasswordSubtitle: 'Mettre à jour mot de passe',
-    
-    // Advanced
     priceAlerts: 'Alertes Prix',
     priceAlertsSubtitle: 'Configurer notifications',
     advancedSettings: 'Paramètres Avancés',
     advancedSettingsSubtitle: 'Options développeur',
-    
-    // Preferences
     language: 'Langue',
     currency: 'Devise',
-    
-    // About
     version: 'Version',
     termsOfService: 'Conditions d\'Utilisation',
     privacyPolicy: 'Politique Confidentialité',
-    support: 'Support',
+    support: 'Soutien',
     supportSubtitle: 'Obtenir aide',
-    
-    // Danger Zone
     deleteWallet: 'Supprimer Portefeuille',
     deleteWalletSubtitle: 'Supprimer définitivement',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Exporter Clé Privée',
     exportPrivateKeyMessage: 'La clé privée donne accès total. Ne partagez jamais !',
     backupWalletTitle: 'Sauvegarder Portefeuille',
@@ -410,7 +382,6 @@ export const fr: TranslationStrings = {
     resetAppSubtitle: 'Réinitialiser paramètres',
     advancedWarning: '⚠️ Réservé aux utilisateurs avancés',
   },
-
   network: {
     network: 'Réseau',
     networks: 'Réseaux',
@@ -430,9 +401,9 @@ export const fr: TranslationStrings = {
     disconnected: 'Déconnecté',
     connectionSpeed: 'Vitesse Connexion',
     fast: 'Rapide',
-    normal: 'Normal',
+    normal: 'Normale',
     slow: 'Lent',
-    mainnet: 'Mainnet',
+    mainnet: 'Réseau principal',
     testnet: 'Testnet',
     nodesAvailable: 'noeuds disponibles',
     hiddenUrl: 'URL masquée',
@@ -441,12 +412,10 @@ export const fr: TranslationStrings = {
     rpcNode: 'Noeud RPC',
     selected: 'sélectionné',
   },
-
   priceAlert: {
     above: 'Au-dessus',
     below: 'En-dessous',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Posez-moi n\'importe quelle question sur la crypto...',
@@ -458,8 +427,18 @@ export const fr: TranslationStrings = {
     marketAnalysis: 'Analyse de marché',
     securityCheck: 'Contrôle de sécurité',
     pricePrediction: 'Prédiction de prix',
+    dailyLimit: 'Limite quotidienne',
+    upgrade: 'Améliorer',
+    currentTier: 'Niveau actuel',
+    free: 'Gratuit',
+    holder: 'Détenteur',
+    vip: 'VIP NFT',
+    pro: 'Abonnement Pro',
+    tokensRemaining: 'tokens restants',
+    upgradePrompt: 'Améliorez pour augmenter la limite',
+    buyEagle: 'Acheter EAGLE',
+    buyNft: 'Acheter NFT',
   },
-
   errors: {
     walletNameRequired: 'Nom requis',
     passwordRequired: 'Mot de passe requis',

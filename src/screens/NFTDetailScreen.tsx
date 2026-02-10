@@ -4,7 +4,7 @@
  * Similar to OKX / AlphaWallet design
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,10 @@ import {
   TouchableOpacity,
   ScrollView,
   Linking,
-  Clipboard,
   Alert,
   Dimensions,
 } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import { useLanguage } from '../i18n/LanguageContext';
 import WalletService from '../services/WalletService';
 
@@ -24,7 +24,7 @@ const { width } = Dimensions.get('window');
 
 export default function NFTDetailScreen({ route, navigation }: any) {
   const { nft } = route.params;
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const network = WalletService.getCurrentNetwork();
 
   const handleCopy = (text: string) => {
@@ -61,7 +61,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t.wallet.nfts}</Text>
+        <Text style={styles.headerTitle}>{t.nft.myNFTs}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -81,7 +81,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
 
         {/* Title Section */}
         <View style={styles.titleSection}>
-            <Text style={styles.collectionName}>{nft.collection || 'Unknown Collection'}</Text>
+            <Text style={styles.collectionName}>{nft.collection || t.nft.unknownCollection}</Text>
             <Text style={styles.nftName}>{nft.name}</Text>
         </View>
 
@@ -150,9 +150,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
             style={styles.transferButton}
             onPress={() => navigation.navigate('Send', { nft })}
         >
-            <Text style={styles.transferButtonText}>
-                {t?.nft?.send || (language?.startsWith('zh') ? '转出' : 'Send')}
-            </Text>
+            <Text style={styles.transferButtonText}>{t.nft.send}</Text>
         </TouchableOpacity>
       </View>
     </View>

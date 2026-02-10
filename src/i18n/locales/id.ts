@@ -16,13 +16,13 @@ export const id: TranslationStrings = {
     share: 'Bagikan',
     loading: 'Memuat...',
     success: 'Berhasil',
-    error: 'Error',
+    error: 'Kesalahan',
     warning: 'Peringatan',
-    ok: 'OK',
+    ok: 'OKE',
     yes: 'Ya',
     no: 'Tidak',
     search: 'Cari',
-    filter: 'Filter',
+    filter: 'Menyaring',
     sort: 'Urutkan',
     all: 'Semua',
     none: 'Tidak Ada',
@@ -39,12 +39,11 @@ export const id: TranslationStrings = {
     receive: 'Terima',
     biometrics: 'Biometrik',
     verifyBiometrics: 'Verifikasi Biometrik',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'ID Wajah',
+    touchId: 'Sentuh ID',
     verifyDescription: 'Harap verifikasi identitas Anda',
     quickSubmit: 'Kirim Cepat',
   },
-
   home: {
     myWallet: 'Dompet Saya',
     totalBalance: 'Total Saldo',
@@ -63,7 +62,6 @@ export const id: TranslationStrings = {
     hideSmallBalances: 'Sembunyikan saldo kecil',
     showSmallBalances: 'Tampilkan saldo kecil',
   },
-
   wallet: {
     createWallet: 'Buat Dompet',
     importWallet: 'Impor Dompet',
@@ -101,7 +99,6 @@ export const id: TranslationStrings = {
     poweredBy: 'Didukung oleh Eagle Network',
     privateKeyName: 'Kunci Pribadi',
   },
-
   send: {
     send: 'Kirim',
     sendTo: 'Kirim ke',
@@ -122,7 +119,7 @@ export const id: TranslationStrings = {
     custom: 'Kustom',
     gasPrice: 'Harga Gas',
     gasLimit: 'Batas Gas',
-    nonce: 'Nonce',
+    nonce: 'Tidak sekali pun',
     data: 'Data',
     sendConfirmation: 'Konfirmasi Pengiriman',
     confirmTransaction: 'Konfirmasi Transaksi',
@@ -144,7 +141,6 @@ export const id: TranslationStrings = {
     invalidAddress: 'Alamat tidak valid',
     invalidAmount: 'Jumlah tidak valid',
   },
-
   receive: {
     receive: 'Terima',
     myAddress: 'Alamat Saya',
@@ -157,7 +153,6 @@ export const id: TranslationStrings = {
     warningMessage: 'Pastikan pengirim menggunakan jaringan yang benar',
     network: 'Jaringan',
   },
-
   swap: {
     swap: 'Tukar',
     from: 'Dari',
@@ -174,7 +169,7 @@ export const id: TranslationStrings = {
     slippageTolerance: 'Toleransi Slippage',
     transactionFee: 'Biaya Transaksi',
     route: 'Rute',
-    pool: 'Pool',
+    pool: 'Kolam',
     swapRoute: 'Rute Penukaran',
     priceReference: 'Harga Referensi',
     price: 'Harga',
@@ -189,13 +184,12 @@ export const id: TranslationStrings = {
     reviewSwap: 'Tinjau Penukaran',
     confirmSwap: 'Konfirmasi Penukaran',
     swapSettings: 'Pengaturan Penukaran',
-    slippage: 'Slippage',
+    slippage: 'Kelicinan',
     deadline: 'Tenggat',
     minutes: 'mnt',
     approve: 'Setujui',
     approving: 'Menyetujui...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'NFT Saya',
@@ -221,11 +215,10 @@ export const id: TranslationStrings = {
     standard: 'Standar',
     unknownCollection: 'Koleksi Tidak Diketahui',
   },
-
   transaction: {
     transactions: 'Transaksi',
     history: 'Riwayat',
-    pending: 'Pending',
+    pending: 'Tertunda',
     completed: 'Selesai',
     failed: 'Gagal',
     all: 'Semua',
@@ -244,8 +237,8 @@ export const id: TranslationStrings = {
     total: 'Total',
     time: 'Waktu',
     block: 'Blok',
-    hash: 'Hash',
-    nonce: 'Nonce',
+    hash: 'hash',
+    nonce: 'Tidak sekali pun',
     gasPrice: 'Harga Gas',
     gasUsed: 'Gas Digunakan',
     gasLimit: 'Batas Gas',
@@ -260,7 +253,6 @@ export const id: TranslationStrings = {
     confirming: 'Mengonfirmasi...',
     confirmed: 'Terkonfirmasi',
   },
-
   token: {
     tokens: 'Token',
     token: 'Token',
@@ -290,11 +282,10 @@ export const id: TranslationStrings = {
     holders: 'Pemegang',
     totalSupply: 'Total Pasokan',
     activity: 'Aktivitas',
-    info: 'Info',
+    info: 'Informasi',
     viewOnExplorer: 'Lihat di Explorer',
     importToken: 'Impor Token',
   },
-
   dapp: {
     dappBrowser: 'Peramban DApp',
     share: 'Bagikan',
@@ -331,12 +322,9 @@ export const id: TranslationStrings = {
     pancakeDesc: 'DEX Terkemuka di BSC',
     uniswapDesc: 'Bursa Terdesentralisasi',
   },
-
   settings: {
     settings: 'Pengaturan',
     back: 'Kembali',
-    
-    // Sections
     walletManagement: 'Manajemen Dompet',
     network: 'Jaringan',
     security: 'Keamanan',
@@ -344,19 +332,13 @@ export const id: TranslationStrings = {
     preferences: 'Preferensi',
     about: 'Tentang',
     dangerZone: 'Zona Bahaya',
-    
-    // Wallet Management
     myWallets: 'Dompet Saya',
     myWalletsSubtitle: 'Kelola banyak dompet',
     addCustomToken: 'Tambah Token Kustom',
     addCustomTokenSubtitle: 'Tambah ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Jaringan Saat Ini',
     rpcNodes: 'Node RPC',
     rpcNodesSubtitle: 'Lihat dan tes kecepatan',
-    
-    // Security
     biometricAuth: 'Autentikasi Biometrik',
     biometricAuthSubtitle: 'Gunakan Sidik Jari atau Wajah',
     exportPrivateKey: 'Ekspor Kunci Pribadi',
@@ -365,29 +347,19 @@ export const id: TranslationStrings = {
     backupWalletSubtitle: 'Lihat frasa pemulihan',
     changePassword: 'Ubah Kata Sandi',
     changePasswordSubtitle: 'Perbarui kata sandi dompet',
-    
-    // Advanced
     priceAlerts: 'Peringatan Harga',
     priceAlertsSubtitle: 'Atur notifikasi harga',
     advancedSettings: 'Pengaturan Lanjutan',
     advancedSettingsSubtitle: 'Opsi pengembang',
-    
-    // Preferences
     language: 'Bahasa',
     currency: 'Mata Uang',
-    
-    // About
     version: 'Versi',
     termsOfService: 'Ketentuan Layanan',
     privacyPolicy: 'Kebijakan Privasi',
     support: 'Dukungan',
     supportSubtitle: 'Dapatkan bantuan',
-    
-    // Danger Zone
     deleteWallet: 'Hapus Dompet',
     deleteWalletSubtitle: 'Hapus secara permanen',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Ekspor Kunci Pribadi',
     exportPrivateKeyMessage: 'Kunci pribadi memberi akses penuh. Jangan bagikan!',
     backupWalletTitle: 'Cadangkan Dompet',
@@ -410,7 +382,6 @@ export const id: TranslationStrings = {
     resetAppSubtitle: 'Kembalikan ke default',
     advancedWarning: '⚠️ Hanya untuk pengguna mahir',
   },
-
   network: {
     network: 'Jaringan',
     networks: 'Jaringan',
@@ -419,9 +390,9 @@ export const id: TranslationStrings = {
     addNetwork: 'Tambah Jaringan',
     networkName: 'Nama Jaringan',
     rpcUrl: 'URL RPC',
-    chainId: 'Chain ID',
+    chainId: 'ID Rantai',
     symbol: 'Simbol',
-    blockExplorer: 'Block Explorer',
+    blockExplorer: 'Blokir Penjelajah',
     networkAdded: 'Jaringan Ditambahkan',
     networkRemoved: 'Jaringan Dihapus',
     invalidRpcUrl: 'URL RPC Tidak Valid',
@@ -432,8 +403,8 @@ export const id: TranslationStrings = {
     fast: 'Cepat',
     normal: 'Normal',
     slow: 'Lambat',
-    mainnet: 'Mainnet',
-    testnet: 'Testnet',
+    mainnet: 'Jaringan utama',
+    testnet: 'jaringan uji',
     nodesAvailable: 'node tersedia',
     hiddenUrl: 'URL disembunyikan',
     fastestNode: 'Node Tercepat',
@@ -441,12 +412,10 @@ export const id: TranslationStrings = {
     rpcNode: 'Node RPC',
     selected: 'dipilih',
   },
-
   priceAlert: {
     above: 'Di Atas',
     below: 'Di Bawah',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Tanya saya apa saja tentang kripto...',
@@ -458,8 +427,18 @@ export const id: TranslationStrings = {
     marketAnalysis: 'Analisis Pasar',
     securityCheck: 'Pemeriksaan Keamanan',
     pricePrediction: 'Prediksi Harga',
+    dailyLimit: 'Batas Harian',
+    upgrade: 'Tingkatkan',
+    currentTier: 'Tingkat Saat Ini',
+    free: 'Gratis',
+    holder: 'Pemegang',
+    vip: 'VIP NFT',
+    pro: 'Langganan Pro',
+    tokensRemaining: 'token tersisa',
+    upgradePrompt: 'Tingkatkan untuk menambah batas',
+    buyEagle: 'Beli EAGLE',
+    buyNft: 'Beli NFT',
   },
-
   errors: {
     walletNameRequired: 'Nama wajib diisi',
     passwordRequired: 'Kata sandi wajib diisi',

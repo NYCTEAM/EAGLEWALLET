@@ -7,7 +7,6 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-  Clipboard,
   SafeAreaView,
   ScrollView,
   KeyboardAvoidingView,
@@ -16,6 +15,7 @@ import {
 } from 'react-native';
 import { ethers } from 'ethers';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Clipboard from '@react-native-clipboard/clipboard';
 import WalletService from '../services/WalletService';
 import { useLanguage } from '../i18n/LanguageContext';
 

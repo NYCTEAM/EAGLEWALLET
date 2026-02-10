@@ -18,22 +18,6 @@ export interface NFT {
   amount?: number; // For ERC1155
 }
 
-// Placeholder for OpenSea Service (Parity with AlphaWallet architecture)
-class OpenSeaService {
-  async fetchAssets(address: string, chainId: number): Promise<NFT[]> {
-    // Integration with OpenSea API would go here
-    return [];
-  }
-}
-
-// Placeholder for Asset Definition Service (Metadata parsing)
-class AssetDefinitionService {
-  async parseMetadata(uri: string): Promise<any> {
-    // TokenScript or Metadata parsing logic
-    return {};
-  }
-}
-
 // ERC-721 ABI for NFT operations
 const ERC721_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
@@ -49,6 +33,10 @@ const ERC1155_ABI = [
   'function balanceOf(address account, uint256 id) view returns (uint256)',
   'function uri(uint256 id) view returns (string)',
 ];
+
+const TRANSFER_EVENT_TOPIC = ethers.id('Transfer(address,address,uint256)');
+const MAX_NFTS_PER_CONTRACT = 100;
+const MAX_DISCOVERY_CANDIDATES = 120;
 
 class NFTService {
   private providers: Map<number, ethers.JsonRpcProvider> = new Map();
@@ -76,11 +64,23 @@ class NFTService {
    */
   async getUserNFTs(address: string, chainId: number): Promise<NFT[]> {
     try {
-      const nfts: NFT[] = [];
-      
+      if (!ethers.isAddress(address)) {
+        return [];
+      }
+
+      const nftMap = new Map<string, NFT>();
+      const normalizedOwner = address.toLowerCase();
+
+      const addNFT = (nft: NFT) => {
+        const key = `${nft.contractAddress.toLowerCase()}:${nft.tokenId}`;
+        if (!nftMap.has(key)) {
+          nftMap.set(key, nft);
+        }
+      };
+
       // Get known NFT contracts for this chain
       const nftContracts = this.getKnownNFTContracts(chainId);
-      
+
       for (const contractAddress of nftContracts) {
         try {
           const contractNFTs = await this.getNFTsFromContract(
@@ -88,42 +88,41 @@ class NFTService {
             contractAddress,
             chainId
           );
-          nfts.push(...contractNFTs);
+          contractNFTs.forEach(addNFT);
         } catch (error) {
           console.error(`Error fetching NFTs from ${contractAddress}:`, error);
         }
       }
 
-      // Also scan for NFTs using Moralis/Alchemy API if available
-      const apiNFTs = await this.getNFTsFromAPI(address, chainId);
-      nfts.push(...apiNFTs);
+      // Discovery path: fetch recent NFT interactions from explorer and verify on-chain ownership
+      const explorerCandidates = await this.getNFTCandidatesFromExplorer(address, chainId);
+      for (const candidate of explorerCandidates) {
+        const key = `${candidate.contractAddress.toLowerCase()}:${candidate.tokenId}`;
+        if (nftMap.has(key)) {
+          continue;
+        }
 
-      // MOCK DATA: Simulate finding some NFTs automatically (for demo purposes)
-      if (chainId === 56 && nfts.length === 0) {
-        nfts.push({
-          contractAddress: '0x0a8901b0e25deb55a87524f0cc164e9644020e16',
-          tokenId: '8888',
-          name: 'Pancake Squad #8888',
-          description: 'Pancake Squad NFT on BSC. Generated automatically.',
-          image: 'https://raw.githubusercontent.com/pancakeswap/pancake-frontend/master/public/images/nfts/squad-placeholder.png',
-          collection: 'Pancake Squad',
-          chainId: 56,
-          type: 'ERC721'
-        });
-        nfts.push({
-          contractAddress: '0x57a204aa1042f6e66dd7730813f4024114d74f37',
-          tokenId: '123',
-          name: 'CyberEagle #123',
-          description: 'Exclusive Eagle Wallet Access Pass (ERC1155)',
-          image: 'https://img.freepik.com/premium-vector/eagle-mascot-logo-design_142909-173.jpg',
-          collection: 'Eagle Genesis',
-          chainId: 56,
-          type: 'ERC1155',
-          amount: 5
-        });
+        const isOwned = await this.ownsNFT(
+          normalizedOwner,
+          candidate.contractAddress,
+          candidate.tokenId,
+          chainId
+        );
+        if (!isOwned) {
+          continue;
+        }
+
+        const details = await this.getNFTDetails(
+          candidate.contractAddress,
+          candidate.tokenId,
+          chainId
+        );
+        if (details) {
+          addNFT(details);
+        }
       }
 
-      return nfts;
+      return Array.from(nftMap.values());
     } catch (error) {
       console.error('Error fetching user NFTs:', error);
       return [];
@@ -146,6 +145,9 @@ class NFTService {
       // Get balance
       const balance = await contract.balanceOf(ownerAddress);
       const balanceNum = Number(balance);
+      if (balanceNum <= 0) {
+        return [];
+      }
 
       // Get collection info
       let collectionName = 'Unknown Collection';
@@ -155,34 +157,67 @@ class NFTService {
         // Some contracts don't have name()
       }
 
-      // Fetch each NFT
-      for (let i = 0; i < balanceNum && i < 50; i++) {
-        try {
-          const tokenId = await contract.tokenOfOwnerByIndex(ownerAddress, i);
-          const tokenIdStr = tokenId.toString();
+      // Enumerable path
+      let supportsEnumerable = true;
+      try {
+        await contract.tokenOfOwnerByIndex(ownerAddress, 0);
+      } catch {
+        supportsEnumerable = false;
+      }
 
-          // Get token URI
-          let tokenURI = '';
+      if (supportsEnumerable) {
+        for (let i = 0; i < balanceNum && i < MAX_NFTS_PER_CONTRACT; i++) {
           try {
-            tokenURI = await contract.tokenURI(tokenId);
-          } catch (e) {
-            console.log(`No tokenURI for ${tokenIdStr}`);
+            const tokenId = await contract.tokenOfOwnerByIndex(ownerAddress, i);
+            const tokenIdStr = tokenId.toString();
+            const metadata = await this.fetchMetadataFrom721Contract(contract, tokenIdStr);
+
+            nfts.push({
+              tokenId: tokenIdStr,
+              contractAddress,
+              name: metadata.name || `#${tokenIdStr}`,
+              description: metadata.description || '',
+              image: this.extractImage(metadata),
+              collection: collectionName,
+              chainId,
+              type: 'ERC721',
+            });
+          } catch (error) {
+            console.error(`Error fetching token ${i}:`, error);
+          }
+        }
+        return nfts;
+      }
+
+      // Non-enumerable fallback: infer owned token IDs from Transfer logs
+      const inferredTokenIds = await this.getOwnedTokenIdsFromLogs(
+        ownerAddress,
+        contractAddress,
+        chainId,
+        MAX_NFTS_PER_CONTRACT
+      );
+
+      for (const tokenIdStr of inferredTokenIds) {
+        try {
+          const isOwned = await this.ownsNFT(ownerAddress, contractAddress, tokenIdStr, chainId);
+          if (!isOwned) {
+            continue;
           }
 
-          // Fetch metadata
-          const metadata = await this.fetchNFTMetadata(tokenURI);
+          const metadata = await this.fetchMetadataFrom721Contract(contract, tokenIdStr);
 
           nfts.push({
             tokenId: tokenIdStr,
             contractAddress,
             name: metadata.name || `#${tokenIdStr}`,
             description: metadata.description || '',
-            image: this.normalizeIPFS(metadata.image || ''),
+            image: this.extractImage(metadata),
             collection: collectionName,
             chainId,
+            type: 'ERC721',
           });
         } catch (error) {
-          console.error(`Error fetching token ${i}:`, error);
+          console.error(`Error fetching token ${tokenIdStr}:`, error);
         }
       }
     } catch (error) {
@@ -199,22 +234,21 @@ class NFTService {
     if (!uri) return {};
 
     try {
+      // Handle data URIs
+      if (uri.startsWith('data:')) {
+        return this.parseDataUriMetadata(uri);
+      }
+
       // Normalize IPFS URLs
       const normalizedURI = this.normalizeIPFS(uri);
-      
-      // Handle data URIs
-      if (normalizedURI.startsWith('data:')) {
-        const json = normalizedURI.split(',')[1];
-        return JSON.parse(Buffer.from(json, 'base64').toString());
-      }
 
       // Fetch from HTTP
       const response = await fetch(normalizedURI);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
       console.error('Error fetching metadata:', error);
@@ -227,23 +261,79 @@ class NFTService {
    */
   private normalizeIPFS(url: string): string {
     if (!url) return '';
-    
+
+    if (url.startsWith('ipfs://ipfs/')) {
+      return url.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
+    }
+
     if (url.startsWith('ipfs://')) {
       return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
-    
+
     if (url.startsWith('ipfs/')) {
       return `https://ipfs.io/ipfs/${url.slice(5)}`;
     }
-    
+
     return url;
+  }
+
+  private parseDataUriMetadata(uri: string): any {
+    try {
+      const commaIndex = uri.indexOf(',');
+      if (commaIndex < 0) {
+        return {};
+      }
+
+      const header = uri.slice(0, commaIndex);
+      const payload = uri.slice(commaIndex + 1);
+
+      if (header.includes(';base64')) {
+        if (typeof globalThis.atob !== 'function') {
+          return {};
+        }
+        const jsonString = globalThis.atob(payload);
+        return JSON.parse(jsonString);
+      }
+
+      return JSON.parse(decodeURIComponent(payload));
+    } catch {
+      return {};
+    }
+  }
+
+  private resolveTokenURI(templateUri: string, tokenId: string): string {
+    if (!templateUri) {
+      return '';
+    }
+
+    if (templateUri.includes('{id}')) {
+      const hexTokenId = ethers.toBeHex(BigInt(tokenId), 32).replace('0x', '');
+      return templateUri.replace('{id}', hexTokenId);
+    }
+
+    return templateUri;
+  }
+
+  private extractImage(metadata: any): string {
+    const image = metadata?.image || metadata?.image_url || metadata?.imageUrl || '';
+    return this.normalizeIPFS(image);
+  }
+
+  private async fetchMetadataFrom721Contract(contract: ethers.Contract, tokenId: string): Promise<any> {
+    try {
+      const tokenURI = await contract.tokenURI(tokenId);
+      const resolved = this.resolveTokenURI(tokenURI, tokenId);
+      return this.fetchNFTMetadata(resolved);
+    } catch {
+      return {};
+    }
   }
 
   /**
    * Get known NFT contracts for a chain
    */
   private getKnownNFTContracts(chainId: number): string[] {
-    // Popular NFT contracts on BSC and XLAYER
+    // Popular NFT contracts on BSC
     const contracts: Record<number, string[]> = {
       // BSC Mainnet
       56: [
@@ -251,42 +341,100 @@ class NFTService {
         '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07', // Pancake Squad
         // Add more popular BSC NFT contracts
       ],
-      // XLAYER Mainnet
-      196: [
-        // Add XLAYER NFT contracts when available
-      ],
     };
 
     return contracts[chainId] || [];
   }
 
   /**
-   * Get NFTs using external API (Moralis, Alchemy, etc.)
+   * Discover NFT candidates via explorer APIs, then verify ownership on-chain
    */
-  private async getNFTsFromAPI(
+  private async getNFTCandidatesFromExplorer(
     address: string,
     chainId: number
-  ): Promise<NFT[]> {
-    // This would integrate with Moralis, Alchemy, or similar services
-    // For now, return empty array
-    // You can add API keys in environment variables
-    
+  ): Promise<Array<{ contractAddress: string; tokenId: string }>> {
     try {
-      // Example: Moralis API
-      // const response = await fetch(
-      //   `https://deep-index.moralis.io/api/v2/${address}/nft?chain=${chainId}`,
-      //   {
-      //     headers: {
-      //       'X-API-Key': process.env.MORALIS_API_KEY,
-      //     },
-      //   }
-      // );
-      // const data = await response.json();
-      // return this.parseAPIResponse(data);
-      
-      return [];
+      if (chainId !== 56) {
+        return [];
+      }
+
+      const url =
+        `https://api.bscscan.com/api?module=account&action=tokennfttx&address=${address}` +
+        `&page=1&offset=${MAX_DISCOVERY_CANDIDATES}&sort=desc`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        return [];
+      }
+
+      const data = await response.json();
+      if (!Array.isArray(data?.result)) {
+        return [];
+      }
+
+      const unique = new Map<string, { contractAddress: string; tokenId: string }>();
+      for (const row of data.result) {
+        const contractAddress = String(row?.contractAddress || '');
+        const tokenId = String(row?.tokenID || '');
+        if (!ethers.isAddress(contractAddress) || tokenId === '') {
+          continue;
+        }
+
+        const key = `${contractAddress.toLowerCase()}:${tokenId}`;
+        if (!unique.has(key)) {
+          unique.set(key, { contractAddress, tokenId });
+        }
+
+        if (unique.size >= MAX_DISCOVERY_CANDIDATES) {
+          break;
+        }
+      }
+
+      return Array.from(unique.values());
     } catch (error) {
-      console.error('Error fetching NFTs from API:', error);
+      console.error('Error fetching NFT candidates from explorer:', error);
+      return [];
+    }
+  }
+
+  private async getOwnedTokenIdsFromLogs(
+    ownerAddress: string,
+    contractAddress: string,
+    chainId: number,
+    maxTokens: number
+  ): Promise<string[]> {
+    try {
+      const provider = this.getProvider(chainId);
+      const currentBlock = await provider.getBlockNumber();
+      const fromBlock = Math.max(0, currentBlock - 500000);
+      const ownerTopic = ethers.zeroPadValue(ownerAddress, 32);
+
+      const [receivedLogs, sentLogs] = await Promise.all([
+        provider.getLogs({
+          address: contractAddress,
+          fromBlock,
+          toBlock: currentBlock,
+          topics: [TRANSFER_EVENT_TOPIC, null, ownerTopic],
+        }),
+        provider.getLogs({
+          address: contractAddress,
+          fromBlock,
+          toBlock: currentBlock,
+          topics: [TRANSFER_EVENT_TOPIC, ownerTopic, null],
+        }),
+      ]);
+
+      const owned = new Set<string>();
+      for (const log of receivedLogs) {
+        if (log.topics.length < 4) continue;
+        owned.add(ethers.toBigInt(log.topics[3]).toString());
+      }
+      for (const log of sentLogs) {
+        if (log.topics.length < 4) continue;
+        owned.delete(ethers.toBigInt(log.topics[3]).toString());
+      }
+
+      return Array.from(owned).slice(0, maxTokens);
+    } catch {
       return [];
     }
   }
@@ -295,7 +443,7 @@ class NFTService {
    * Transfer NFT to another address
    */
   async transferNFT(
-    wallet: ethers.Wallet,
+    wallet: ethers.Wallet | ethers.HDNodeWallet,
     contractAddress: string,
     tokenId: string,
     toAddress: string,
@@ -330,20 +478,32 @@ class NFTService {
   ): Promise<NFT | null> {
     try {
       const provider = this.getProvider(chainId);
-      const contract = new ethers.Contract(contractAddress, ERC721_ABI, provider);
+      const erc721 = new ethers.Contract(contractAddress, ERC721_ABI, provider);
+      let tokenURI = '';
+      let collectionName = 'Unknown Collection';
+      let type: 'ERC721' | 'ERC1155' = 'ERC721';
 
-      const tokenURI = await contract.tokenURI(tokenId);
-      const metadata = await this.fetchNFTMetadata(tokenURI);
-      const collectionName = await contract.name();
+      try {
+        tokenURI = await erc721.tokenURI(tokenId);
+        collectionName = await erc721.name();
+      } catch {
+        // ERC1155 fallback
+        const erc1155 = new ethers.Contract(contractAddress, ERC1155_ABI, provider);
+        tokenURI = await erc1155.uri(tokenId);
+        type = 'ERC1155';
+      }
+
+      const metadata = await this.fetchNFTMetadata(this.resolveTokenURI(tokenURI, tokenId));
 
       return {
         tokenId,
         contractAddress,
         name: metadata.name || `#${tokenId}`,
         description: metadata.description || '',
-        image: this.normalizeIPFS(metadata.image || ''),
+        image: this.extractImage(metadata),
         collection: collectionName,
         chainId,
+        type,
       };
     } catch (error) {
       console.error('Error getting NFT details:', error);
@@ -362,11 +522,18 @@ class NFTService {
   ): Promise<boolean> {
     try {
       const provider = this.getProvider(chainId);
-      const contract = new ethers.Contract(contractAddress, ERC721_ABI, provider);
-      const owner = await contract.ownerOf(tokenId);
+      const erc721 = new ethers.Contract(contractAddress, ERC721_ABI, provider);
+      const owner = await erc721.ownerOf(tokenId);
       return owner.toLowerCase() === address.toLowerCase();
     } catch (error) {
-      return false;
+      try {
+        const provider = this.getProvider(chainId);
+        const erc1155 = new ethers.Contract(contractAddress, ERC1155_ABI, provider);
+        const balance = await erc1155.balanceOf(address, tokenId);
+        return BigInt(balance) > 0n;
+      } catch {
+        return false;
+      }
     }
   }
 }

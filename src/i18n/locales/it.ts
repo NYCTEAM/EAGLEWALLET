@@ -20,7 +20,7 @@ export const it: TranslationStrings = {
     warning: 'Attenzione',
     ok: 'OK',
     yes: 'Sì',
-    no: 'No',
+    no: 'NO',
     search: 'Cerca',
     filter: 'Filtra',
     sort: 'Ordina',
@@ -39,12 +39,11 @@ export const it: TranslationStrings = {
     receive: 'Ricevi',
     biometrics: 'Biometria',
     verifyBiometrics: 'Verifica Biometria',
-    faceId: 'Face ID',
-    touchId: 'Touch ID',
+    faceId: 'ID viso',
+    touchId: 'Tocca l\'ID',
     verifyDescription: 'Verifica la tua identità per continuare',
     quickSubmit: 'Invio Rapido',
   },
-
   home: {
     myWallet: 'Il mio Portafoglio',
     totalBalance: 'Saldo Totale',
@@ -63,7 +62,6 @@ export const it: TranslationStrings = {
     hideSmallBalances: 'Nascondi saldi piccoli',
     showSmallBalances: 'Mostra saldi piccoli',
   },
-
   wallet: {
     createWallet: 'Crea Portafoglio',
     importWallet: 'Importa Portafoglio',
@@ -98,10 +96,9 @@ export const it: TranslationStrings = {
     passwordHint: 'Questa password cripta la tua chiave privata su questo dispositivo.',
     generating: 'Generazione portafoglio sicuro...',
     appSubtitle: 'Portafoglio Crypto Multi-Chain Sicuro',
-    poweredBy: 'Powered by Eagle Network',
+    poweredBy: 'Alimentato da Eagle Network',
     privateKeyName: 'Chiave Privata',
   },
-
   send: {
     send: 'Invia',
     sendTo: 'Invia a',
@@ -110,7 +107,7 @@ export const it: TranslationStrings = {
     recipientPlaceholder: 'Inserisci indirizzo o nome ENS',
     amount: 'Importo',
     amountPlaceholder: 'Inserisci importo',
-    max: 'MAX',
+    max: 'MASSIMO',
     balance: 'Saldo',
     available: 'Disponibile',
     gasFee: 'Commissione Gas',
@@ -144,7 +141,6 @@ export const it: TranslationStrings = {
     invalidAddress: 'Indirizzo non valido',
     invalidAmount: 'Importo non valido',
   },
-
   receive: {
     receive: 'Ricevi',
     myAddress: 'Mio Indirizzo',
@@ -157,7 +153,6 @@ export const it: TranslationStrings = {
     warningMessage: 'Assicurati che il mittente usi la rete corretta',
     network: 'Rete',
   },
-
   swap: {
     swap: 'Scambia',
     from: 'Da',
@@ -166,7 +161,7 @@ export const it: TranslationStrings = {
     youReceive: 'Ricevi',
     selectToken: 'Seleziona Token',
     balance: 'Saldo',
-    max: 'MAX',
+    max: 'MASSIMO',
     rate: 'Tasso',
     priceImpact: 'Impatto Prezzo',
     minimumReceived: 'Minimo Ricevuto',
@@ -174,7 +169,7 @@ export const it: TranslationStrings = {
     slippageTolerance: 'Tolleranza Slippage',
     transactionFee: 'Commissione Transazione',
     route: 'Percorso',
-    pool: 'Pool',
+    pool: 'Piscina',
     swapRoute: 'Percorso Scambio',
     priceReference: 'Prezzo Riferimento',
     price: 'Prezzo',
@@ -189,13 +184,12 @@ export const it: TranslationStrings = {
     reviewSwap: 'Rivedi Scambio',
     confirmSwap: 'Conferma Scambio',
     swapSettings: 'Impostazioni Scambio',
-    slippage: 'Slippage',
+    slippage: 'Slittamento',
     deadline: 'Scadenza',
     minutes: 'min',
     approve: 'Approva',
     approving: 'Approvazione...',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'Miei NFT',
@@ -221,7 +215,6 @@ export const it: TranslationStrings = {
     standard: 'Standard',
     unknownCollection: 'Collezione Sconosciuta',
   },
-
   transaction: {
     transactions: 'Transazioni',
     history: 'Cronologia',
@@ -260,10 +253,9 @@ export const it: TranslationStrings = {
     confirming: 'Conferma...',
     confirmed: 'Confermato',
   },
-
   token: {
     tokens: 'Token',
-    token: 'Token',
+    token: 'Gettone',
     addToken: 'Aggiungi Token',
     customToken: 'Token Personalizzato',
     searchToken: 'Cerca Token',
@@ -290,11 +282,10 @@ export const it: TranslationStrings = {
     holders: 'Detentori',
     totalSupply: 'Offerta Totale',
     activity: 'Attività',
-    info: 'Info',
+    info: 'Informazioni',
     viewOnExplorer: 'Vedi su Explorer',
     importToken: 'Importa Token',
   },
-
   dapp: {
     dappBrowser: 'Browser DApp',
     share: 'Condividi',
@@ -331,12 +322,9 @@ export const it: TranslationStrings = {
     pancakeDesc: 'DEX leader su BSC',
     uniswapDesc: 'Exchange Decentralizzato',
   },
-
   settings: {
     settings: 'Impostazioni',
     back: 'Indietro',
-    
-    // Sections
     walletManagement: 'Gestione Portafogli',
     network: 'Rete',
     security: 'Sicurezza',
@@ -344,19 +332,13 @@ export const it: TranslationStrings = {
     preferences: 'Preferenze',
     about: 'Info',
     dangerZone: 'Zona Pericolo',
-    
-    // Wallet Management
     myWallets: 'Miei Portafogli',
     myWalletsSubtitle: 'Gestisci più portafogli',
     addCustomToken: 'Aggiungi Token Pers.',
     addCustomTokenSubtitle: 'Aggiungi ERC20/721/1155',
-    
-    // Network
     currentNetwork: 'Rete Attuale',
     rpcNodes: 'Nodi RPC',
     rpcNodesSubtitle: 'Controlla velocità',
-    
-    // Security
     biometricAuth: 'Autenticazione Biometrica',
     biometricAuthSubtitle: 'Usa Impronta o Face ID',
     exportPrivateKey: 'Esporta Chiave Privata',
@@ -365,29 +347,19 @@ export const it: TranslationStrings = {
     backupWalletSubtitle: 'Vedi frase recupero',
     changePassword: 'Cambia Password',
     changePasswordSubtitle: 'Aggiorna password',
-    
-    // Advanced
     priceAlerts: 'Avvisi Prezzo',
     priceAlertsSubtitle: 'Imposta notifiche',
     advancedSettings: 'Impostazioni Avanzate',
     advancedSettingsSubtitle: 'Opzioni sviluppatore',
-    
-    // Preferences
     language: 'Lingua',
     currency: 'Valuta',
-    
-    // About
     version: 'Versione',
     termsOfService: 'Termini di Servizio',
-    privacyPolicy: 'Privacy Policy',
+    privacyPolicy: 'politica sulla riservatezza',
     support: 'Supporto',
     supportSubtitle: 'Ricevi aiuto',
-    
-    // Danger Zone
     deleteWallet: 'Elimina Portafoglio',
     deleteWalletSubtitle: 'Elimina definitivamente',
-    
-    // Alerts
     exportPrivateKeyTitle: 'Esporta Chiave Privata',
     exportPrivateKeyMessage: 'La chiave privata dà accesso totale. Non condividerla!',
     backupWalletTitle: 'Backup Portafoglio',
@@ -410,7 +382,6 @@ export const it: TranslationStrings = {
     resetAppSubtitle: 'Ripristina default',
     advancedWarning: '⚠️ Solo per esperti',
   },
-
   network: {
     network: 'Rete',
     networks: 'Reti',
@@ -421,7 +392,7 @@ export const it: TranslationStrings = {
     rpcUrl: 'URL RPC',
     chainId: 'ID Catena',
     symbol: 'Simbolo',
-    blockExplorer: 'Block Explorer',
+    blockExplorer: 'Esplora blocchi',
     networkAdded: 'Rete Aggiunta',
     networkRemoved: 'Rete Rimossa',
     invalidRpcUrl: 'URL RPC Non Valido',
@@ -432,8 +403,8 @@ export const it: TranslationStrings = {
     fast: 'Veloce',
     normal: 'Normale',
     slow: 'Lento',
-    mainnet: 'Mainnet',
-    testnet: 'Testnet',
+    mainnet: 'Rete principale',
+    testnet: 'Rete di prova',
     nodesAvailable: 'nodi disponibili',
     hiddenUrl: 'URL nascosto',
     fastestNode: 'Nodo più veloce',
@@ -441,12 +412,10 @@ export const it: TranslationStrings = {
     rpcNode: 'Nodo RPC',
     selected: 'selezionato',
   },
-
   priceAlert: {
     above: 'Sopra',
     below: 'Sotto',
   },
-
   ai: {
     title: 'Eagle AI',
     askPlaceholder: 'Chiedimi qualsiasi cosa su cripto...',
@@ -458,8 +427,18 @@ export const it: TranslationStrings = {
     marketAnalysis: 'Analisi di mercato',
     securityCheck: 'Controllo sicurezza',
     pricePrediction: 'Previsione prezzi',
+    dailyLimit: 'Limite Giornaliero',
+    upgrade: 'Aggiorna',
+    currentTier: 'Livello Attuale',
+    free: 'Gratuito',
+    holder: 'Detentore',
+    vip: 'NFT VIP',
+    pro: 'Abbonamento Pro',
+    tokensRemaining: 'token rimanenti',
+    upgradePrompt: 'Aggiorna per aumentare il limite',
+    buyEagle: 'Acquista EAGLE',
+    buyNft: 'Acquista NFT',
   },
-
   errors: {
     walletNameRequired: 'Nome richiesto',
     passwordRequired: 'Password richiesta',
