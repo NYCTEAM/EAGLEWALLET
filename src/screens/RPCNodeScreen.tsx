@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import WalletService from '../services/WalletService';
-import { NETWORKS } from '../config/networks';
+import RPCService from '../services/RPCService';
 
 interface RPCNode {
   name: string;
@@ -28,7 +28,8 @@ interface RPCNode {
   fetchOptions?: any;
 }
 
-const PINNED_RPC_KEY = 'EAGLE_PINNED_RPC';
+const PINNED_RPC_KEY_PREFIX = 'EAGLE_PINNED_RPC_';
+const LEGACY_PINNED_RPC_KEY = 'EAGLE_PINNED_RPC';
 
 export default function RPCNodeScreen({ navigation }: any) {
   const { t } = useLanguage();
@@ -42,12 +43,21 @@ export default function RPCNodeScreen({ navigation }: any) {
 
   useEffect(() => {
     loadPinnedNode();
-    testNodes();
-  }, []);
+    loadCachedNodes();
+    testNodes(true);
+  }, [network.chainId]);
 
   const loadPinnedNode = async () => {
     try {
-      const pinned = await AsyncStorage.getItem(PINNED_RPC_KEY);
+      const pinnedKey = `${PINNED_RPC_KEY_PREFIX}${network.chainId}`;
+      let pinned = await AsyncStorage.getItem(pinnedKey);
+      if (!pinned) {
+        const legacy = await AsyncStorage.getItem(LEGACY_PINNED_RPC_KEY);
+        if (legacy) {
+          pinned = legacy;
+          await AsyncStorage.setItem(pinnedKey, legacy);
+        }
+      }
       if (pinned) {
         setPinnedNode(pinned);
         setSelectedNode(pinned);
@@ -57,103 +67,54 @@ export default function RPCNodeScreen({ navigation }: any) {
     }
   };
 
-  const testNodes = async () => {
+  const loadCachedNodes = async () => {
+    try {
+      const cached = await RPCService.getCachedNodes(network.chainId);
+      if (cached?.nodes?.length) {
+        setNodes(cached.nodes as RPCNode[]);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Failed to load cached RPC nodes:', error);
+    }
+  };
+
+  const testNodes = async (forceRefresh: boolean = false) => {
     setTesting(true);
-    const networkConfig = NETWORKS[network.chainId];
-    const rpcNodes = networkConfig.rpcNodes || [];
-    
-    console.log(`🔍 Testing ${rpcNodes.length} RPC nodes for ${network.name}...`);
-    
-    const testedNodes: RPCNode[] = [];
-    
-    for (const node of rpcNodes) {
-      try {
-        const startTime = Date.now();
-        
-        // Test RPC with eth_blockNumber call
-        const response = await fetch(node.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(node.fetchOptions?.headers || {}),
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'eth_blockNumber',
-            params: [],
-            id: 1,
-          }),
-        });
-        
-        const endTime = Date.now();
-        const latency = endTime - startTime;
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.result) {
-            testedNodes.push({
-              ...node,
-              latency,
-              available: true,
-            });
-            console.log(`✅ ${node.name}: ${latency}ms`);
-          } else {
-            testedNodes.push({
-              ...node,
-              latency: 9999,
-              available: false,
-            });
-            console.log(`❌ ${node.name}: Invalid response`);
-          }
-        } else {
-          testedNodes.push({
-            ...node,
-            latency: 9999,
-            available: false,
-          });
-          console.log(`❌ ${node.name}: HTTP ${response.status}`);
-        }
-      } catch (error) {
-        testedNodes.push({
-          ...node,
-          latency: 9999,
-          available: false,
-        });
-        console.log(`❌ ${node.name}: ${error}`);
+    const testedNodes = await RPCService.getNodes(network.chainId, forceRefresh);
+    setNodes(testedNodes as RPCNode[]);
+
+    let currentPinned = pinnedNode;
+    if (!currentPinned) {
+      const pinnedKey = `${PINNED_RPC_KEY_PREFIX}${network.chainId}`;
+      currentPinned = await AsyncStorage.getItem(pinnedKey);
+      if (currentPinned) {
+        setPinnedNode(currentPinned);
+        setSelectedNode(currentPinned);
       }
     }
-    
-    // Sort by latency (fastest first)
-    testedNodes.sort((a, b) => a.latency - b.latency);
-    
-    setNodes(testedNodes);
-    
-    // Auto-select the fastest node
-    if (testedNodes.length > 0 && testedNodes[0].available) {
+
+    if (!currentPinned && testedNodes.length > 0 && testedNodes[0].available) {
       const fastestNode = testedNodes[0];
-      console.log(`🚀 Auto-selecting fastest node: ${fastestNode.name} (${fastestNode.latency}ms)`);
-      
       setSelectedNode(fastestNode.name);
       setPinnedNode(fastestNode.name);
-      
-      // Save to storage automatically
-      AsyncStorage.setItem(PINNED_RPC_KEY, fastestNode.name).catch(err => {
+
+      const pinnedKey = `${PINNED_RPC_KEY_PREFIX}${network.chainId}`;
+      AsyncStorage.setItem(pinnedKey, fastestNode.name).catch(err => {
         console.error('Failed to auto-save fastest node:', err);
       });
     }
 
     setTesting(false);
     setLoading(false);
-    
-    console.log('🏁 RPC testing complete');
   };
-
   const handleSelectNode = async (nodeName: string) => {
     setSelectedNode(nodeName);
     setPinnedNode(nodeName);
     
     try {
-      await AsyncStorage.setItem(PINNED_RPC_KEY, nodeName);
+      const pinnedKey = `${PINNED_RPC_KEY_PREFIX}${network.chainId}`;
+      await AsyncStorage.setItem(pinnedKey, nodeName);
       Alert.alert(
         t.common.success,
         `${t.network.rpcNode} ${nodeName} ${t.network.selected}`,
@@ -195,7 +156,7 @@ export default function RPCNodeScreen({ navigation }: any) {
           <Text style={styles.backButton}>← {t.common.back}</Text>
         </TouchableOpacity>
         <Text style={styles.title}>{t.settings.rpcNodes}</Text>
-        <TouchableOpacity onPress={testNodes} disabled={testing}>
+        <TouchableOpacity onPress={() => testNodes(true)} disabled={testing}>
           <Text style={styles.refreshButton}>
             {testing ? '⏳' : '🔄'}
           </Text>

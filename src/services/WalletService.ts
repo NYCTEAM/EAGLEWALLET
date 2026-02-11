@@ -47,7 +47,11 @@ class WalletService {
     const network = NETWORKS[resolvedChainId];
 
     try {
-      this.provider = await RPCService.getProvider(resolvedChainId);
+      const preferredRpc = await RPCService.getPreferredRpcUrl(resolvedChainId);
+      this.provider = new ethers.JsonRpcProvider(preferredRpc, {
+        chainId: network.chainId,
+        name: network.name,
+      });
     } catch {
       this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
         chainId: network.chainId,

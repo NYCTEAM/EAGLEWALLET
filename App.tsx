@@ -6,7 +6,7 @@
 import 'react-native-get-random-values';
 
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View, AppState } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import CreateWalletScreen from './src/screens/CreateWalletScreen';
@@ -42,6 +42,7 @@ import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import WalletService from './src/services/WalletService';
 import ApiBaseService from './src/services/ApiBaseService';
 import RewardsDappService from './src/services/RewardsDappService';
+import RPCService from './src/services/RPCService';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
 const Stack = createStackNavigator();
@@ -79,6 +80,49 @@ export default function App() {
   useEffect(() => {
     ApiBaseService.prewarm();
     RewardsDappService.prewarm();
+  }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    let isActive = true;
+
+    const refreshRpc = async () => {
+      if (!isActive) return;
+      const chainId = WalletService.getCurrentNetwork().chainId;
+      try {
+        await RPCService.refreshNodes(chainId);
+      } catch (error) {
+        console.warn('RPC auto-refresh failed:', error);
+      }
+    };
+
+    const start = () => {
+      if (interval) return;
+      refreshRpc();
+      interval = setInterval(refreshRpc, 180000);
+    };
+
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    start();
+    const sub = AppState.addEventListener('change', (state) => {
+      isActive = state === 'active';
+      if (isActive) {
+        start();
+      } else {
+        stop();
+      }
+    });
+
+    return () => {
+      stop();
+      sub.remove();
+    };
   }, []);
 
   if (hasWallet === null) {

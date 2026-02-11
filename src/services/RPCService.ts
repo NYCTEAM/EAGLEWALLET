@@ -4,6 +4,7 @@
  */
 
 import { ethers } from 'ethers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NETWORKS } from '../config/networks';
 
 interface RPCLatency {
@@ -16,6 +17,8 @@ class RPCService {
   private latencyCache: Map<string, RPCLatency> = new Map();
   private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes
   private lastCheck: Map<string, number> = new Map();
+  private cacheKeyPrefix = 'EAGLE_RPC_LATENCY_';
+  private pinnedKeyPrefix = 'EAGLE_PINNED_RPC_';
 
   /**
    * Test RPC node latency
@@ -173,6 +176,135 @@ class RPCService {
     }
 
     return results.sort((a, b) => a.latency - b.latency);
+  }
+
+  /**
+   * Refresh RPC nodes for a chain and persist to storage.
+   */
+  async refreshNodes(chainId: number): Promise<Array<{
+    name: string;
+    url: string;
+    region?: string;
+    latency: number;
+    available: boolean;
+    fetchOptions?: any;
+  }>> {
+    const network = NETWORKS[chainId];
+    if (!network || !network.rpcNodes) {
+      return [];
+    }
+
+    const latencyTests = network.rpcNodes.map(async (node) => {
+      const latency = await this.testRPCLatency(node.url, node.fetchOptions);
+      return {
+        name: node.name,
+        url: node.url,
+        region: node.region,
+        latency,
+        available: latency < 999999,
+        fetchOptions: node.fetchOptions,
+      };
+    });
+
+    const results = await Promise.all(latencyTests);
+    results.sort((a, b) => a.latency - b.latency);
+
+    const payload = {
+      updatedAt: Date.now(),
+      nodes: results,
+    };
+
+    try {
+      await AsyncStorage.setItem(`${this.cacheKeyPrefix}${chainId}`, JSON.stringify(payload));
+    } catch (error) {
+      console.error('Failed to cache RPC nodes:', error);
+    }
+
+    return results;
+  }
+
+  /**
+   * Load cached RPC nodes (if any).
+   */
+  async getCachedNodes(chainId: number): Promise<{
+    updatedAt: number;
+    nodes: Array<{
+      name: string;
+      url: string;
+      region?: string;
+      latency: number;
+      available: boolean;
+      fetchOptions?: any;
+    }>;
+  } | null> {
+    try {
+      const raw = await AsyncStorage.getItem(`${this.cacheKeyPrefix}${chainId}`);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (error) {
+      console.error('Failed to read cached RPC nodes:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get RPC nodes (cached when fresh, otherwise refresh).
+   */
+  async getNodes(chainId: number, forceRefresh: boolean = false): Promise<Array<{
+    name: string;
+    url: string;
+    region?: string;
+    latency: number;
+    available: boolean;
+    fetchOptions?: any;
+  }>> {
+    const cached = await this.getCachedNodes(chainId);
+    if (!forceRefresh && cached && Date.now() - cached.updatedAt < this.cacheExpiry) {
+      return cached.nodes;
+    }
+
+    try {
+      return await this.refreshNodes(chainId);
+    } catch (error) {
+      console.error('Failed to refresh RPC nodes:', error);
+      return cached?.nodes || [];
+    }
+  }
+
+  /**
+   * Get preferred RPC URL (pinned if exists, else fastest).
+   */
+  async getPreferredRpcUrl(chainId: number): Promise<string> {
+    const network = NETWORKS[chainId];
+    if (!network) {
+      throw new Error(`No RPC nodes configured for chain ${chainId}`);
+    }
+
+    try {
+      let pinned = await AsyncStorage.getItem(`${this.pinnedKeyPrefix}${chainId}`);
+      if (!pinned) {
+        pinned = await AsyncStorage.getItem('EAGLE_PINNED_RPC');
+        if (pinned) {
+          await AsyncStorage.setItem(`${this.pinnedKeyPrefix}${chainId}`, pinned);
+        }
+      }
+      if (pinned) {
+        const match = network.rpcNodes.find((node) => node.name === pinned);
+        if (match) {
+          return match.url;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load pinned RPC:', error);
+    }
+
+    const nodes = await this.getNodes(chainId);
+    const fastest = nodes.find((node) => node.available) || nodes[0];
+    if (fastest?.url) {
+      return fastest.url;
+    }
+
+    return network.rpcUrls[0];
   }
 
   /**
