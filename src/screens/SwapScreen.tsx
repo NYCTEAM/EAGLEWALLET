@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import PriceService from '../services/PriceService';
 import SwapService, { SwapSimulationResult } from '../services/SwapService';
 import WalletService from '../services/WalletService';
+import TokenLogoService from '../services/TokenLogoService';
 import SwapMiningService from '../services/SwapMiningService';
 import RewardsDappService from '../services/RewardsDappService';
 
@@ -105,12 +107,14 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       name: network.name,
       address: ethers.ZeroAddress,
       decimals: 18,
+      logo: network.symbol.toLowerCase(),
     });
     setToToken({
       symbol: 'USDT',
       name: 'Tether USD',
       address: '0x55d398326f99059fF775485246999027B3197955',
       decimals: 18,
+      logo: 'usdt',
     });
 
     const bal = await WalletService.getBalance();
@@ -391,6 +395,32 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     return 'PancakeSwap V2';
   };
 
+  const renderTokenPillContent = (token: any) => {
+    if (!token) {
+      return <Text style={styles.tokenPillText}>{t.common.select}</Text>;
+    }
+
+    let logoSource: any = null;
+    if (token.logo && typeof token.logo === 'string' && token.logo.startsWith('http')) {
+      logoSource = { uri: token.logo };
+    } else {
+      logoSource = TokenLogoService.getTokenLogo(token.logo || token.symbol);
+    }
+
+    return (
+      <View style={styles.tokenPillContent}>
+        {logoSource ? (
+          <Image source={logoSource} style={styles.tokenPillLogo} />
+        ) : (
+          <View style={styles.tokenPillLogoFallback}>
+            <Text style={styles.tokenPillLogoText}>{String(token.symbol || '?')[0]}</Text>
+          </View>
+        )}
+        <Text style={styles.tokenPillText}>{token.symbol}</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -416,7 +446,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           <Text style={styles.balance}>{`${t.swap.wallet}: ${parseFloat(fromBalance).toFixed(4)}`}</Text>
           <View style={styles.row}>
             <TouchableOpacity style={styles.tokenPill} onPress={() => navigation.navigate('SelectToken', { onSelect: setFromToken })}>
-              <Text style={styles.tokenPillText}>{fromToken?.symbol || t.common.select}</Text>
+              {renderTokenPillContent(fromToken)}
             </TouchableOpacity>
             <TextInput value={amount} onChangeText={setAmount} style={styles.input} keyboardType="decimal-pad" placeholder="0" />
           </View>
@@ -442,7 +472,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           <Text style={styles.balance}>{`${t.swap.wallet}: ${parseFloat(toBalance).toFixed(4)}`}</Text>
           <View style={styles.row}>
             <TouchableOpacity style={styles.tokenPill} onPress={() => navigation.navigate('SelectToken', { onSelect: setToToken })}>
-              <Text style={styles.tokenPillText}>{toToken?.symbol || t.common.select}</Text>
+              {renderTokenPillContent(toToken)}
             </TouchableOpacity>
             <Text style={[styles.input, styles.readonly]}>{quote ? parseFloat(quote.amountOut).toFixed(6) : '0'}</Text>
           </View>
@@ -533,6 +563,10 @@ const styles = StyleSheet.create({
   balance: { color: '#999', fontSize: 12, marginBottom: 10 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   tokenPill: { backgroundColor: '#F1F3F5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
+  tokenPillContent: { flexDirection: 'row', alignItems: 'center' },
+  tokenPillLogo: { width: 20, height: 20, borderRadius: 10, marginRight: 6 },
+  tokenPillLogoFallback: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#D0D5DD', alignItems: 'center', justifyContent: 'center', marginRight: 6 },
+  tokenPillLogoText: { color: '#344054', fontSize: 11, fontWeight: '700' },
   tokenPillText: { color: '#111', fontSize: 16, fontWeight: '700' },
   input: { flex: 1, textAlign: 'right', color: '#111', fontSize: 28, fontWeight: '700' },
   readonly: { color: '#333' },
