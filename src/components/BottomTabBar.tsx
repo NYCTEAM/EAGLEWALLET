@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface BottomTabBarProps {
@@ -7,17 +8,15 @@ interface BottomTabBarProps {
   onTabPress: (tab: string) => void;
 }
 
-const { width } = Dimensions.get('window');
-
 export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProps) {
   const { t } = useLanguage();
 
   const tabs = [
-    { key: 'wallet', label: t.home.myWallet, icon: '👛' },
-    { key: 'swap', label: t.home.swap, icon: '🔁' },
-    { key: 'ai', label: t.ai.title, icon: '🤖' },
-    { key: 'dapps', label: t.dapp.discover, icon: '🧭' },
-    { key: 'settings', label: t.settings.settings, icon: '⚙️' },
+    { key: 'wallet', label: t.home.myWallet, icon: 'wallet-outline' },
+    { key: 'swap', label: t.home.swap, icon: 'swap-horizontal' },
+    { key: 'ai', label: t.ai.title, icon: 'robot-outline' },
+    { key: 'dapps', label: t.dapp.discover, icon: 'compass-outline' },
+    { key: 'settings', label: t.settings.settings, icon: 'cog-outline' },
   ];
 
   return (
@@ -32,7 +31,11 @@ export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProp
             activeOpacity={0.7}
           >
             <View style={[styles.iconContainer, isActive && styles.activeIconContainer]}>
-              <Text style={[styles.icon, isActive && styles.activeIcon]}>{tab.icon}</Text>
+              <Icon
+                name={tab.icon}
+                size={22}
+                color={isActive ? '#F3BA2F' : '#999'}
+              />
             </View>
             <Text style={[styles.label, isActive && styles.activeLabel]}>{tab.label}</Text>
           </TouchableOpacity>
@@ -68,13 +71,6 @@ const styles = StyleSheet.create({
   },
   activeIconContainer: {
     backgroundColor: 'rgba(243, 186, 47, 0.15)',
-  },
-  icon: {
-    fontSize: 24,
-    color: '#999',
-  },
-  activeIcon: {
-    color: '#F3BA2F',
   },
   label: {
     fontSize: 10,
