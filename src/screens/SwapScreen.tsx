@@ -32,6 +32,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const [quote, setQuote] = useState<any>(null);
   const [slippage, setSlippage] = useState(0.5);
   const [loading, setLoading] = useState(false);
+  const [quoting, setQuoting] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [approving, setApproving] = useState(false);
   const [needsApproval, setNeedsApproval] = useState(false);
@@ -77,7 +78,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     }
 
     debounceTimer.current = setTimeout(() => {
-      void getQuote(true);
+      void getQuote({ silent: true, showIndicator: true });
     }, 450);
 
     return () => {
@@ -90,7 +91,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     if (!quote || !amount) return;
 
     refreshTimer.current = setInterval(() => {
-      void getQuote(true);
+      void getQuote({ silent: true, showIndicator: false });
     }, 5000);
   }, [quote, amount, fromToken, toToken]);
 
@@ -171,12 +172,16 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     }
   };
 
-  const getQuote = async (silent = false) => {
+  const getQuote = async (options: { silent?: boolean; showIndicator?: boolean } = {}) => {
+    const silent = options.silent ?? false;
+    const showIndicator = options.showIndicator ?? true;
     if (!amount || !fromToken || !toToken || parseFloat(amount) <= 0) {
       setQuote(null);
+      if (showIndicator) setQuoting(false);
       return;
     }
     try {
+      if (showIndicator) setQuoting(true);
       if (!silent) setLoading(true);
       const network = WalletService.getCurrentNetwork();
       const result = await SwapService.getBestQuote(
@@ -192,6 +197,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       if (!silent) setQuote(null);
       console.error('getQuote', error);
     } finally {
+      if (showIndicator) setQuoting(false);
       if (!silent) setLoading(false);
     }
   };
@@ -395,7 +401,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         )}
         <Text style={styles.title}>{t.swap.swap}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => void getQuote()} style={styles.headerAction}>
+          <TouchableOpacity onPress={() => void getQuote({ silent: false, showIndicator: true })} style={styles.headerAction}>
             <Text style={styles.headerActionText}>↻</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowSlippageModal(true)} style={styles.headerAction}>
@@ -445,11 +451,18 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
         <TouchableOpacity
           style={[styles.mainBtn, ((loading && !quote) || approving) && styles.mainBtnDisabled]}
-          onPress={needsApproval ? approveToken : (quote ? openConfirm : () => void getQuote())}
+          onPress={needsApproval ? approveToken : (quote ? openConfirm : () => void getQuote({ silent: false, showIndicator: true }))}
           disabled={!amount || ((loading && !quote) || approving)}
         >
           {(approving || (loading && !quote)) ? <ActivityIndicator color="#fff" /> : <Text style={styles.mainBtnText}>{buttonLabel()}</Text>}
         </TouchableOpacity>
+
+        {quoting && (
+          <View style={styles.quoteHint}>
+            <ActivityIndicator size="small" color="#6C8FF7" />
+            <Text style={styles.quoteHintText}>{t.common.loading}</Text>
+          </View>
+        )}
 
         {quote ? (
           <View style={styles.details}>
@@ -534,6 +547,8 @@ const styles = StyleSheet.create({
   mainBtn: { backgroundColor: '#6C8FF7', borderRadius: 14, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginTop: 8, marginBottom: 12 },
   mainBtnDisabled: { opacity: 0.65 },
   mainBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  quoteHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  quoteHintText: { color: '#667085', marginLeft: 8, fontSize: 12, fontWeight: '600' },
   details: { backgroundColor: '#fff', borderRadius: 14, padding: 14 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   detailLabel: { color: '#666', fontSize: 14 },

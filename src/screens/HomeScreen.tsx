@@ -3,8 +3,9 @@
  * Main dashboard showing balance and tokens
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   StyleSheet,
@@ -31,55 +32,70 @@ import { ethers } from 'ethers';
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation, isTabScreen }: any) {
-  console.log('🏠 HomeScreen: Component rendering');
   const { t } = useLanguage();
   const [balance, setBalance] = useState('0.0000');
   const [totalValue, setTotalValue] = useState('0.00');
   const [address, setAddress] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [walletName, setWalletName] = useState('');
   const [tokens, setTokens] = useState<any[]>([]);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
   const [network, setNetwork] = useState(NETWORKS[56]); // Default BSC
+  const loadingRef = useRef(false);
+  const loadSeq = useRef(0);
 
-  const loadData = async () => {
-    console.log('🏠 HomeScreen: loadData called');
+  const loadData = async (options: { silent?: boolean } = {}) => {
+    const silent = options.silent ?? false;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    const showLoading = !silent || !hasLoaded;
+    if (showLoading) setLoading(true);
+    const seq = ++loadSeq.current;
     try {
-      // Get current wallet info
-      const addr = await WalletService.getAddress();
+      const [addr, wallets, bal] = await Promise.all([
+        WalletService.getAddress(),
+        MultiWalletService.getAllWallets(),
+        WalletService.getBalance(),
+      ]);
+      if (seq !== loadSeq.current) return;
+
       if (addr) {
         setAddress(addr);
-        
-        // Get wallet name
-        const wallets = await MultiWalletService.getAllWallets();
         const currentWallet = wallets.find(w => w.address.toLowerCase() === addr.toLowerCase());
         if (currentWallet) {
           setWalletName(currentWallet.name);
         }
+      } else {
+        setAddress('');
+        setWalletName('');
       }
 
-      // Get balance
-      const bal = await WalletService.getBalance();
-      // Format balance to 4 decimal places
-      const formattedBal = parseFloat(bal).toFixed(4);
+      const parsedBal = Number(bal);
+      const formattedBal = Number.isFinite(parsedBal) ? parsedBal.toFixed(4) : '0.0000';
       setBalance(formattedBal);
-      
-      // Get current network
+
       const currentNet = WalletService.getCurrentNetwork();
       setNetwork(currentNet);
 
-      // Load NFTs
-      console.log('🖼️ Loading NFTs...');
-      if (addr) {
-        const userNFTs = await NFTService.getUserNFTs(addr, currentNet.chainId);
-        setNfts(userNFTs);
-        console.log(`✅ Loaded ${userNFTs.length} NFTs`);
+      if (!addr) {
+        setTokens([]);
+        setNfts([]);
+        setTotalValue('0.00');
+        return;
       }
 
-      // Load predefined + custom ERC20 tokens for current chain
+      const [userNFTs, customTokensRaw] = await Promise.all([
+        NFTService.getUserNFTs(addr, currentNet.chainId),
+        CustomTokenService.getCustomTokensByChain(currentNet.chainId),
+      ]);
+      if (seq !== loadSeq.current) return;
+      setNfts(userNFTs);
+
       const chainTokens = getChainTokens(currentNet.chainId);
-      const customTokens = (await CustomTokenService.getCustomTokensByChain(currentNet.chainId))
+      const customTokens = customTokensRaw
         .filter((token) => token.type === 'ERC20')
         .map((token) => ({
           symbol: token.symbol,
@@ -100,8 +116,6 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         }
       });
       const mergedTokens = Array.from(mergedTokensMap.values());
-
-      console.log(`📦 Loading ${mergedTokens.length} tokens for ${currentNet.name} (${chainTokens.length} predefined + ${customTokens.length} custom)`);
       
       // Get provider for balance queries
       const provider = await WalletService.getProvider();
@@ -132,40 +146,31 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       
       // Render immediately with initial list
       setTokens(initialTokenList);
-      
-      // Load balances for all ERC20 tokens in background
+
       const updatedListWithBalances = [...initialTokenList];
-      
-      // We can fetch balances in parallel to speed up
       const balancePromises = mergedTokens.map(async (token, index) => {
-        let balance = '0.0000';
         try {
-          // ERC20 ABI for balanceOf
           const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
           const contract = new ethers.Contract(token.address, erc20Abi, provider);
           const tokenBalance = await contract.balanceOf(addr);
-          balance = ethers.formatUnits(tokenBalance, token.decimals);
-        } catch (error) {
-          // console.warn(`Failed to load balance for ${token.symbol}, showing as 0`);
+          const balance = ethers.formatUnits(tokenBalance, token.decimals);
+          updatedListWithBalances[index + 1] = {
+            ...updatedListWithBalances[index + 1],
+            balance: parseFloat(balance).toFixed(4),
+          };
+        } catch {
+          // ignore single token failures
         }
-        
-        // Update the item in the list (index + 1 because of native token at 0)
-        updatedListWithBalances[index + 1] = {
-           ...updatedListWithBalances[index + 1],
-           balance: parseFloat(balance).toFixed(4)
-        };
       });
-      
-      await Promise.all(balancePromises);
-      setTokens([...updatedListWithBalances]);
-      console.log(`✅ Loaded balances for ${mergedTokens.length} tokens`);
-      
-      // Fetch prices for all tokens using contract addresses
-      console.log('💰 Fetching token prices...');
+
       const tokenAddresses = updatedListWithBalances.map(t => t.address);
-      const priceData = await PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId);
-      
-      // Update token list with prices
+      const pricePromise = PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId)
+        .catch(() => ({}));
+
+      await Promise.all(balancePromises);
+      const priceData = await pricePromise;
+      if (seq !== loadSeq.current) return;
+
       let totalPortfolioValue = 0;
       const tokensWithPrices = updatedListWithBalances.map(token => {
         const data = priceData[token.address.toLowerCase()] || { price: 0, change24h: 0 };
@@ -192,21 +197,24 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       
       setTokens(tokensWithPrices);
       setTotalValue(totalPortfolioValue.toFixed(2));
-      console.log(`💰 Prices loaded for ${Object.keys(priceData).length} tokens`);
-
     } catch (error) {
       console.error('Error loading home data:', error);
+    } finally {
+      if (seq === loadSeq.current) {
+        setHasLoaded(true);
+        if (showLoading) setLoading(false);
+      }
+      loadingRef.current = false;
     }
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      loadData({ silent: false });
       
       // Auto refresh every 30 seconds
       const interval = setInterval(() => {
-        console.log('🔄 Auto-refreshing token data...');
-        loadData();
+        loadData({ silent: true });
       }, 30000);
       
       return () => clearInterval(interval);
@@ -215,7 +223,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await loadData({ silent: true });
     setRefreshing(false);
   };
 
@@ -330,6 +338,12 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
               </TouchableOpacity>
             )}
           </View>
+          {loading && (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#F3BA2F" />
+              <Text style={styles.loadingText}>{t.common.loading}</Text>
+            </View>
+          )}
 
           {activeTab === 'crypto' ? (
             <>
@@ -679,6 +693,17 @@ const styles = StyleSheet.create({
   tokenValueSmall: {
     color: '#999',
     fontSize: 13,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  loadingText: {
+    color: '#999',
+    marginLeft: 8,
+    fontSize: 12,
   },
   manageButton: {
     marginTop: 20,
