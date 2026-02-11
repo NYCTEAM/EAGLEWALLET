@@ -98,9 +98,8 @@ export const es: TranslationStrings = {
     appSubtitle: 'Billetera Cripto Multicadena Segura',
     poweredBy: 'Desarrollado por Eagle Network',
     privateKeyName: 'Clave Privada',
-  
     watchWallet: 'Watch Wallet',
-    watchHint: 'Watch wallets can view balances but cannot send transactions.'
+    watchHint: 'Watch wallets can view balances but cannot send transactions.',
   },
   send: {
     send: 'Enviar',
@@ -327,7 +326,6 @@ export const es: TranslationStrings = {
     addInfo: 'ℹ️ Esta DApp se añadirá a ',
     pancakeDesc: 'DEX líder en BSC',
     uniswapDesc: 'Intercambio descentralizado',
-  
     description: 'Description',
     category: 'Category',
     categoryDefi: 'DeFi',
@@ -339,7 +337,7 @@ export const es: TranslationStrings = {
     connectWalletMessage: 'This site wants to connect to your wallet address.',
     signMessage: 'Sign Message',
     signTypedData: 'Sign Typed Data',
-    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.',
   },
   settings: {
     settings: 'Configuración',
@@ -434,14 +432,13 @@ export const es: TranslationStrings = {
   priceAlert: {
     above: 'Por encima',
     below: 'Por debajo',
-  
     targetPrice: 'Target Price (USD)',
     noAlerts: 'No alerts yet',
     triggered: 'Triggered',
     active: 'Active',
     paused: 'Paused',
     pause: 'Pause',
-    resume: 'Resume'
+    resume: 'Resume',
   },
   ai: {
     title: 'Eagle AI',

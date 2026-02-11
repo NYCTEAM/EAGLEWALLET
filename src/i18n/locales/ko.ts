@@ -98,9 +98,8 @@ export const ko: TranslationStrings = {
     appSubtitle: '안전한 멀티체인 암호화폐 지갑',
     poweredBy: '이글 네트워크 제공',
     privateKeyName: '개인 키',
-  
     watchWallet: 'Watch Wallet',
-    watchHint: 'Watch wallets can view balances but cannot send transactions.'
+    watchHint: 'Watch wallets can view balances but cannot send transactions.',
   },
   send: {
     send: '보내기',
@@ -327,7 +326,6 @@ export const ko: TranslationStrings = {
     addInfo: 'ℹ️ 이 DApp은 다음 항목에 추가됩니다: ',
     pancakeDesc: 'BSC의 주요 DEX',
     uniswapDesc: '탈중앙화 거래소',
-  
     description: 'Description',
     category: 'Category',
     categoryDefi: 'DeFi',
@@ -339,7 +337,7 @@ export const ko: TranslationStrings = {
     connectWalletMessage: 'This site wants to connect to your wallet address.',
     signMessage: 'Sign Message',
     signTypedData: 'Sign Typed Data',
-    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.',
   },
   settings: {
     settings: '설정',
@@ -434,14 +432,13 @@ export const ko: TranslationStrings = {
   priceAlert: {
     above: '이상',
     below: '이하',
-  
     targetPrice: 'Target Price (USD)',
     noAlerts: 'No alerts yet',
     triggered: 'Triggered',
     active: 'Active',
     paused: 'Paused',
     pause: 'Pause',
-    resume: 'Resume'
+    resume: 'Resume',
   },
   ai: {
     title: 'Eagle AI',

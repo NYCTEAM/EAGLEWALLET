@@ -34,8 +34,16 @@ export const zh: TranslationStrings = {
     retry: '重试',
     skip: '跳过',
     continue: '继续',
+    contentCopied: 'Copied to clipboard',
+    send: 'Send',
+    receive: 'Receive',
+    biometrics: 'Biometrics',
+    verifyBiometrics: 'Verify Biometrics',
+    faceId: 'Face ID',
+    touchId: 'Touch ID',
+    verifyDescription: 'Please verify your identity to continue',
+    quickSubmit: 'Quick Submit',
   },
-
   home: {
     myWallet: '我的钱包',
     totalBalance: '总余额',
@@ -54,7 +62,6 @@ export const zh: TranslationStrings = {
     hideSmallBalances: '隐藏小额余额',
     showSmallBalances: '显示小额余额',
   },
-
   wallet: {
     createWallet: '创建钱包',
     importWallet: '导入钱包',
@@ -86,11 +93,14 @@ export const zh: TranslationStrings = {
     walletAddress: '钱包地址',
     copyAddress: '复制地址',
     addressCopied: '地址已复制',
-  
+    passwordHint: 'This password will encrypt your private key on this device.',
+    generating: 'Generating secure wallet...',
+    appSubtitle: 'Secure Multi-Chain Crypto Wallet',
+    poweredBy: 'Powered by Eagle Network',
+    privateKeyName: 'Private Key',
     watchWallet: 'Watch Wallet',
-    watchHint: 'Watch wallets can view balances but cannot send transactions.'
+    watchHint: 'Watch wallets can view balances but cannot send transactions.',
   },
-
   send: {
     send: '发送',
     sendTo: '发送至',
@@ -133,7 +143,6 @@ export const zh: TranslationStrings = {
     invalidAddress: '地址无效',
     invalidAmount: '金额无效',
   },
-
   receive: {
     receive: '接收',
     myAddress: '我的地址',
@@ -146,7 +155,6 @@ export const zh: TranslationStrings = {
     warningMessage: '请确保发送方使用正确的网络',
     network: '网络',
   },
-
   swap: {
     swap: '兑换',
     from: '从',
@@ -159,9 +167,16 @@ export const zh: TranslationStrings = {
     rate: '汇率',
     priceImpact: '价格影响',
     minimumReceived: '最少接收',
+    estimatedReceived: 'Estimated Received',
     slippageTolerance: '滑点容差',
     transactionFee: '交易费用',
     route: '路由',
+    pool: 'Pool',
+    swapRoute: 'Swap Route',
+    priceReference: 'Reference Price',
+    price: 'Price',
+    fee: 'Fee',
+    wallet: 'Wallet',
     swapping: '兑换中...',
     swapSuccess: '兑换成功',
     swapFailed: '兑换失败',
@@ -174,9 +189,10 @@ export const zh: TranslationStrings = {
     slippage: '滑点',
     deadline: '截止时间',
     minutes: '分钟',
+    approve: 'Approve',
+    approving: 'Approving...',
     miningReward: '可获得 {amount} EAGLE 奖励',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: '我的NFT',
@@ -198,8 +214,10 @@ export const zh: TranslationStrings = {
     sendTo: '发送至',
     confirmSend: '确认发送',
     nftSent: 'NFT发送成功',
+    viewOnMarketplace: 'View on Marketplace',
+    standard: 'Standard',
+    unknownCollection: 'Unknown Collection',
   },
-
   transaction: {
     transactions: '交易',
     history: '历史',
@@ -240,7 +258,6 @@ export const zh: TranslationStrings = {
     miningReward: 'EAGLE 奖励',
     viewRewards: '查看奖励',
   },
-
   token: {
     tokens: '代币',
     token: '代币',
@@ -269,8 +286,11 @@ export const zh: TranslationStrings = {
     contract: '合约',
     holders: '持有者',
     totalSupply: '总供应量',
+    activity: 'Activity',
+    info: 'Info',
+    viewOnExplorer: 'View on Explorer',
+    importToken: 'Import Token',
   },
-
   dapp: {
     dappBrowser: 'DApp浏览器',
     share: '分享',
@@ -301,7 +321,11 @@ export const zh: TranslationStrings = {
     dappAdded: 'DApp已添加',
     removeDApp: '移除DApp',
     openInBrowser: '在浏览器打开',
-  
+    customDApp: 'Custom DApp',
+    icon: 'Icon',
+    addInfo: 'ℹ️ This DApp will be added to ',
+    pancakeDesc: 'Leading DEX on BSC',
+    uniswapDesc: 'Decentralized exchange',
     description: 'Description',
     category: 'Category',
     categoryDefi: 'DeFi',
@@ -313,9 +337,8 @@ export const zh: TranslationStrings = {
     connectWalletMessage: 'This site wants to connect to your wallet address.',
     signMessage: 'Sign Message',
     signTypedData: 'Sign Typed Data',
-    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.',
   },
-
   settings: {
     settings: '设置',
     back: '返回',
@@ -363,8 +386,19 @@ export const zh: TranslationStrings = {
     show: '显示',
     showRecoveryPhrase: '显示助记词',
     chooseCurrency: '选择货币',
+    resetApp: 'Reset App',
+    resetMessage: 'This will reset all settings to default. Your wallets will NOT be deleted. Continue?',
+    appReset: 'App reset to defaults',
+    displayTestnet: 'Display test networks',
+    enableAdvanced: 'Enable advanced features',
+    autoLock: 'Auto-Lock',
+    autoLockSubtitle: 'Lock app when inactive',
+    analytics: 'Analytics',
+    analyticsSubtitle: 'Help improve the app',
+    clearCacheSubtitle: 'Free up storage space',
+    resetAppSubtitle: 'Reset to default settings',
+    advancedWarning: '⚠️ Advanced settings are for experienced users only',
   },
-
   network: {
     network: '网络',
     networks: '网络',
@@ -388,8 +422,47 @@ export const zh: TranslationStrings = {
     slow: '慢速',
     mainnet: '主网',
     testnet: '测试网',
+    nodesAvailable: 'nodes available',
+    hiddenUrl: 'URL hidden for security',
+    fastestNode: 'Fastest Node',
+    bsc: 'BSC',
+    rpcNode: 'RPC Node',
+    selected: 'selected',
   },
-
+  priceAlert: {
+    above: 'Above',
+    below: 'Below',
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume',
+  },
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Ask me anything about crypto...',
+    send: 'Send',
+    thinking: 'Thinking...',
+    error: 'Sorry, I encountered an error.',
+    welcomeMessage: 'Hello! I am Eagle AI. How can I help you today?',
+    suggestedQuestions: 'Suggested questions',
+    marketAnalysis: 'Market Analysis',
+    securityCheck: 'Security Check',
+    pricePrediction: 'Price Prediction',
+    dailyLimit: 'Daily Limit',
+    upgrade: 'Upgrade',
+    currentTier: 'Current Tier',
+    free: 'Free',
+    holder: 'Holder',
+    vip: 'NFT VIP',
+    pro: 'Pro Subscription',
+    tokensRemaining: 'tokens remaining',
+    upgradePrompt: 'Upgrade to increase limit',
+    buyEagle: 'Buy EAGLE',
+    buyNft: 'Buy NFT',
+  },
   errors: {
     walletNameRequired: '请输入钱包名称',
     passwordRequired: '请输入密码',

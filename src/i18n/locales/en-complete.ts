@@ -34,8 +34,16 @@ export const en: TranslationStrings = {
     retry: 'Retry',
     skip: 'Skip',
     continue: 'Continue',
+    contentCopied: 'Copied to clipboard',
+    send: 'Send',
+    receive: 'Receive',
+    biometrics: 'Biometrics',
+    verifyBiometrics: 'Verify Biometrics',
+    faceId: 'Face ID',
+    touchId: 'Touch ID',
+    verifyDescription: 'Please verify your identity to continue',
+    quickSubmit: 'Quick Submit',
   },
-
   home: {
     myWallet: 'My Wallet',
     totalBalance: 'Total Balance',
@@ -54,7 +62,6 @@ export const en: TranslationStrings = {
     hideSmallBalances: 'Hide small balances',
     showSmallBalances: 'Show small balances',
   },
-
   wallet: {
     createWallet: 'Create Wallet',
     importWallet: 'Import Wallet',
@@ -86,11 +93,14 @@ export const en: TranslationStrings = {
     walletAddress: 'Wallet Address',
     copyAddress: 'Copy Address',
     addressCopied: 'Address copied',
-  
+    passwordHint: 'This password will encrypt your private key on this device.',
+    generating: 'Generating secure wallet...',
+    appSubtitle: 'Secure Multi-Chain Crypto Wallet',
+    poweredBy: 'Powered by Eagle Network',
+    privateKeyName: 'Private Key',
     watchWallet: 'Watch Wallet',
-    watchHint: 'Watch wallets can view balances but cannot send transactions.'
+    watchHint: 'Watch wallets can view balances but cannot send transactions.',
   },
-
   send: {
     send: 'Send',
     sendTo: 'Send To',
@@ -133,7 +143,6 @@ export const en: TranslationStrings = {
     invalidAddress: 'Invalid address',
     invalidAmount: 'Invalid amount',
   },
-
   receive: {
     receive: 'Receive',
     myAddress: 'My Address',
@@ -146,7 +155,6 @@ export const en: TranslationStrings = {
     warningMessage: 'Make sure the sender is using the correct network',
     network: 'Network',
   },
-
   swap: {
     swap: 'Swap',
     from: 'From',
@@ -159,9 +167,16 @@ export const en: TranslationStrings = {
     rate: 'Rate',
     priceImpact: 'Price Impact',
     minimumReceived: 'Minimum Received',
+    estimatedReceived: 'Estimated Received',
     slippageTolerance: 'Slippage Tolerance',
     transactionFee: 'Transaction Fee',
     route: 'Route',
+    pool: 'Pool',
+    swapRoute: 'Swap Route',
+    priceReference: 'Reference Price',
+    price: 'Price',
+    fee: 'Fee',
+    wallet: 'Wallet',
     swapping: 'Swapping...',
     swapSuccess: 'Swap Successful',
     swapFailed: 'Swap Failed',
@@ -174,9 +189,10 @@ export const en: TranslationStrings = {
     slippage: 'Slippage',
     deadline: 'Deadline',
     minutes: 'minutes',
+    approve: 'Approve',
+    approving: 'Approving...',
     miningReward: 'You can earn {amount} EAGLE reward',
   },
-
   nft: {
     nft: 'NFT',
     myNFTs: 'My NFTs',
@@ -198,8 +214,10 @@ export const en: TranslationStrings = {
     sendTo: 'Send To',
     confirmSend: 'Confirm Send',
     nftSent: 'NFT sent successfully',
+    viewOnMarketplace: 'View on Marketplace',
+    standard: 'Standard',
+    unknownCollection: 'Unknown Collection',
   },
-
   transaction: {
     transactions: 'Transactions',
     history: 'History',
@@ -240,7 +258,6 @@ export const en: TranslationStrings = {
     miningReward: 'EAGLE Reward',
     viewRewards: 'View Rewards',
   },
-
   token: {
     tokens: 'Tokens',
     token: 'Token',
@@ -269,8 +286,11 @@ export const en: TranslationStrings = {
     contract: 'Contract',
     holders: 'Holders',
     totalSupply: 'Total Supply',
+    activity: 'Activity',
+    info: 'Info',
+    viewOnExplorer: 'View on Explorer',
+    importToken: 'Import Token',
   },
-
   dapp: {
     dappBrowser: 'DApp Browser',
     share: 'Share',
@@ -301,7 +321,11 @@ export const en: TranslationStrings = {
     dappAdded: 'DApp added',
     removeDApp: 'Remove DApp',
     openInBrowser: 'Open in Browser',
-  
+    customDApp: 'Custom DApp',
+    icon: 'Icon',
+    addInfo: 'ℹ️ This DApp will be added to ',
+    pancakeDesc: 'Leading DEX on BSC',
+    uniswapDesc: 'Decentralized exchange',
     description: 'Description',
     category: 'Category',
     categoryDefi: 'DeFi',
@@ -313,9 +337,8 @@ export const en: TranslationStrings = {
     connectWalletMessage: 'This site wants to connect to your wallet address.',
     signMessage: 'Sign Message',
     signTypedData: 'Sign Typed Data',
-    signTypedDataMessage: 'A dApp requested EIP-712 signature.'
+    signTypedDataMessage: 'A dApp requested EIP-712 signature.',
   },
-
   settings: {
     settings: 'Settings',
     back: 'Back',
@@ -363,8 +386,19 @@ export const en: TranslationStrings = {
     show: 'Show',
     showRecoveryPhrase: 'Show Recovery Phrase',
     chooseCurrency: 'Choose currency',
+    resetApp: 'Reset App',
+    resetMessage: 'This will reset all settings to default. Your wallets will NOT be deleted. Continue?',
+    appReset: 'App reset to defaults',
+    displayTestnet: 'Display test networks',
+    enableAdvanced: 'Enable advanced features',
+    autoLock: 'Auto-Lock',
+    autoLockSubtitle: 'Lock app when inactive',
+    analytics: 'Analytics',
+    analyticsSubtitle: 'Help improve the app',
+    clearCacheSubtitle: 'Free up storage space',
+    resetAppSubtitle: 'Reset to default settings',
+    advancedWarning: '⚠️ Advanced settings are for experienced users only',
   },
-
   network: {
     network: 'Network',
     networks: 'Networks',
@@ -388,8 +422,47 @@ export const en: TranslationStrings = {
     slow: 'Slow',
     mainnet: 'Mainnet',
     testnet: 'Testnet',
+    nodesAvailable: 'nodes available',
+    hiddenUrl: 'URL hidden for security',
+    fastestNode: 'Fastest Node',
+    bsc: 'BSC',
+    rpcNode: 'RPC Node',
+    selected: 'selected',
   },
-
+  priceAlert: {
+    above: 'Above',
+    below: 'Below',
+    targetPrice: 'Target Price (USD)',
+    noAlerts: 'No alerts yet',
+    triggered: 'Triggered',
+    active: 'Active',
+    paused: 'Paused',
+    pause: 'Pause',
+    resume: 'Resume',
+  },
+  ai: {
+    title: 'Eagle AI',
+    askPlaceholder: 'Ask me anything about crypto...',
+    send: 'Send',
+    thinking: 'Thinking...',
+    error: 'Sorry, I encountered an error.',
+    welcomeMessage: 'Hello! I am Eagle AI. How can I help you today?',
+    suggestedQuestions: 'Suggested questions',
+    marketAnalysis: 'Market Analysis',
+    securityCheck: 'Security Check',
+    pricePrediction: 'Price Prediction',
+    dailyLimit: 'Daily Limit',
+    upgrade: 'Upgrade',
+    currentTier: 'Current Tier',
+    free: 'Free',
+    holder: 'Holder',
+    vip: 'NFT VIP',
+    pro: 'Pro Subscription',
+    tokensRemaining: 'tokens remaining',
+    upgradePrompt: 'Upgrade to increase limit',
+    buyEagle: 'Buy EAGLE',
+    buyNft: 'Buy NFT',
+  },
   errors: {
     walletNameRequired: 'Please enter wallet name',
     passwordRequired: 'Please enter password',
