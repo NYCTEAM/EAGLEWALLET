@@ -158,6 +158,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const webviewRef = useRef<WebView>(null);
   const approvedOriginsRef = useRef<Set<string>>(new Set());
   const autoConnectedRef = useRef<Set<string>>(new Set());
+  const pendingApprovalsRef = useRef<Map<string, Promise<boolean>>>(new Map());
 
   const initialUrl = route.params?.url || 'https://pancakeswap.finance';
   const title = route.params?.title || t.dapp.dappBrowser;
@@ -192,6 +193,15 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     return AUTO_CONNECT_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
   };
 
+  const isTrustedOrigin = (origin: string): boolean => {
+    try {
+      const host = new URL(origin).host.toLowerCase();
+      return AUTO_CONNECT_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+    } catch {
+      return false;
+    }
+  };
+
   const askForApproval = (title: string, message: string): Promise<boolean> => {
     return new Promise((resolve) => {
       let resolved = false;
@@ -217,18 +227,31 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     });
   };
 
-  const ensureDappConnected = async (origin: string): Promise<void> => {
+  const ensureDappConnected = async (origin: string, options?: { autoApprove?: boolean }): Promise<void> => {
     if (approvedOriginsRef.current.has(origin)) {
       return;
     }
 
-    const approved = await askForApproval(
-      t.dapp.connectWallet,
-      `${origin}\n\n${t.dapp.connectWalletMessage}`
-    );
-
-    if (!approved) {
-      throw new Error(t.errors.operationCancelled);
+    const allowAuto = options?.autoApprove || isTrustedOrigin(origin);
+    if (!allowAuto) {
+      const existing = pendingApprovalsRef.current.get(origin);
+      if (existing) {
+        const approved = await existing;
+        if (!approved) {
+          throw new Error(t.errors.operationCancelled);
+        }
+      } else {
+        const approvalPromise = askForApproval(
+          t.dapp.connectWallet,
+          `${origin}\n\n${t.dapp.connectWalletMessage}`
+        );
+        pendingApprovalsRef.current.set(origin, approvalPromise);
+        const approved = await approvalPromise;
+        pendingApprovalsRef.current.delete(origin);
+        if (!approved) {
+          throw new Error(t.errors.operationCancelled);
+        }
+      }
     }
 
     approvedOriginsRef.current.add(origin);
@@ -263,7 +286,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
 
     autoConnectedRef.current.add(origin);
     try {
-      await ensureDappConnected(origin);
+      await ensureDappConnected(origin, { autoApprove: true });
       await syncWalletState();
       const requestScript = `
         if (window.ethereum && window.ethereum.request) {
@@ -293,7 +316,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
       }
 
       case 'eth_requestAccounts': {
-        await ensureDappConnected(origin);
+        await ensureDappConnected(origin, { autoApprove: shouldAutoConnect(origin) });
         const address = await WalletService.getAddress();
         const accounts = address ? [address] : [];
         await syncWalletState();
