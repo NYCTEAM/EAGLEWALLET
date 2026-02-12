@@ -115,7 +115,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         CustomTokenService.getCustomTokensByChain(currentNet.chainId),
       ]);
       if (seq !== loadSeq.current) return;
-      setNfts(userNFTs);
+      const safeNFTs = Array.isArray(userNFTs) ? userNFTs : [];
+      setNfts(safeNFTs);
       const customTokens = customTokensRaw
         .filter((token) => token.type === 'ERC20')
         .map((token) => ({
@@ -319,18 +320,43 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     );
   }, [navigation]);
 
-  const renderNftItem = useCallback(({ item }: { item: NFT }) => (
-    <TouchableOpacity
-      style={styles.nftCard}
-      onPress={() => navigation.navigate('NFTDetail', { nft: item })}
-    >
-      <Image source={{ uri: item.image }} style={styles.nftImage} resizeMode="cover" />
-      <View style={styles.nftInfo}>
-        <Text style={styles.nftName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.nftId}>#{item.tokenId}</Text>
-      </View>
-    </TouchableOpacity>
-  ), [navigation]);
+  const normalizeNftImage = (raw: any) => {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('ipfs://ipfs/')) {
+      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('ipfs://')) {
+      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    return '';
+  };
+
+  const renderNftItem = useCallback(({ item }: { item: NFT }) => {
+    const imageUri = normalizeNftImage((item as any)?.image);
+    return (
+      <TouchableOpacity
+        style={styles.nftCard}
+        onPress={() => navigation.navigate('NFTDetail', { nft: item })}
+      >
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.nftImage} resizeMode="cover" />
+        ) : (
+          <View style={styles.nftImageFallback}>
+            <Icon name="image-outline" size={28} color="#666" />
+          </View>
+        )}
+        <View style={styles.nftInfo}>
+          <Text style={styles.nftName} numberOfLines={1}>{item.name || t.nft.unknownCollection}</Text>
+          <Text style={styles.nftId}>#{item.tokenId || '-'}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }, [navigation, t.nft.unknownCollection]);
 
   return (
     <View style={styles.container}>
@@ -622,6 +648,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: (width - 60) / 2,
     backgroundColor: '#333',
+  },
+  nftImageFallback: {
+    width: '100%',
+    height: (width - 60) / 2,
+    backgroundColor: '#333',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nftInfo: {
     padding: 10,

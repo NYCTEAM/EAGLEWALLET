@@ -50,16 +50,41 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
     setRefreshing(false);
   };
 
-  const renderItem = ({ item }: { item: NFT }) => (
-    <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NFTDetail', { nft: item })}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <View style={styles.cardBody}>
-        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.sub} numberOfLines={1}>{item.collection}</Text>
-        <Text style={styles.sub}>#{item.tokenId}</Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const normalizeNftImage = (raw: any) => {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('ipfs://ipfs/')) {
+      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('ipfs://')) {
+      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    return '';
+  };
+
+  const renderItem = ({ item }: { item: NFT }) => {
+    const imageUri = normalizeNftImage((item as any)?.image);
+    return (
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NFTDetail', { nft: item })}>
+        {imageUri ? (
+          <Image source={{ uri: imageUri }} style={styles.image} />
+        ) : (
+          <View style={styles.imageFallback}>
+            <Text style={styles.imageFallbackText}>NFT</Text>
+          </View>
+        )}
+        <View style={styles.cardBody}>
+          <Text style={styles.name} numberOfLines={1}>{item.name || t.nft.unknownCollection}</Text>
+          <Text style={styles.sub} numberOfLines={1}>{item.collection || '-'}</Text>
+          <Text style={styles.sub}>#{item.tokenId || '-'}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,6 +152,18 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 150,
     backgroundColor: '#252A3D',
+  },
+  imageFallback: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#252A3D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageFallbackText: {
+    color: '#9FA7BE',
+    fontSize: 12,
+    fontWeight: '600',
   },
   cardBody: {
     padding: 10,

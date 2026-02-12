@@ -26,6 +26,21 @@ export default function NFTDetailScreen({ route, navigation }: any) {
   const { nft } = route.params;
   const { t } = useLanguage();
   const network = WalletService.getCurrentNetwork();
+  const normalizeNftImage = (raw: any) => {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim();
+    if (!trimmed) return '';
+    if (trimmed.startsWith('ipfs://ipfs/')) {
+      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('ipfs://')) {
+      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    return '';
+  };
 
   const handleCopy = (text: string) => {
     Clipboard.setString(text);
@@ -68,11 +83,17 @@ export default function NFTDetailScreen({ route, navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Large NFT Image */}
         <View style={styles.imageContainer}>
-            <Image 
-                source={{ uri: nft.image }} 
-                style={styles.nftImage} 
-                resizeMode="cover" 
-            />
+            {normalizeNftImage(nft?.image) ? (
+                <Image 
+                    source={{ uri: normalizeNftImage(nft?.image) }} 
+                    style={styles.nftImage} 
+                    resizeMode="cover" 
+                />
+            ) : (
+                <View style={styles.nftImageFallback}>
+                    <Text style={styles.nftImageFallbackText}>NFT</Text>
+                </View>
+            )}
             {/* Network Badge */}
             <View style={styles.networkBadge}>
                 <Text style={styles.networkBadgeText}>{network.name}</Text>
@@ -82,7 +103,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
         {/* Title Section */}
         <View style={styles.titleSection}>
             <Text style={styles.collectionName}>{nft.collection || t.nft.unknownCollection}</Text>
-            <Text style={styles.nftName}>{nft.name}</Text>
+            <Text style={styles.nftName}>{nft.name || t.nft.unknownCollection}</Text>
         </View>
 
         {/* Action List */}
@@ -112,7 +133,9 @@ export default function NFTDetailScreen({ route, navigation }: any) {
             {/* Token ID */}
             <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>{t.nft.tokenId}</Text>
-                <Text style={styles.infoValue}>#{nft.tokenId.length > 10 ? nft.tokenId.substring(0, 10) + '...' : nft.tokenId}</Text>
+                <Text style={styles.infoValue}>
+                  #{nft.tokenId ? (nft.tokenId.length > 10 ? nft.tokenId.substring(0, 10) + '...' : nft.tokenId) : '-'}
+                </Text>
             </View>
 
             <View style={styles.divider} />
@@ -197,6 +220,18 @@ const styles = StyleSheet.create({
   nftImage: {
     width: '100%',
     height: '100%',
+  },
+  nftImageFallback: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#252A3D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nftImageFallbackText: {
+    color: '#9FA7BE',
+    fontSize: 14,
+    fontWeight: '600',
   },
   networkBadge: {
     position: 'absolute',
