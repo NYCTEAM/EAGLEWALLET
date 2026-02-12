@@ -8,6 +8,7 @@ import {
   View,
   Linking,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { ethers } from 'ethers';
@@ -65,6 +66,12 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
     };
 
     var initialAddress = ${initialAddress ? JSON.stringify(initialAddress) : 'null'};
+    var providerInfo = {
+      uuid: 'eagle-wallet-provider',
+      name: 'Eagle Wallet',
+      icon: '',
+      rdns: 'com.eaglewallet'
+    };
     var provider = {
       isMetaMask: true,
       isEagleWallet: true,
@@ -118,6 +125,7 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
     };
 
     window.ethereum = provider;
+    window.web3 = { currentProvider: provider };
     window.__EAGLE_PROVIDER__ = provider;
     window.dispatchEvent(new Event('ethereum#initialized'));
     document.dispatchEvent(new Event('ethereum#initialized'));
@@ -125,6 +133,17 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
     if (initialAddress) {
       emit('accountsChanged', [initialAddress]);
     }
+
+    function announceProvider() {
+      try {
+        var ev = new CustomEvent('eip6963:announceProvider', {
+          detail: { info: providerInfo, provider: provider }
+        });
+        window.dispatchEvent(ev);
+      } catch (e) {}
+    }
+    window.addEventListener('eip6963:requestProvider', announceProvider);
+    announceProvider();
   })();
   true;
 `;
@@ -179,7 +198,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const AUTO_CONNECT_HOSTS = ['eagleswap.io', 'eagleswap.llc', 'ai.eagleswaps.com'];
   const AUTO_CONNECT_DELAYS = [0, 700, 1500];
 
-  const [initialAddress, setInitialAddress] = useState<string | null>(null);
+  const [initialAddress, setInitialAddress] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     let mounted = true;
@@ -576,24 +595,31 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         </View>
       </View>
 
-      <WebView
-        ref={webviewRef}
-        source={{ uri: initialUrl }}
-        javaScriptEnabled
-        domStorageEnabled
-        injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId, initialAddress)}
-        onMessage={handleWebViewMessage}
-        onLoadEnd={(event) => {
-          syncWalletState();
-          const nextUrl = event?.nativeEvent?.url || currentUrl;
-          autoConnectIfNeeded(nextUrl);
-        }}
-        onNavigationStateChange={(state) => {
-          setCurrentUrl(state.url);
-          setCanGoBack(state.canGoBack);
-          autoConnectIfNeeded(state.url);
-        }}
-      />
+      {initialAddress === undefined ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="small" color="#E9B949" />
+          <Text style={styles.loadingText}>{t.common.loading}</Text>
+        </View>
+      ) : (
+        <WebView
+          ref={webviewRef}
+          source={{ uri: initialUrl }}
+          javaScriptEnabled
+          domStorageEnabled
+          injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId, initialAddress)}
+          onMessage={handleWebViewMessage}
+          onLoadEnd={(event) => {
+            syncWalletState();
+            const nextUrl = event?.nativeEvent?.url || currentUrl;
+            autoConnectIfNeeded(nextUrl);
+          }}
+          onNavigationStateChange={(state) => {
+            setCurrentUrl(state.url);
+            setCanGoBack(state.canGoBack);
+            autoConnectIfNeeded(state.url);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -637,5 +663,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginLeft: 8,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  loadingText: {
+    color: '#95A0BC',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
