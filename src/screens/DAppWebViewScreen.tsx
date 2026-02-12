@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   SafeAreaView,
@@ -21,7 +21,7 @@ type BridgeRequest = {
   params?: any[];
 };
 
-const createInjectedProviderScript = (chainId: number) => `
+const createInjectedProviderScript = (chainId: number, initialAddress?: string | null) => `
   (function() {
     if (window.__EAGLE_PROVIDER__) return;
 
@@ -64,13 +64,14 @@ const createInjectedProviderScript = (chainId: number) => `
       } catch (e) {}
     };
 
+    var initialAddress = ${initialAddress ? JSON.stringify(initialAddress) : 'null'};
     var provider = {
       isMetaMask: true,
       isEagleWallet: true,
-      selectedAddress: null,
+      selectedAddress: initialAddress || null,
       chainId: '${ethers.toQuantity(chainId)}',
       networkVersion: '${String(chainId)}',
-      _state: { accounts: [], isConnected: true, isUnlocked: true },
+      _state: { accounts: initialAddress ? [initialAddress] : [], isConnected: true, isUnlocked: !!initialAddress },
       isConnected: function() { return true; },
       emit: emit,
       request: function(args) {
@@ -121,6 +122,9 @@ const createInjectedProviderScript = (chainId: number) => `
     window.dispatchEvent(new Event('ethereum#initialized'));
     document.dispatchEvent(new Event('ethereum#initialized'));
     emit('connect', { chainId: provider.chainId });
+    if (initialAddress) {
+      emit('accountsChanged', [initialAddress]);
+    }
   })();
   true;
 `;
@@ -170,10 +174,26 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const [currentUrl, setCurrentUrl] = useState(initialUrl);
   const [canGoBack, setCanGoBack] = useState(false);
   const chainId = WalletService.getCurrentNetwork().chainId;
-  const autoConnectParam = route.params?.autoConnect;
+  const autoConnectParam = route.params?.autoConnect ?? 'all';
 
   const AUTO_CONNECT_HOSTS = ['eagleswap.io', 'eagleswap.llc', 'ai.eagleswaps.com'];
   const AUTO_CONNECT_DELAYS = [0, 700, 1500];
+
+  const [initialAddress, setInitialAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    WalletService.getAddress()
+      .then((addr) => {
+        if (mounted) {
+          setInitialAddress(addr || null);
+        }
+      })
+      .catch(() => null);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const parseOrigin = (url: string): string => {
     try {
@@ -561,7 +581,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         source={{ uri: initialUrl }}
         javaScriptEnabled
         domStorageEnabled
-        injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId)}
+        injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId, initialAddress)}
         onMessage={handleWebViewMessage}
         onLoadEnd={(event) => {
           syncWalletState();
