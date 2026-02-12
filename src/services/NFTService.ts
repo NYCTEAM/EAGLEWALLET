@@ -116,7 +116,7 @@ class NFTService {
         }
       }
 
-      // Discovery path: fetch recent NFT interactions from explorer and verify on-chain ownership
+      // Discovery path: scan on-chain transfer logs via the wallet RPC and verify ownership
       const transferCandidates = await this.getNFTCandidatesFromTransfers(address, chainId);
       for (const candidate of transferCandidates) {
         const key = `${candidate.contractAddress.toLowerCase()}:${candidate.tokenId}`;
@@ -371,70 +371,11 @@ class NFTService {
     return contracts[chainId] || [];
   }
 
-  /**
-   * Discover NFT candidates via explorer APIs, then verify ownership on-chain
-   */
-  private async getNFTCandidatesFromExplorer(
-    address: string,
-    chainId: number
-  ): Promise<NFTCandidate[]> {
-    try {
-      if (chainId !== 56) {
-        return [];
-      }
-
-      const url =
-        `https://api.bscscan.com/api?module=account&action=tokennfttx&address=${address}` +
-        `&page=1&offset=${MAX_DISCOVERY_CANDIDATES}&sort=desc`;
-      const response = await fetch(url);
-      if (!response.ok) {
-        return [];
-      }
-
-      const data = await response.json();
-      if (!Array.isArray(data?.result)) {
-        return [];
-      }
-
-      const unique = new Map<string, NFTCandidate>();
-      for (const row of data.result) {
-        const contractAddress = String(row?.contractAddress || '');
-        const tokenId = String(row?.tokenID || '');
-        if (!ethers.isAddress(contractAddress) || tokenId === '') {
-          continue;
-        }
-
-        const typeValue = String(row?.tokenType || '').toUpperCase();
-        const type: 'ERC721' | 'ERC1155' | undefined =
-          typeValue.includes('1155') ? 'ERC1155' : (typeValue.includes('721') ? 'ERC721' : undefined);
-        const nameHint = String(row?.tokenName || '').trim();
-        const key = `${contractAddress.toLowerCase()}:${tokenId}`;
-        if (!unique.has(key)) {
-          unique.set(key, {
-            contractAddress,
-            tokenId,
-            type,
-            nameHint: nameHint || undefined,
-            blockNumber: Number(row?.blockNumber || 0),
-          });
-        }
-
-        if (unique.size >= MAX_DISCOVERY_CANDIDATES) {
-          break;
-        }
-      }
-
-      return Array.from(unique.values());
-    } catch (error) {
-      console.error('Error fetching NFT candidates from explorer:', error);
-      return [];
-    }
-  }
-
   private async getNFTCandidatesFromTransfers(address: string, chainId: number): Promise<NFTCandidate[]> {
-    const fromExplorer = await this.getNFTCandidatesFromExplorer(address, chainId);
     let fromLogs: NFTCandidate[] = [];
-    const lookbackSteps = [120000, 400000, 1200000];
+    // Progressive scan window:
+    // fast path first, then expand if empty.
+    const lookbackSteps = [120000, 400000, 1200000, 3000000];
     for (const lookback of lookbackSteps) {
       fromLogs = await this.getNFTCandidatesFromChainLogs(
         address,
@@ -447,15 +388,15 @@ class NFTService {
       }
     }
 
-    const merged = new Map<string, NFTCandidate>();
-    [...fromExplorer, ...fromLogs].forEach((candidate) => {
+    const unique = new Map<string, NFTCandidate>();
+    fromLogs.forEach((candidate) => {
       const key = `${candidate.contractAddress.toLowerCase()}:${candidate.tokenId}`;
-      const existing = merged.get(key);
+      const existing = unique.get(key);
       if (!existing) {
-        merged.set(key, candidate);
+        unique.set(key, candidate);
         return;
       }
-      merged.set(key, {
+      unique.set(key, {
         ...existing,
         ...candidate,
         nameHint: candidate.nameHint || existing.nameHint,
@@ -463,7 +404,7 @@ class NFTService {
       });
     });
 
-    return Array.from(merged.values())
+    return Array.from(unique.values())
       .sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0))
       .slice(0, MAX_DISCOVERY_CANDIDATES);
   }
