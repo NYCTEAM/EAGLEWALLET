@@ -47,6 +47,19 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const [hiddenTokenKeys, setHiddenTokenKeys] = useState<string[]>([]);
   const loadingRef = useRef(false);
   const loadSeq = useRef(0);
+  const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise<T>((resolve) => {
+          timeoutId = setTimeout(() => resolve(fallback), ms);
+        }),
+      ]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  }, []);
 
   const loadData = async (options: { silent?: boolean } = {}) => {
     const silent = options.silent ?? false;
@@ -201,7 +214,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         try {
           const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
           const contract = new ethers.Contract(token.address, erc20Abi, provider);
-          const tokenBalance = await contract.balanceOf(addr);
+          const tokenBalance = await withTimeout(contract.balanceOf(addr), 5000, 0n as any);
           const balance = ethers.formatUnits(tokenBalance, token.decimals);
           updatedListWithBalances[index + 1] = {
             ...updatedListWithBalances[index + 1],
@@ -213,8 +226,11 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       });
 
       const tokenAddresses = updatedListWithBalances.map(t => t.address);
-      const pricePromise = PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId)
-        .catch(() => ({}));
+      const pricePromise = withTimeout(
+        PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId).catch(() => ({} as any)),
+        6000,
+        {} as any
+      );
 
       await Promise.all(balancePromises);
       const priceData = await pricePromise;
@@ -552,7 +568,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
             </TouchableOpacity>
           )}
         </View>
-        {loading && (
+        {loading && activeTab === 'crypto' && (
           <View style={styles.loadingRow}>
             <ActivityIndicator color="#F3BA2F" />
             <Text style={styles.loadingText}>{t.common.loading}</Text>
