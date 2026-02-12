@@ -43,6 +43,7 @@ import WalletService from './src/services/WalletService';
 import ApiBaseService from './src/services/ApiBaseService';
 import RewardsDappService from './src/services/RewardsDappService';
 import RPCService from './src/services/RPCService';
+import PriceService from './src/services/PriceService';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 
 const Stack = createStackNavigator();
@@ -81,6 +82,20 @@ export default function App() {
     ApiBaseService.prewarm();
     RewardsDappService.prewarm();
   }, []);
+
+  useEffect(() => {
+    if (!hasWallet) return;
+    const warm = async () => {
+      try {
+        const network = WalletService.getCurrentNetwork();
+        await WalletService.getBalance();
+        await PriceService.getTokenPriceBySymbol(network.symbol, network.chainId);
+      } catch {
+        // silent prewarm
+      }
+    };
+    warm();
+  }, [hasWallet]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;

@@ -6,6 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ethers } from 'ethers';
 import { NETWORKS } from '../config/networks';
+import RPCService from './RPCService';
 
 const PENDING_TXS_KEY = 'EAGLE_PENDING_TXS';
 const BSCSCAN_API_KEY = '';
@@ -93,7 +94,8 @@ class TransactionService {
     }
 
     try {
-      const provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
+      const rpcUrl = await RPCService.getPreferredRpcUrl(chainId);
+      const provider = new ethers.JsonRpcProvider(rpcUrl, {
         chainId: network.chainId,
         name: network.name,
       });

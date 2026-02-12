@@ -32,6 +32,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const [toToken, setToToken] = useState<any>(null);
   const [amount, setAmount] = useState('');
   const [quote, setQuote] = useState<any>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [slippage, setSlippage] = useState(0.5);
   const [loading, setLoading] = useState(false);
   const [quoting, setQuoting] = useState(false);
@@ -51,6 +52,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   const isMounted = useRef(true);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const refreshTimer = useRef<NodeJS.Timeout | null>(null);
+  const prewarmQuoteRef = useRef(false);
 
   useEffect(() => {
     void loadDefaultTokens();
@@ -67,12 +69,27 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
   }, [fromToken, toToken]);
 
   useEffect(() => {
+    if (!fromToken || !toToken || prewarmQuoteRef.current) return;
+    prewarmQuoteRef.current = true;
+    const network = WalletService.getCurrentNetwork();
+    SwapService.getBestQuote(
+      fromToken.address,
+      toToken.address,
+      '1',
+      fromToken.decimals,
+      toToken.decimals,
+      network.chainId,
+    ).catch(() => null);
+  }, [fromToken, toToken]);
+
+  useEffect(() => {
     void checkAllowance();
   }, [fromToken, amount]);
 
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     setSimulationResult(null);
+    setQuoteError(null);
 
     if (!amount || parseFloat(amount) <= 0 || !fromToken || !toToken) {
       setQuote(null);
@@ -196,9 +213,13 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         toToken.decimals,
         network.chainId,
       );
-      if (isMounted.current) setQuote(result || null);
+      if (isMounted.current) {
+        setQuote(result || null);
+        setQuoteError(null);
+      }
     } catch (error) {
       if (!silent) setQuote(null);
+      setQuoteError(t.errors.connectionFailed);
       console.error('getQuote', error);
     } finally {
       if (showIndicator) setQuoting(false);
@@ -494,6 +515,15 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
           </View>
         )}
 
+        {quoteError && !quote && amount ? (
+          <View style={styles.quoteError}>
+            <Text style={styles.quoteErrorText}>{quoteError}</Text>
+            <TouchableOpacity onPress={() => void getQuote({ silent: false, showIndicator: true })}>
+              <Text style={styles.quoteRetry}>{t.common.retry}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
         {quote ? (
           <View style={styles.details}>
             <View style={styles.detailRow}><Text style={styles.detailLabel}>{t.swap.estimatedReceived}</Text><Text style={styles.detailValue}>{`${parseFloat(quote.amountOut).toFixed(6)} ${toToken?.symbol}`}</Text></View>
@@ -583,6 +613,18 @@ const styles = StyleSheet.create({
   mainBtnText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   quoteHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   quoteHintText: { color: '#667085', marginLeft: 8, fontSize: 12, fontWeight: '600' },
+  quoteError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFF4F4',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  quoteErrorText: { color: '#D92D20', fontSize: 12, fontWeight: '600' },
+  quoteRetry: { color: '#E9B949', fontSize: 12, fontWeight: '700' },
   details: { backgroundColor: '#fff', borderRadius: 14, padding: 14 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   detailLabel: { color: '#666', fontSize: 14 },

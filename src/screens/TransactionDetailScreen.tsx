@@ -17,6 +17,7 @@ import RewardsDappService from '../services/RewardsDappService';
 export default function TransactionDetailScreen({ navigation, route }: any) {
   const { t } = useLanguage();
   const tx = route.params?.tx;
+  const confirmThreshold = 12;
 
   const copyHash = () => {
     if (!tx?.hash) {
@@ -52,6 +53,16 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
     </View>
   );
 
+  const getDisplayStatus = () => {
+    if (!tx) return t.transaction.pending;
+    if (tx.status === 'pending') return t.transaction.pending;
+    if (tx.status === 'failed') return t.transaction.failed;
+    if (tx.confirmations !== undefined && tx.confirmations < confirmThreshold) {
+      return t.transaction.confirming;
+    }
+    return t.transaction.confirmed || t.transaction.completed;
+  };
+
   if (!tx) {
     return (
       <SafeAreaView style={styles.container}>
@@ -82,7 +93,7 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
           {renderRow(t.transaction.hash, tx.hash)}
-          {renderRow(t.transaction.status, tx.status)}
+          {renderRow(t.transaction.status, getDisplayStatus())}
           {renderRow(t.transaction.from, tx.from)}
           {renderRow(t.transaction.to, tx.to)}
           {renderRow(t.transaction.amount, tx.value)}

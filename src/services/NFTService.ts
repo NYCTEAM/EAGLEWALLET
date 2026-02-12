@@ -5,6 +5,7 @@
 
 import { ethers } from 'ethers';
 import { NETWORKS } from '../config/networks';
+import RPCService from './RPCService';
 
 export interface NFT {
   tokenId: string;
@@ -39,24 +40,29 @@ const MAX_NFTS_PER_CONTRACT = 100;
 const MAX_DISCOVERY_CANDIDATES = 120;
 
 class NFTService {
-  private providers: Map<number, ethers.JsonRpcProvider> = new Map();
+  private providers: Map<number, { url: string; provider: ethers.JsonRpcProvider }> = new Map();
 
   /**
    * Get provider for specific chain
    */
-  private getProvider(chainId: number): ethers.JsonRpcProvider {
-    if (!this.providers.has(chainId)) {
-      const network = NETWORKS[chainId];
-      if (!network) {
-        throw new Error(`Unsupported network: ${chainId}`);
-      }
-      const provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
-        chainId: network.chainId,
-        name: network.name,
-      });
-      this.providers.set(chainId, provider);
+  private async getProvider(chainId: number): Promise<ethers.JsonRpcProvider> {
+    const network = NETWORKS[chainId];
+    if (!network) {
+      throw new Error(`Unsupported network: ${chainId}`);
     }
-    return this.providers.get(chainId)!;
+
+    const preferred = await RPCService.getPreferredRpcUrl(chainId);
+    const cached = this.providers.get(chainId);
+    if (cached && cached.url === preferred) {
+      return cached.provider;
+    }
+
+    const provider = new ethers.JsonRpcProvider(preferred, {
+      chainId: network.chainId,
+      name: network.name,
+    });
+    this.providers.set(chainId, { url: preferred, provider });
+    return provider;
   }
 
   /**
@@ -137,7 +143,7 @@ class NFTService {
     contractAddress: string,
     chainId: number
   ): Promise<NFT[]> {
-    const provider = this.getProvider(chainId);
+    const provider = await this.getProvider(chainId);
     const contract = new ethers.Contract(contractAddress, ERC721_ABI, provider);
     const nfts: NFT[] = [];
 
@@ -403,7 +409,7 @@ class NFTService {
     maxTokens: number
   ): Promise<string[]> {
     try {
-      const provider = this.getProvider(chainId);
+      const provider = await this.getProvider(chainId);
       const currentBlock = await provider.getBlockNumber();
       const fromBlock = Math.max(0, currentBlock - 500000);
       const ownerTopic = ethers.zeroPadValue(ownerAddress, 32);
@@ -449,7 +455,7 @@ class NFTService {
     toAddress: string,
     chainId: number
   ): Promise<string> {
-    const provider = this.getProvider(chainId);
+    const provider = await this.getProvider(chainId);
     const connectedWallet = wallet.connect(provider);
     const contract = new ethers.Contract(
       contractAddress,
@@ -477,7 +483,7 @@ class NFTService {
     chainId: number
   ): Promise<NFT | null> {
     try {
-      const provider = this.getProvider(chainId);
+      const provider = await this.getProvider(chainId);
       const erc721 = new ethers.Contract(contractAddress, ERC721_ABI, provider);
       let tokenURI = '';
       let collectionName = 'Unknown Collection';
@@ -521,13 +527,13 @@ class NFTService {
     chainId: number
   ): Promise<boolean> {
     try {
-      const provider = this.getProvider(chainId);
+      const provider = await this.getProvider(chainId);
       const erc721 = new ethers.Contract(contractAddress, ERC721_ABI, provider);
       const owner = await erc721.ownerOf(tokenId);
       return owner.toLowerCase() === address.toLowerCase();
     } catch (error) {
       try {
-        const provider = this.getProvider(chainId);
+        const provider = await this.getProvider(chainId);
         const erc1155 = new ethers.Contract(contractAddress, ERC1155_ABI, provider);
         const balance = await erc1155.balanceOf(address, tokenId);
         return BigInt(balance) > 0n;

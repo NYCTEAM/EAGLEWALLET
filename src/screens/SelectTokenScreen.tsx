@@ -3,7 +3,7 @@
  * Select which token to send
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import {
   Alert,
@@ -15,7 +15,7 @@ import {
   TextInput,
   Image,
 } from 'react-native';
-import { getChainTokens, TokenConfig } from '../config/tokenConfig';
+import { getChainTokens } from '../config/tokenConfig';
 import WalletService from '../services/WalletService';
 import TokenLogoService from '../services/TokenLogoService';
 import CustomTokenService from '../services/CustomTokenService';
@@ -28,6 +28,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
   const [tokens, setTokens] = useState<any[]>([]);
   const [networkName, setNetworkName] = useState('BNB Chain');
   const [importingCustom, setImportingCustom] = useState(false);
+  const popularSymbols = useMemo(() => ['BNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'BTC', 'ETH', 'EAGLE'], []);
 
   useEffect(() => {
     loadTokens();
@@ -106,7 +107,29 @@ export default function SelectTokenScreen({ route, navigation }: any) {
     return ethers.isAddress(query);
   };
 
-  const filteredTokens = tokens.filter(token =>
+  const sortedTokens = useMemo(() => {
+    const rank = (symbol?: string) => {
+      if (!symbol) return Number.MAX_SAFE_INTEGER;
+      const idx = popularSymbols.indexOf(symbol.toUpperCase());
+      return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+    };
+
+    return [...tokens].sort((a, b) => {
+      const ar = rank(a.symbol);
+      const br = rank(b.symbol);
+      if (ar !== br) return ar - br;
+
+      const ab = Number(a.balance || 0);
+      const bb = Number(b.balance || 0);
+      if (Number.isFinite(ab) && Number.isFinite(bb) && ab !== bb) {
+        return bb - ab;
+      }
+
+      return String(a.symbol || '').localeCompare(String(b.symbol || ''));
+    });
+  }, [tokens, popularSymbols]);
+
+  const filteredTokens = sortedTokens.filter(token =>
     token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
     token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     token.address.toLowerCase() === searchQuery.toLowerCase()
@@ -238,7 +261,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
         {showImport && (
              <TouchableOpacity style={styles.tokenItem} onPress={handleImportCustom}>
                 <View style={[styles.tokenIcon, { backgroundColor: '#666' }]}>
-                    <Text style={styles.tokenIconText}>?</Text>
+                    <Text style={styles.tokenIconText}>+</Text>
                 </View>
                 <View style={styles.tokenInfo}>
                     <Text style={styles.tokenSymbol}>{importingCustom ? t.common.loading : t.token.importToken}</Text>

@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useState } from 'react';
+﻿import React, { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -20,8 +20,11 @@ export default function TransactionHistoryScreen({ navigation }: any) {
   const { t } = useLanguage();
   const [txs, setTxs] = useState<Transaction[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const confirmThreshold = 12;
 
   const loadTransactions = useCallback(async () => {
+    setError(null);
     const address = await WalletService.getAddress();
     const network = WalletService.getCurrentNetwork();
 
@@ -30,39 +33,71 @@ export default function TransactionHistoryScreen({ navigation }: any) {
       return;
     }
 
-    const [history, pending, mining] = await Promise.all([
-      TransactionService.getTransactionHistory(address, network.chainId, 50),
-      TransactionService.getPendingTransactions(),
-      SwapMiningService.getUserTransactions(address, 50),
-    ]);
+    try {
+      const [history, pending, mining] = await Promise.all([
+        TransactionService.getTransactionHistory(address, network.chainId, 50),
+        TransactionService.getPendingTransactions(),
+        SwapMiningService.getUserTransactions(address, 50),
+      ]);
 
-    const pendingChain = pending.filter((item) => item.chainId === network.chainId);
-    const miningTxs = mining?.data?.transactions || [];
-    const miningMap = new Map<string, any>(
-      miningTxs.map((tx: any) => [String(tx.tx_hash || tx.hash || '').toLowerCase(), tx])
-    );
+      const pendingChain = pending.filter((item) => item.chainId === network.chainId);
+      const provider = await WalletService.getProvider();
+      const pendingUpdates = await Promise.all(
+        pendingChain.map(async (item) => {
+          try {
+            const detail = await TransactionService.getTransactionDetail(item.hash, network.chainId, provider);
+            if (detail && detail.status !== 'pending') {
+              await TransactionService.updateTransactionStatus(item.hash, detail.status);
+            }
+            return detail ? { ...item, ...detail } : item;
+          } catch {
+            return item;
+          }
+        })
+      );
 
-    const merged = [...pendingChain, ...history]
-      .map((item) => {
-        const miningInfo = miningMap.get(item.hash.toLowerCase());
-        const reward = miningInfo?.eagle_reward ?? miningInfo?.eagle_earned ?? miningInfo?.eagleReward;
-        const rewardNum =
-          typeof reward === 'number' ? reward : reward !== undefined && reward !== null ? Number(reward) : undefined;
-        const safeReward = Number.isFinite(rewardNum) ? rewardNum : undefined;
-        return {
-          ...item,
-          swapReward: safeReward,
-          swapRoute: miningInfo?.route_info,
-        };
-      })
-      .sort((a, b) => b.timestamp - a.timestamp);
+      const txMap = new Map<string, Transaction>();
+      pendingUpdates.forEach((item) => txMap.set(item.hash.toLowerCase(), item));
+      history.forEach((item) => {
+        const key = item.hash.toLowerCase();
+        const existing = txMap.get(key);
+        txMap.set(key, existing ? { ...existing, ...item } : item);
+      });
 
-    setTxs(merged);
-  }, []);
+      const miningTxs = mining?.data?.transactions || [];
+      const miningMap = new Map<string, any>(
+        miningTxs.map((tx: any) => [String(tx.tx_hash || tx.hash || '').toLowerCase(), tx])
+      );
+
+      const merged = Array.from(txMap.values())
+        .map((item) => {
+          const miningInfo = miningMap.get(item.hash.toLowerCase());
+          const reward = miningInfo?.eagle_reward ?? miningInfo?.eagle_earned ?? miningInfo?.eagleReward;
+          const rewardNum =
+            typeof reward === 'number' ? reward : reward !== undefined && reward !== null ? Number(reward) : undefined;
+          const safeReward = Number.isFinite(rewardNum) ? rewardNum : undefined;
+          return {
+            ...item,
+            swapReward: safeReward,
+            swapRoute: miningInfo?.route_info,
+          };
+        })
+        .sort((a, b) => b.timestamp - a.timestamp);
+
+      setTxs(merged);
+    } catch (err) {
+      console.error('Failed to load transactions:', err);
+      setError(t.errors.connectionFailed);
+      setTxs([]);
+    }
+  }, [t]);
+
 
   useFocusEffect(
     useCallback(() => {
       loadTransactions();
+      const interval = setInterval(loadTransactions, 15000);
+      return () => clearInterval(interval);
     }, [loadTransactions])
   );
 
@@ -95,11 +130,33 @@ export default function TransactionHistoryScreen({ navigation }: any) {
     return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
   };
 
-  const statusColor = (status: Transaction['status']) => {
-    if (status === 'success') return '#38D39F';
-    if (status === 'failed') return '#FF8A9A';
-    return '#F2C14F';
-  };
+  const getDisplayStatus = useCallback((tx: Transaction) => {
+    if (tx.status === 'pending') {
+      return { label: t.transaction.pending, color: '#F2C14F' };
+    }
+    if (tx.status === 'failed') {
+      return { label: t.transaction.failed, color: '#FF8A9A' };
+    }
+    if (tx.confirmations !== undefined && tx.confirmations < confirmThreshold) {
+      return { label: t.transaction.confirming, color: '#F2C14F' };
+    }
+    return { label: t.transaction.confirmed || t.transaction.completed, color: '#38D39F' };
+  }, [t, confirmThreshold]);
+
+  const emptyComponent = useMemo(() => {
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.empty}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadTransactions}>
+            <Text style={styles.retryButtonText}>{t.common.retry}</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return <Text style={styles.empty}>{t.transaction.noTransactions}</Text>;
+  }, [error, loadTransactions, t]);
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -131,12 +188,17 @@ export default function TransactionHistoryScreen({ navigation }: any) {
         keyExtractor={(item, index) => `${item.hash}-${index}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#E9B949" />}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>{t.transaction.noTransactions}</Text>}
+        ListEmptyComponent={emptyComponent}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.item} onPress={() => navigation.navigate('TransactionDetail', { tx: item })}>
             <View style={styles.itemTop}>
               <Text style={styles.hash}>{shortHash(item.hash)}</Text>
-              <Text style={[styles.status, { color: statusColor(item.status) }]}>{item.status.toUpperCase()}</Text>
+              {(() => {
+                const meta = getDisplayStatus(item);
+                return (
+                  <Text style={[styles.status, { color: meta.color }]}>{meta.label}</Text>
+                );
+              })()}
             </View>
             <Text style={styles.amount}>{formatAmount(item)}</Text>
             {item.swapReward !== undefined && (
@@ -188,5 +250,15 @@ const styles = StyleSheet.create({
   amount: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', marginBottom: 4 },
   reward: { color: '#38D39F', fontSize: 12, fontWeight: '700', marginBottom: 4 },
   meta: { color: '#98A1B8', fontSize: 11 },
-  empty: { color: '#98A1B8', textAlign: 'center', marginTop: 24 },
+  emptyContainer: { alignItems: 'center', marginTop: 24 },
+  empty: { color: '#98A1B8', textAlign: 'center' },
+  retryButton: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2E3550',
+  },
+  retryButtonText: { color: '#E9B949', fontSize: 12, fontWeight: '600' },
 });
