@@ -407,6 +407,55 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     );
   }, [navigation, t.nft.unknownCollection]);
 
+  const nftCollections = useMemo(() => {
+    const grouped = new Map<string, { key: string; name: string; count: number; image: string; first: NFT }>();
+    for (const nft of nfts) {
+      if (!nft || !nft.contractAddress) continue;
+      const key = `${String(nft.contractAddress).toLowerCase()}-${String(nft.type || 'ERC721')}`;
+      const name =
+        typeof nft.name === 'string' && nft.name.trim()
+          ? nft.name
+          : (typeof nft.collection === 'string' && nft.collection.trim() ? nft.collection : t.nft.unknownCollection);
+      const image = normalizeNftImage((nft as any)?.image);
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.count += 1;
+        if (!existing.image && image) {
+          existing.image = image;
+        }
+      } else {
+        grouped.set(key, {
+          key,
+          name,
+          count: 1,
+          image,
+          first: nft,
+        });
+      }
+    }
+    return Array.from(grouped.values());
+  }, [nfts, t.nft.unknownCollection]);
+
+  const renderNftCollectionItem = useCallback(({ item }: { item: { key: string; name: string; count: number; image: string; first: NFT } }) => {
+    const logoSource = item.image ? { uri: item.image } : null;
+    return (
+      <TouchableOpacity
+        style={styles.nftCollectionItem}
+        onPress={() => navigation.navigate('NFTDetail', { nft: item.first })}
+      >
+        {logoSource ? (
+          <Image source={logoSource} style={styles.nftCollectionImage} />
+        ) : (
+          <View style={styles.nftCollectionFallback}>
+            <Icon name="image-outline" size={20} color="#777" />
+          </View>
+        )}
+        <Text style={styles.nftCollectionName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.nftCollectionCount}>{item.count}</Text>
+      </TouchableOpacity>
+    );
+  }, [navigation]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#121212" />
@@ -526,16 +575,14 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           />
         ) : (
           <FlatList
-            data={nfts}
-            keyExtractor={(item, index) => String(item.contractAddress || item.tokenId) + '-' + index}
-            renderItem={renderNftItem}
-            numColumns={2}
-            columnWrapperStyle={styles.nftRow}
+            data={nftCollections}
+            keyExtractor={(item) => item.key}
+            renderItem={renderNftCollectionItem}
             removeClippedSubviews
             initialNumToRender={6}
             windowSize={7}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F3BA2F" />}
-            contentContainerStyle={styles.nftListContent}
+            contentContainerStyle={styles.tokenListContent}
             ListEmptyComponent={(
               <View style={styles.emptyNftState}>
                 <Icon name="image-outline" size={36} color="#666" />
@@ -685,6 +732,42 @@ const styles = StyleSheet.create({
   },
   nftRow: {
     justifyContent: 'space-between',
+  },
+  nftCollectionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2C2C2C',
+  },
+  nftCollectionImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: '#252A3D',
+  },
+  nftCollectionFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: '#252A3D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nftCollectionName: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  nftCollectionCount: {
+    color: '#FFF',
+    fontSize: 28,
+    fontWeight: '700',
+    minWidth: 36,
+    textAlign: 'right',
   },
   nftListContent: {
     paddingBottom: 20,
