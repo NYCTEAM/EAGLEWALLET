@@ -70,6 +70,9 @@ const createInjectedProviderScript = (chainId: number) => `
       selectedAddress: null,
       chainId: '${ethers.toQuantity(chainId)}',
       networkVersion: '${String(chainId)}',
+      _state: { accounts: [], isConnected: true, isUnlocked: true },
+      isConnected: function() { return true; },
+      emit: emit,
       request: function(args) {
         return sendRequest(args.method, args.params || []);
       },
@@ -101,6 +104,8 @@ const createInjectedProviderScript = (chainId: number) => `
 
     window.__eagleSetAddress = function(address) {
       provider.selectedAddress = address || null;
+      provider._state.accounts = address ? [address] : [];
+      provider._state.isUnlocked = !!address;
       emit('accountsChanged', address ? [address] : []);
     };
 
@@ -188,13 +193,18 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
 
   const shouldAutoConnect = (url: string): boolean => {
     if (autoConnectParam === false) return false;
-    if (autoConnectParam === true) return true;
+    if (autoConnectParam === true || autoConnectParam === 'all') {
+      return /^https?:\/\//i.test(url);
+    }
     const host = getHost(url);
     if (!host) return false;
     return AUTO_CONNECT_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
   };
 
   const isTrustedOrigin = (origin: string): boolean => {
+    if (autoConnectParam === true || autoConnectParam === 'all') {
+      return /^https?:\/\//i.test(origin);
+    }
     try {
       const host = new URL(origin).host.toLowerCase();
       return AUTO_CONNECT_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
@@ -323,9 +333,22 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     const method = request.method;
     const params = request.params || [];
 
+    const withAccountsPermission = async () => {
+      const address = await WalletService.getAddress();
+      const accounts = address ? [address] : [];
+      return [
+        {
+          parentCapability: 'eth_accounts',
+          caveats: accounts.length ? [{ type: 'filterResponse', value: accounts }] : [],
+        },
+      ];
+    };
+
     switch (method) {
       case 'eth_accounts': {
-        if (!approvedOriginsRef.current.has(origin) && !shouldAutoConnect(origin)) {
+        if (shouldAutoConnect(origin)) {
+          approvedOriginsRef.current.add(origin);
+        } else if (!approvedOriginsRef.current.has(origin)) {
           return [];
         }
         const address = await WalletService.getAddress();
@@ -391,6 +414,18 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
           throw new Error(t.errors.operationCancelled);
         }
         return WalletService.signTypedData(typed.domain, typed.types, typed.message);
+      }
+
+      case 'wallet_requestPermissions': {
+        await ensureDappConnected(origin, { autoApprove: shouldAutoConnect(origin) });
+        return withAccountsPermission();
+      }
+
+      case 'wallet_getPermissions': {
+        if (shouldAutoConnect(origin) || approvedOriginsRef.current.has(origin)) {
+          return withAccountsPermission();
+        }
+        return [];
       }
 
       case 'eth_sendTransaction': {
@@ -536,6 +571,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         onNavigationStateChange={(state) => {
           setCurrentUrl(state.url);
           setCanGoBack(state.canGoBack);
+          autoConnectIfNeeded(state.url);
         }}
       />
     </SafeAreaView>
