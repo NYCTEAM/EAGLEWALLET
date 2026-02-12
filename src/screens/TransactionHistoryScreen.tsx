@@ -172,6 +172,7 @@ export default function TransactionHistoryScreen({ navigation }: any) {
               navigation.navigate('DAppWebView', {
                 url,
                 title: t.transaction.viewRewards,
+                autoConnect: true,
               });
             }}
           >

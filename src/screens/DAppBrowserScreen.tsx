@@ -45,6 +45,22 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
     }, [loadDapps])
   );
 
+  const isAutoConnectHost = (url: string) => {
+    try {
+      const host = new URL(url).host.toLowerCase();
+      return (
+        host === 'eagleswap.io' ||
+        host.endsWith('.eagleswap.io') ||
+        host === 'eagleswap.llc' ||
+        host.endsWith('.eagleswap.llc') ||
+        host === 'ai.eagleswaps.com' ||
+        host.endsWith('.ai.eagleswaps.com')
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const openDapp = async (dapp: DApp) => {
     const deduped = [dapp, ...recentDapps.filter((item) => item.id !== dapp.id)].slice(0, 12);
     setRecentDapps(deduped);
@@ -53,6 +69,7 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
     navigation.navigate('DAppWebView', {
       title: dapp.name,
       url: dapp.url,
+      autoConnect: isAutoConnectHost(dapp.url),
     });
   };
 

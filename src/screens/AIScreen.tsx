@@ -14,6 +14,7 @@ export default function AIScreen({ navigation }: any) {
     navigation.navigate('DAppWebView', {
       url: AI_WEB_URL,
       title: t.ai.title,
+      autoConnect: true,
     });
   }, [navigation, t.ai.title]);
 
@@ -28,6 +29,7 @@ export default function AIScreen({ navigation }: any) {
             navigation.navigate('DAppWebView', {
               url: AI_WEB_URL,
               title: t.ai.title,
+              autoConnect: true,
             })
           }
         >

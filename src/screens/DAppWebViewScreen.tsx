@@ -157,12 +157,16 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const { t } = useLanguage();
   const webviewRef = useRef<WebView>(null);
   const approvedOriginsRef = useRef<Set<string>>(new Set());
+  const autoConnectedRef = useRef<Set<string>>(new Set());
 
   const initialUrl = route.params?.url || 'https://pancakeswap.finance';
   const title = route.params?.title || t.dapp.dappBrowser;
   const [currentUrl, setCurrentUrl] = useState(initialUrl);
   const [canGoBack, setCanGoBack] = useState(false);
   const chainId = WalletService.getCurrentNetwork().chainId;
+  const autoConnectParam = route.params?.autoConnect;
+
+  const AUTO_CONNECT_HOSTS = ['eagleswap.io', 'eagleswap.llc', 'ai.eagleswaps.com'];
 
   const parseOrigin = (url: string): string => {
     try {
@@ -170,6 +174,22 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     } catch {
       return url;
     }
+  };
+
+  const getHost = (url: string): string => {
+    try {
+      return new URL(url).host.toLowerCase();
+    } catch {
+      return '';
+    }
+  };
+
+  const shouldAutoConnect = (url: string): boolean => {
+    if (autoConnectParam === false) return false;
+    if (autoConnectParam === true) return true;
+    const host = getHost(url);
+    if (!host) return false;
+    return AUTO_CONNECT_HOSTS.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
   };
 
   const askForApproval = (title: string, message: string): Promise<boolean> => {
@@ -234,6 +254,27 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
       true;
     `;
     webviewRef.current?.injectJavaScript(script);
+  };
+
+  const autoConnectIfNeeded = async (url: string) => {
+    if (!shouldAutoConnect(url)) return;
+    const origin = parseOrigin(url);
+    if (autoConnectedRef.current.has(origin)) return;
+
+    autoConnectedRef.current.add(origin);
+    try {
+      await ensureDappConnected(origin);
+      await syncWalletState();
+      const requestScript = `
+        if (window.ethereum && window.ethereum.request) {
+          window.ethereum.request({ method: 'eth_requestAccounts' }).catch(function() {});
+        }
+        true;
+      `;
+      webviewRef.current?.injectJavaScript(requestScript);
+    } catch {
+      // user cancelled
+    }
   };
 
   const handleBridgeRequest = async (request: BridgeRequest, origin: string) => {
@@ -431,7 +472,11 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
         domStorageEnabled
         injectedJavaScriptBeforeContentLoaded={createInjectedProviderScript(chainId)}
         onMessage={handleWebViewMessage}
-        onLoadEnd={syncWalletState}
+        onLoadEnd={(event) => {
+          syncWalletState();
+          const nextUrl = event?.nativeEvent?.url || currentUrl;
+          autoConnectIfNeeded(nextUrl);
+        }}
         onNavigationStateChange={(state) => {
           setCurrentUrl(state.url);
           setCanGoBack(state.canGoBack);

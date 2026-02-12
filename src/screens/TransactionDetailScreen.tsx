@@ -43,6 +43,7 @@ export default function TransactionDetailScreen({ navigation, route }: any) {
     navigation.navigate('DAppWebView', {
       url,
       title: t.transaction.viewRewards,
+      autoConnect: true,
     });
   };
 

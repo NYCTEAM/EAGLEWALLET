@@ -301,6 +301,7 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
         navigation.navigate('DAppWebView', {
           url,
           title: t.transaction.viewRewards,
+          autoConnect: true,
         });
       };
 
