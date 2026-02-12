@@ -312,10 +312,9 @@ class NFTService {
       const payload = uri.slice(commaIndex + 1);
 
       if (header.includes(';base64')) {
-        if (typeof globalThis.atob !== 'function') {
-          return {};
-        }
-        const jsonString = globalThis.atob(payload);
+        // Hermes on Android may not provide global atob; use ethers base64 helpers.
+        const bytes = ethers.decodeBase64(payload);
+        const jsonString = ethers.toUtf8String(bytes);
         return JSON.parse(jsonString);
       }
 
