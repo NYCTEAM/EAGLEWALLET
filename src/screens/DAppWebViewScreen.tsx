@@ -72,9 +72,14 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
       icon: '',
       rdns: 'com.eaglewallet'
     };
+    function localAccounts() {
+      return initialAddress ? [initialAddress] : [];
+    }
+
     var provider = {
       isMetaMask: true,
       isEagleWallet: true,
+      providers: [],
       selectedAddress: initialAddress || null,
       chainId: '${ethers.toQuantity(chainId)}',
       networkVersion: '${String(chainId)}',
@@ -82,9 +87,15 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
       isConnected: function() { return true; },
       emit: emit,
       request: function(args) {
+        if (args && (args.method === 'eth_accounts' || args.method === 'eth_requestAccounts') && initialAddress) {
+          return Promise.resolve(localAccounts());
+        }
         return sendRequest(args.method, args.params || []);
       },
       enable: function() {
+        if (initialAddress) {
+          return Promise.resolve(localAccounts());
+        }
         return sendRequest('eth_requestAccounts', []);
       },
       on: function(event, handler) {
@@ -98,13 +109,23 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
         return provider;
       },
       sendAsync: function(payload, callback) {
+        if (payload && (payload.method === 'eth_accounts' || payload.method === 'eth_requestAccounts') && initialAddress) {
+          callback(null, { id: payload.id, jsonrpc: '2.0', result: localAccounts() });
+          return;
+        }
         sendRequest(payload.method, payload.params || [])
           .then(function(result) { callback(null, { id: payload.id, jsonrpc: '2.0', result: result }); })
           .catch(function(err) { callback(err, null); });
       },
       send: function(methodOrPayload, params) {
         if (typeof methodOrPayload === 'string') {
+          if ((methodOrPayload === 'eth_accounts' || methodOrPayload === 'eth_requestAccounts') && initialAddress) {
+            return Promise.resolve(localAccounts());
+          }
           return sendRequest(methodOrPayload, params || []);
+        }
+        if (methodOrPayload && (methodOrPayload.method === 'eth_accounts' || methodOrPayload.method === 'eth_requestAccounts') && initialAddress) {
+          return Promise.resolve(localAccounts());
         }
         return sendRequest(methodOrPayload.method, methodOrPayload.params || []);
       }
@@ -124,6 +145,7 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
       emit('connect', { chainId: chainHex });
     };
 
+    provider.providers = [provider];
     window.ethereum = provider;
     window.web3 = { currentProvider: provider };
     window.__EAGLE_PROVIDER__ = provider;
