@@ -168,6 +168,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   const autoConnectParam = route.params?.autoConnect;
 
   const AUTO_CONNECT_HOSTS = ['eagleswap.io', 'eagleswap.llc', 'ai.eagleswaps.com'];
+  const AUTO_CONNECT_DELAYS = [0, 700, 1500];
 
   const parseOrigin = (url: string): string => {
     try {
@@ -257,6 +258,20 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     approvedOriginsRef.current.add(origin);
   };
 
+  const proxyRpc = async (method: string, params: any[], origin: string) => {
+    const provider = await WalletService.getProvider();
+    try {
+      return await provider.send(method, params);
+    } catch (error) {
+      // For trusted dapps, return safe fallback on read calls instead of crashing UI
+      if (isTrustedOrigin(origin)) {
+        if (method === 'eth_call') return '0x0';
+        return null;
+      }
+      throw error;
+    }
+  };
+
   const shareCurrentUrl = async () => {
     await Share.share({ message: currentUrl });
   };
@@ -288,13 +303,17 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
     try {
       await ensureDappConnected(origin, { autoApprove: true });
       await syncWalletState();
-      const requestScript = `
-        if (window.ethereum && window.ethereum.request) {
-          window.ethereum.request({ method: 'eth_requestAccounts' }).catch(function() {});
-        }
-        true;
-      `;
-      webviewRef.current?.injectJavaScript(requestScript);
+      AUTO_CONNECT_DELAYS.forEach((delay) => {
+        setTimeout(() => {
+          const requestScript = `
+            if (window.ethereum && window.ethereum.request) {
+              window.ethereum.request({ method: 'eth_requestAccounts' }).catch(function() {});
+            }
+            true;
+          `;
+          webviewRef.current?.injectJavaScript(requestScript);
+        }, delay);
+      });
     } catch {
       // user cancelled
     }
@@ -306,7 +325,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
 
     switch (method) {
       case 'eth_accounts': {
-        if (!approvedOriginsRef.current.has(origin)) {
+        if (!approvedOriginsRef.current.has(origin) && !shouldAutoConnect(origin)) {
           return [];
         }
         const address = await WalletService.getAddress();
@@ -404,6 +423,20 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
 
         const sentTx = await wallet.sendTransaction(requestTx);
         return sentTx.hash;
+      }
+
+      case 'eth_call':
+      case 'eth_getBalance':
+      case 'eth_getCode':
+      case 'eth_gasPrice':
+      case 'eth_estimateGas':
+      case 'eth_getTransactionCount':
+      case 'eth_getTransactionReceipt':
+      case 'eth_getBlockByNumber':
+      case 'eth_getLogs':
+      case 'eth_feeHistory':
+      case 'eth_blockNumber': {
+        return proxyRpc(method, params, origin);
       }
 
       case 'wallet_switchEthereumChain': {
