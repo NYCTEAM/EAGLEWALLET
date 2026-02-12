@@ -91,6 +91,7 @@ export default function App() {
       const chainId = WalletService.getCurrentNetwork().chainId;
       try {
         await RPCService.refreshNodes(chainId);
+        await WalletService.ensurePreferredProvider(true);
       } catch (error) {
         console.warn('RPC auto-refresh failed:', error);
       }

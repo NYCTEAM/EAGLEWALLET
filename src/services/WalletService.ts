@@ -25,6 +25,9 @@ class WalletService {
   private wallet: ethers.Wallet | ethers.HDNodeWallet | null = null;
   private provider: ethers.JsonRpcProvider | null = null;
   private currentChainId: number = DEFAULT_NETWORK;
+  private currentRpcUrl: string | null = null;
+  private lastProviderCheck: number = 0;
+  private refreshingProvider: boolean = false;
 
   private hashPassword(password: string): string {
     return ethers.keccak256(ethers.toUtf8Bytes(password));
@@ -52,11 +55,13 @@ class WalletService {
         chainId: network.chainId,
         name: network.name,
       });
+      this.currentRpcUrl = preferredRpc;
     } catch {
       this.provider = new ethers.JsonRpcProvider(network.rpcUrls[0], {
         chainId: network.chainId,
         name: network.name,
       });
+      this.currentRpcUrl = network.rpcUrls[0];
     }
 
     if (this.wallet && this.provider) {
@@ -64,6 +69,36 @@ class WalletService {
     }
 
     this.currentChainId = resolvedChainId;
+    this.lastProviderCheck = Date.now();
+  }
+
+  private async refreshProviderIfNeeded(force: boolean = false): Promise<void> {
+    if (this.refreshingProvider) return;
+    const now = Date.now();
+    if (!force && now - this.lastProviderCheck < 60 * 1000) {
+      return;
+    }
+
+    this.refreshingProvider = true;
+    this.lastProviderCheck = now;
+    try {
+      const preferredRpc = await RPCService.getPreferredRpcUrl(this.currentChainId);
+      if (!this.provider || !this.currentRpcUrl || preferredRpc !== this.currentRpcUrl) {
+        const network = NETWORKS[this.currentChainId] || NETWORKS[DEFAULT_NETWORK];
+        this.provider = new ethers.JsonRpcProvider(preferredRpc, {
+          chainId: network.chainId,
+          name: network.name,
+        });
+        this.currentRpcUrl = preferredRpc;
+        if (this.wallet) {
+          this.wallet = this.wallet.connect(this.provider);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to refresh provider:', error);
+    } finally {
+      this.refreshingProvider = false;
+    }
   }
 
   /**
@@ -210,6 +245,8 @@ class WalletService {
 
     if (!this.provider) {
       await this.initProvider(this.currentChainId);
+    } else {
+      await this.refreshProviderIfNeeded();
     }
 
     this.wallet = this.wallet.connect(this.provider!);
@@ -222,6 +259,8 @@ class WalletService {
   async getProvider(): Promise<ethers.Provider> {
     if (!this.provider) {
       await this.initProvider(this.currentChainId);
+    } else {
+      await this.refreshProviderIfNeeded();
     }
     return this.provider!;
   }
@@ -231,6 +270,17 @@ class WalletService {
    */
   async switchNetwork(chainId: number): Promise<void> {
     await this.initProvider(chainId);
+  }
+
+  /**
+   * Ensure provider uses preferred RPC (force refresh if needed).
+   */
+  async ensurePreferredProvider(force: boolean = false): Promise<void> {
+    if (!this.provider) {
+      await this.initProvider(this.currentChainId);
+      return;
+    }
+    await this.refreshProviderIfNeeded(force);
   }
 
   /**

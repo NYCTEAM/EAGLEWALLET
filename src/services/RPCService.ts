@@ -19,6 +19,7 @@ class RPCService {
   private lastCheck: Map<string, number> = new Map();
   private cacheKeyPrefix = 'EAGLE_RPC_LATENCY_';
   private pinnedKeyPrefix = 'EAGLE_PINNED_RPC_';
+  private maxPreferredLatency = 2000; // ms
 
   /**
    * Test RPC node latency
@@ -140,7 +141,7 @@ class RPCService {
    * Get provider with automatic RPC selection
    */
   async getProvider(chainId: number): Promise<ethers.JsonRpcProvider> {
-    const fastestRPC = await this.getFastestRPC(chainId);
+    const fastestRPC = await this.getPreferredRpcUrl(chainId);
     const network = NETWORKS[chainId];
     
     return new ethers.JsonRpcProvider(fastestRPC, {
@@ -280,6 +281,8 @@ class RPCService {
       throw new Error(`No RPC nodes configured for chain ${chainId}`);
     }
 
+    const nodes = await this.getNodes(chainId);
+
     try {
       let pinned = await AsyncStorage.getItem(`${this.pinnedKeyPrefix}${chainId}`);
       if (!pinned) {
@@ -289,16 +292,15 @@ class RPCService {
         }
       }
       if (pinned) {
-        const match = network.rpcNodes.find((node) => node.name === pinned);
-        if (match) {
-          return match.url;
+        const pinnedNode = nodes.find((node) => node.name === pinned);
+        if (pinnedNode && pinnedNode.available && pinnedNode.latency < this.maxPreferredLatency) {
+          return pinnedNode.url;
         }
       }
     } catch (error) {
       console.error('Failed to load pinned RPC:', error);
     }
 
-    const nodes = await this.getNodes(chainId);
     const fastest = nodes.find((node) => node.available) || nodes[0];
     if (fastest?.url) {
       return fastest.url;
