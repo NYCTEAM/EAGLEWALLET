@@ -308,7 +308,7 @@ export default function DAppWebViewScreen({ navigation, route }: any) {
   };
 
   const proxyRpc = async (method: string, params: any[], origin: string) => {
-    const provider = await WalletService.getProvider();
+    const provider = (await WalletService.getProvider()) as any;
     try {
       return await provider.send(method, params);
     } catch (error) {
