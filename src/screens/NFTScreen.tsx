@@ -31,7 +31,10 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
         setNfts([]);
       } else {
         const data = await NFTService.getUserNFTs(address, network.chainId);
-        setNfts(data);
+        const safe = Array.isArray(data)
+          ? data.filter((nft) => nft && nft.contractAddress && nft.tokenId)
+          : [];
+        setNfts(safe);
       }
     } finally {
       setLoading(false);
@@ -60,7 +63,7 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
     if (trimmed.startsWith('ipfs://')) {
       return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return trimmed;
     }
     return '';

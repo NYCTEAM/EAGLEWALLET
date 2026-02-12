@@ -87,10 +87,13 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
     );
   }, [allDapps, query]);
 
-  const renderDapp = ({ item }: { item: DApp }) => {
+  const renderDappCard = (item: DApp, compact: boolean) => {
     const isEagle = item.icon === 'eagle' || item.id.startsWith('eagleswap');
     return (
-    <TouchableOpacity style={styles.dappCard} onPress={() => openDapp(item)}>
+    <TouchableOpacity
+      style={[styles.dappCard, compact && styles.dappCardCompact]}
+      onPress={() => openDapp(item)}
+    >
       <View style={styles.iconBox}>
         {isEagle ? (
           <Image source={EAGLE_LOGO} style={styles.logo} />
@@ -99,13 +102,16 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
         )}
       </View>
       <View style={styles.dappInfo}>
-        <Text style={styles.dappName}>{item.name}</Text>
-        <Text style={styles.dappDesc} numberOfLines={2}>{item.description}</Text>
+        <Text style={styles.dappName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.dappDesc} numberOfLines={compact ? 1 : 2}>{item.description}</Text>
         <Text style={styles.dappUrl} numberOfLines={1}>{item.url}</Text>
       </View>
     </TouchableOpacity>
     );
   };
+
+  const renderDapp = ({ item }: { item: DApp }) => renderDappCard(item, false);
+  const renderRecentDapp = ({ item }: { item: DApp }) => renderDappCard(item, true);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,7 +143,7 @@ export default function DAppBrowserScreen({ navigation, isTabScreen }: any) {
           <FlatList
             data={recentDapps}
             keyExtractor={(item) => `recent-${item.id}`}
-            renderItem={renderDapp}
+            renderItem={renderRecentDapp}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.recentList}
@@ -229,6 +235,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     minWidth: 290,
     marginRight: 10,
+  },
+  dappCardCompact: {
+    minWidth: 210,
+    padding: 10,
   },
   iconBox: {
     width: 44,

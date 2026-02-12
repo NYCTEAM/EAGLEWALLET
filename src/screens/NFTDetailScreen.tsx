@@ -36,7 +36,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
     if (trimmed.startsWith('ipfs://')) {
       return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return trimmed;
     }
     return '';
