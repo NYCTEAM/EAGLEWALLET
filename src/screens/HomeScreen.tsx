@@ -77,9 +77,34 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       setBalance(formattedBal);
 
       const currentNet = WalletService.getCurrentNetwork();
+      const chainTokens = getChainTokens(currentNet.chainId);
+
+      // Show predefined tokens immediately (even before balances/custom tokens load)
+      const baseTokenList: any[] = [
+        {
+          symbol: currentNet.symbol,
+          name: currentNet.name,
+          balance: formattedBal,
+          price: 0,
+          change: 0,
+          address: 'native',
+          logo: currentNet.symbol.toLowerCase(),
+        },
+        ...chainTokens.map((token) => ({
+          symbol: token.symbol,
+          name: token.name,
+          balance: '0.0000',
+          price: 0,
+          change: 0,
+          address: token.address,
+          logo: token.logo || token.symbol.toLowerCase(),
+          color: token.color,
+          decimals: token.decimals,
+        })),
+      ];
+      setTokens(baseTokenList);
 
       if (!addr) {
-        setTokens([]);
         setNfts([]);
         setTotalValue('0.00');
         return;
@@ -91,8 +116,6 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       ]);
       if (seq !== loadSeq.current) return;
       setNfts(userNFTs);
-
-      const chainTokens = getChainTokens(currentNet.chainId);
       const customTokens = customTokensRaw
         .filter((token) => token.type === 'ERC20')
         .map((token) => ({
@@ -118,18 +141,18 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       // Get provider for balance queries
       const provider = await WalletService.getProvider();
       
-      // Build token list with native token first
+      // Build token list with native token first (including custom tokens)
       const initialTokenList: any[] = [
-        { 
-          symbol: currentNet.symbol, 
-          name: currentNet.name, 
-          balance: formattedBal, 
-          price: 0, 
-          change: 0, 
+        {
+          symbol: currentNet.symbol,
+          name: currentNet.name,
+          balance: formattedBal,
+          price: 0,
+          change: 0,
           address: 'native',
           logo: currentNet.symbol.toLowerCase(),
         },
-        ...mergedTokens.map(token => ({
+        ...mergedTokens.map((token) => ({
           symbol: token.symbol,
           name: token.name,
           balance: '0.0000',
@@ -139,10 +162,10 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           logo: token.logo || token.symbol.toLowerCase(),
           color: token.color,
           decimals: token.decimals,
-        }))
+        })),
       ];
-      
-      // Render immediately with initial list
+
+      // Update list once custom tokens are ready
       setTokens(initialTokenList);
 
       const updatedListWithBalances = [...initialTokenList];
