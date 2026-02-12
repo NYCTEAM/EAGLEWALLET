@@ -28,7 +28,7 @@ export default function SelectTokenScreen({ route, navigation }: any) {
   const [tokens, setTokens] = useState<any[]>([]);
   const [networkName, setNetworkName] = useState('BNB Chain');
   const [importingCustom, setImportingCustom] = useState(false);
-  const popularSymbols = useMemo(() => ['BNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'BTC', 'ETH', 'EAGLE'], []);
+  const popularSymbols = useMemo(() => ['EAGLE', 'BNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'BTC', 'ETH'], []);
 
   useEffect(() => {
     loadTokens();

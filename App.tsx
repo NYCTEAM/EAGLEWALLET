@@ -32,6 +32,7 @@ import TransactionResultScreen from './src/screens/TransactionResultScreen';
 import WalletsScreen from './src/screens/WalletsScreen';
 import AddWalletScreen from './src/screens/AddWalletScreen';
 import AddTokenScreen from './src/screens/AddTokenScreen';
+import ManageTokensScreen from './src/screens/ManageTokensScreen';
 import SwapScreen from './src/screens/SwapScreen';
 import AdvancedSettingsScreen from './src/screens/AdvancedSettingsScreen';
 import PriceAlertScreen from './src/screens/PriceAlertScreen';
@@ -179,6 +180,7 @@ export default function App() {
               <Stack.Screen name="Wallets" component={WalletsScreen} />
               <Stack.Screen name="AddWallet" component={AddWalletScreen} />
               <Stack.Screen name="AddToken" component={AddTokenScreen} />
+              <Stack.Screen name="ManageTokens" component={ManageTokensScreen} />
               <Stack.Screen name="Swap" component={SwapScreen} />
               <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
               <Stack.Screen name="PriceAlert" component={PriceAlertScreen} />

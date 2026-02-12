@@ -26,6 +26,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { getChainTokens } from '../config/tokenConfig';
 import NFTService, { NFT } from '../services/NFTService';
 import CustomTokenService from '../services/CustomTokenService';
+import TokenVisibilityService from '../services/TokenVisibilityService';
 import { ethers } from 'ethers';
 
 const { width } = Dimensions.get('window');
@@ -43,6 +44,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const [tokens, setTokens] = useState<any[]>([]);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
+  const [hiddenTokenKeys, setHiddenTokenKeys] = useState<string[]>([]);
   const loadingRef = useRef(false);
   const loadSeq = useRef(0);
 
@@ -78,6 +80,9 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
       const currentNet = WalletService.getCurrentNetwork();
       const chainTokens = getChainTokens(currentNet.chainId);
+      const hidden = await TokenVisibilityService.getHiddenTokens(currentNet.chainId);
+      if (seq !== loadSeq.current) return;
+      setHiddenTokenKeys(hidden);
 
       // Show predefined tokens immediately (even before balances/custom tokens load)
       const baseTokenList: any[] = [
@@ -115,8 +120,28 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         CustomTokenService.getCustomTokensByChain(currentNet.chainId),
       ]);
       if (seq !== loadSeq.current) return;
+      const sanitizeNft = (raw: any): NFT | null => {
+        if (!raw || typeof raw !== 'object') return null;
+        const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
+        const tokenId =
+          typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
+            ? String(raw.tokenId)
+            : '';
+        if (!contractAddress || !tokenId) return null;
+        return {
+          tokenId,
+          contractAddress,
+          name: typeof raw.name === 'string' ? raw.name : '',
+          description: typeof raw.description === 'string' ? raw.description : '',
+          image: typeof raw.image === 'string' ? raw.image : '',
+          collection: typeof raw.collection === 'string' ? raw.collection : '',
+          chainId: Number(raw.chainId || currentNet.chainId),
+          type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
+          amount: typeof raw.amount === 'number' ? raw.amount : undefined,
+        };
+      };
       const safeNFTs = Array.isArray(userNFTs)
-        ? userNFTs.filter((nft) => nft && nft.contractAddress && nft.tokenId)
+        ? userNFTs.map(sanitizeNft).filter((nft): nft is NFT => !!nft)
         : [];
       setNfts(safeNFTs);
       const customTokens = customTokensRaw
@@ -257,13 +282,27 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   };
 
   const displayTokens = useMemo(() => {
+    const hiddenSet = new Set(hiddenTokenKeys.map((key) => key.toLowerCase()));
+    const isEagle = (token: any) => String(token.symbol || '').toUpperCase() === 'EAGLE';
+    const isHidden = (token: any) => {
+      if (isEagle(token)) return false;
+      const key = TokenVisibilityService.getTokenKey(token);
+      return key ? hiddenSet.has(key.toLowerCase()) : false;
+    };
+
     const rank = (symbol?: string) => {
       if (!symbol) return Number.MAX_SAFE_INTEGER;
       const idx = POPULAR_SYMBOLS.indexOf(symbol.toUpperCase());
       return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
     };
 
-    return [...tokens].sort((a, b) => {
+    return [...tokens]
+      .filter((token) => !isHidden(token))
+      .sort((a, b) => {
+      const aIsEagle = isEagle(a);
+      const bIsEagle = isEagle(b);
+      if (aIsEagle !== bIsEagle) return aIsEagle ? -1 : 1;
+
       const ar = rank(a.symbol);
       const br = rank(b.symbol);
       if (ar !== br) return ar - br;
@@ -276,7 +315,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
       return String(a.symbol || '').localeCompare(String(b.symbol || ''));
     });
-  }, [tokens]);
+  }, [tokens, hiddenTokenKeys]);
 
   const renderTokenItem = useCallback(({ item }: { item: any }) => {
     let logoSource = null;
@@ -340,6 +379,14 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
   const renderNftItem = useCallback(({ item }: { item: NFT }) => {
     const imageUri = normalizeNftImage((item as any)?.image);
+    const safeName =
+      typeof item?.name === 'string' && item.name.trim()
+        ? item.name
+        : t.nft.unknownCollection;
+    const safeTokenId =
+      typeof item?.tokenId === 'string' || typeof item?.tokenId === 'number' || typeof item?.tokenId === 'bigint'
+        ? String(item.tokenId)
+        : '-';
     return (
       <TouchableOpacity
         style={styles.nftCard}
@@ -353,8 +400,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           </View>
         )}
         <View style={styles.nftInfo}>
-          <Text style={styles.nftName} numberOfLines={1}>{item.name || t.nft.unknownCollection}</Text>
-          <Text style={styles.nftId}>#{item.tokenId || '-'}</Text>
+          <Text style={styles.nftName} numberOfLines={1}>{safeName}</Text>
+          <Text style={styles.nftId}>#{safeTokenId}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -472,8 +519,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
             contentContainerStyle={styles.tokenListContent}
             ListEmptyComponent={!loading ? <Text style={styles.emptyListText}>{t.home.noTokens}</Text> : null}
             ListFooterComponent={(
-              <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate('AddToken')}>
-                <Text style={styles.manageButtonText}>{t.home.manageAddWallets}</Text>
+              <TouchableOpacity style={styles.manageButton} onPress={() => navigation.navigate('ManageTokens')}>
+                <Text style={styles.manageButtonText}>{`${t.common.edit} ${t.token.tokens}`}</Text>
               </TouchableOpacity>
             )}
           />
@@ -484,6 +531,9 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
             renderItem={renderNftItem}
             numColumns={2}
             columnWrapperStyle={styles.nftRow}
+            removeClippedSubviews
+            initialNumToRender={6}
+            windowSize={7}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F3BA2F" />}
             contentContainerStyle={styles.nftListContent}
             ListEmptyComponent={(

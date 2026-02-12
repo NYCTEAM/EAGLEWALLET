@@ -23,7 +23,22 @@ import WalletService from '../services/WalletService';
 const { width } = Dimensions.get('window');
 
 export default function NFTDetailScreen({ route, navigation }: any) {
-  const { nft } = route.params;
+  const inputNft = route?.params?.nft || {};
+  const nft = {
+    tokenId:
+      typeof inputNft.tokenId === 'string' ||
+      typeof inputNft.tokenId === 'number' ||
+      typeof inputNft.tokenId === 'bigint'
+        ? String(inputNft.tokenId)
+        : '',
+    contractAddress: typeof inputNft.contractAddress === 'string' ? inputNft.contractAddress : '',
+    name: typeof inputNft.name === 'string' ? inputNft.name : '',
+    description: typeof inputNft.description === 'string' ? inputNft.description : '',
+    image: typeof inputNft.image === 'string' ? inputNft.image : '',
+    collection: typeof inputNft.collection === 'string' ? inputNft.collection : '',
+    chainId: Number(inputNft.chainId || 0),
+    type: inputNft.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
+  };
   const { t } = useLanguage();
   const network = WalletService.getCurrentNetwork();
   const normalizeNftImage = (raw: any) => {
@@ -121,7 +136,7 @@ export default function NFTDetailScreen({ route, navigation }: any) {
                 <Text style={styles.infoLabel}>{t.nft.contract}</Text>
                 <TouchableOpacity 
                     style={styles.copyRow}
-                    onPress={() => handleCopy(nft.contractAddress)}
+                    onPress={() => handleCopy(nft.contractAddress || '')}
                 >
                     <Text style={styles.infoValue}>{formatAddress(nft.contractAddress)}</Text>
                     <Text style={styles.copyIcon}>📋</Text>

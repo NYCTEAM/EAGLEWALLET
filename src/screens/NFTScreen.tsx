@@ -31,8 +31,28 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
         setNfts([]);
       } else {
         const data = await NFTService.getUserNFTs(address, network.chainId);
+        const sanitizeNft = (raw: any): NFT | null => {
+          if (!raw || typeof raw !== 'object') return null;
+          const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
+          const tokenId =
+            typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
+              ? String(raw.tokenId)
+              : '';
+          if (!contractAddress || !tokenId) return null;
+          return {
+            tokenId,
+            contractAddress,
+            name: typeof raw.name === 'string' ? raw.name : '',
+            description: typeof raw.description === 'string' ? raw.description : '',
+            image: typeof raw.image === 'string' ? raw.image : '',
+            collection: typeof raw.collection === 'string' ? raw.collection : '',
+            chainId: Number(raw.chainId || network.chainId),
+            type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
+            amount: typeof raw.amount === 'number' ? raw.amount : undefined,
+          };
+        };
         const safe = Array.isArray(data)
-          ? data.filter((nft) => nft && nft.contractAddress && nft.tokenId)
+          ? data.map(sanitizeNft).filter((nft): nft is NFT => !!nft)
           : [];
         setNfts(safe);
       }
@@ -71,6 +91,18 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
 
   const renderItem = ({ item }: { item: NFT }) => {
     const imageUri = normalizeNftImage((item as any)?.image);
+    const safeName =
+      typeof item?.name === 'string' && item.name.trim()
+        ? item.name
+        : t.nft.unknownCollection;
+    const safeCollection =
+      typeof item?.collection === 'string' && item.collection.trim()
+        ? item.collection
+        : '-';
+    const safeTokenId =
+      typeof item?.tokenId === 'string' || typeof item?.tokenId === 'number' || typeof item?.tokenId === 'bigint'
+        ? String(item.tokenId)
+        : '-';
     return (
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NFTDetail', { nft: item })}>
         {imageUri ? (
@@ -81,9 +113,9 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
           </View>
         )}
         <View style={styles.cardBody}>
-          <Text style={styles.name} numberOfLines={1}>{item.name || t.nft.unknownCollection}</Text>
-          <Text style={styles.sub} numberOfLines={1}>{item.collection || '-'}</Text>
-          <Text style={styles.sub}>#{item.tokenId || '-'}</Text>
+          <Text style={styles.name} numberOfLines={1}>{safeName}</Text>
+          <Text style={styles.sub} numberOfLines={1}>{safeCollection}</Text>
+          <Text style={styles.sub}>#{safeTokenId}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -116,6 +148,9 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
           renderItem={renderItem}
           numColumns={2}
           columnWrapperStyle={styles.row}
+          removeClippedSubviews
+          initialNumToRender={6}
+          windowSize={7}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#E9B949" />}
           ListEmptyComponent={<Text style={styles.empty}>{t.nft.noNFTs}</Text>}
