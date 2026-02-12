@@ -72,6 +72,9 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
       icon: '',
       rdns: 'com.eaglewallet'
     };
+    var chainHex = '${ethers.toQuantity(chainId)}';
+    var chainDec = '${String(chainId)}';
+
     function localAccounts() {
       return initialAddress ? [initialAddress] : [];
     }
@@ -79,14 +82,28 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
     var provider = {
       isMetaMask: true,
       isEagleWallet: true,
+      isTokenPocket: true,
+      isTrust: true,
+      isOkxWallet: true,
+      isOKExWallet: true,
+      isCoinbaseWallet: false,
       providers: [],
       selectedAddress: initialAddress || null,
-      chainId: '${ethers.toQuantity(chainId)}',
-      networkVersion: '${String(chainId)}',
+      chainId: chainHex,
+      networkVersion: chainDec,
       _state: { accounts: initialAddress ? [initialAddress] : [], isConnected: true, isUnlocked: !!initialAddress },
       isConnected: function() { return true; },
       emit: emit,
       request: function(args) {
+        if (!args || !args.method) {
+          return Promise.reject(new Error('Invalid request'));
+        }
+        if (args.method === 'eth_chainId') {
+          return Promise.resolve(chainHex);
+        }
+        if (args.method === 'net_version') {
+          return Promise.resolve(chainDec);
+        }
         if (args && (args.method === 'eth_accounts' || args.method === 'eth_requestAccounts') && initialAddress) {
           return Promise.resolve(localAccounts());
         }
@@ -109,6 +126,14 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
         return provider;
       },
       sendAsync: function(payload, callback) {
+        if (payload && payload.method === 'eth_chainId') {
+          callback(null, { id: payload.id, jsonrpc: '2.0', result: chainHex });
+          return;
+        }
+        if (payload && payload.method === 'net_version') {
+          callback(null, { id: payload.id, jsonrpc: '2.0', result: chainDec });
+          return;
+        }
         if (payload && (payload.method === 'eth_accounts' || payload.method === 'eth_requestAccounts') && initialAddress) {
           callback(null, { id: payload.id, jsonrpc: '2.0', result: localAccounts() });
           return;
@@ -119,15 +144,36 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
       },
       send: function(methodOrPayload, params) {
         if (typeof methodOrPayload === 'string') {
+          if (methodOrPayload === 'eth_chainId') {
+            return Promise.resolve(chainHex);
+          }
+          if (methodOrPayload === 'net_version') {
+            return Promise.resolve(chainDec);
+          }
           if ((methodOrPayload === 'eth_accounts' || methodOrPayload === 'eth_requestAccounts') && initialAddress) {
             return Promise.resolve(localAccounts());
           }
           return sendRequest(methodOrPayload, params || []);
         }
+        if (methodOrPayload && methodOrPayload.method === 'eth_chainId') {
+          return Promise.resolve(chainHex);
+        }
+        if (methodOrPayload && methodOrPayload.method === 'net_version') {
+          return Promise.resolve(chainDec);
+        }
         if (methodOrPayload && (methodOrPayload.method === 'eth_accounts' || methodOrPayload.method === 'eth_requestAccounts') && initialAddress) {
           return Promise.resolve(localAccounts());
         }
         return sendRequest(methodOrPayload.method, methodOrPayload.params || []);
+      }
+    };
+
+    provider._metamask = {
+      isUnlocked: function() { return Promise.resolve(!!initialAddress); },
+      isApproved: function() { return Promise.resolve(!!initialAddress); },
+      requestBatch: function(requests) {
+        if (!Array.isArray(requests)) return Promise.resolve([]);
+        return Promise.all(requests.map(function(r) { return provider.request(r); }));
       }
     };
 
@@ -148,6 +194,16 @@ const createInjectedProviderScript = (chainId: number, initialAddress?: string |
     provider.providers = [provider];
     window.ethereum = provider;
     window.web3 = { currentProvider: provider };
+    window.tokenpocket = window.tokenpocket || {};
+    window.tokenpocket.ethereum = provider;
+    window.tokenpocket.isTokenPocket = true;
+    window.trustwallet = window.trustwallet || {};
+    window.trustwallet.ethereum = provider;
+    window.trustwallet.isTrust = true;
+    window.okxwallet = window.okxwallet || {};
+    window.okxwallet.ethereum = provider;
+    window.okxwallet.isOkxWallet = true;
+    window.okxwallet.isOKExWallet = true;
     window.__EAGLE_PROVIDER__ = provider;
     window.dispatchEvent(new Event('ethereum#initialized'));
     document.dispatchEvent(new Event('ethereum#initialized'));
