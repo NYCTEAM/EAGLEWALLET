@@ -88,6 +88,35 @@ class NFTService {
     }
   >();
 
+  private async mapWithConcurrency<T, R>(
+    items: T[],
+    limit: number,
+    worker: (item: T, index: number) => Promise<R>
+  ): Promise<R[]> {
+    const size = items.length;
+    if (size === 0) return [];
+
+    const resolvedLimit = Math.max(1, Math.min(limit, size));
+    const results: R[] = new Array(size);
+    let cursor = 0;
+
+    const runners = Array.from({ length: resolvedLimit }, async () => {
+      while (cursor < size) {
+        const idx = cursor;
+        cursor += 1;
+        try {
+          results[idx] = await worker(items[idx], idx);
+        } catch {
+          // @ts-expect-error - allow sparse failures
+          results[idx] = undefined;
+        }
+      }
+    });
+
+    await Promise.all(runners);
+    return results;
+  }
+
   private cacheKey(chainId: number, address: string): string {
     return `${NFT_CACHE_PREFIX}${chainId}:${String(address || '').toLowerCase()}`;
   }
@@ -117,12 +146,17 @@ class NFTService {
     }
   }
 
-  async refreshUserNFTs(address: string, chainId: number): Promise<NFT[]> {
-    const key = `${chainId}:${String(address || '').toLowerCase()}`;
+  async refreshUserNFTs(
+    address: string,
+    chainId: number,
+    options?: { mode?: 'fast' | 'full' }
+  ): Promise<NFT[]> {
+    const mode = options?.mode === 'full' ? 'full' : 'fast';
+    const key = `${chainId}:${String(address || '').toLowerCase()}:${mode}`;
     const inFlight = this.refreshInFlight.get(key);
     if (inFlight) return inFlight;
 
-    const task = this.getUserNFTs(address, chainId)
+    const task = this.getUserNFTs(address, chainId, { mode })
       .catch(() => [] as NFT[])
       .finally(() => {
         this.refreshInFlight.delete(key);
@@ -274,12 +308,13 @@ class NFTService {
   /**
    * Get all NFTs owned by an address
    */
-  async getUserNFTs(address: string, chainId: number): Promise<NFT[]> {
+  async getUserNFTs(address: string, chainId: number, options?: { mode?: 'fast' | 'full' }): Promise<NFT[]> {
     try {
       if (!ethers.isAddress(address)) {
         return [];
       }
 
+      const mode = options?.mode === 'full' ? 'full' : 'fast';
       const nftMap = new Map<string, NFT>();
       const normalizedOwner = address.toLowerCase();
 
@@ -293,46 +328,49 @@ class NFTService {
       // Get known NFT contracts for this chain
       const nftContracts = this.getKnownNFTContracts(chainId);
 
-      for (const contractAddress of nftContracts) {
-        try {
-          const contractNFTs = await this.getNFTsFromContract(
-            address,
-            contractAddress,
-            chainId
-          );
-          contractNFTs.forEach(addNFT);
-        } catch (error) {
-          console.error(`Error fetching NFTs from ${contractAddress}:`, error);
-        }
+      if (nftContracts.length > 0) {
+        const results = await Promise.allSettled(
+          nftContracts.map((contractAddress) => this.getNFTsFromContract(address, contractAddress, chainId))
+        );
+        results.forEach((res, idx) => {
+          if (res.status === 'fulfilled') {
+            res.value.forEach(addNFT);
+            return;
+          }
+          console.warn(`Error fetching NFTs from ${nftContracts[idx]}:`, res.reason);
+        });
       }
 
-      // Discovery path: scan on-chain transfer logs via the wallet RPC and verify ownership
-      const transferCandidates = await this.getNFTCandidatesFromTransfers(address, chainId);
-      for (const candidate of transferCandidates) {
-        const key = `${candidate.contractAddress.toLowerCase()}:${candidate.tokenId}`;
-        if (nftMap.has(key)) {
-          continue;
-        }
+      if (mode === 'full') {
+        // Discovery path: scan on-chain transfer logs via the wallet RPC and verify ownership.
+        // This can be slow on some public nodes, so keep it optional.
+        const transferCandidates = await this.getNFTCandidatesFromTransfers(address, chainId);
+        for (const candidate of transferCandidates) {
+          const key = `${candidate.contractAddress.toLowerCase()}:${candidate.tokenId}`;
+          if (nftMap.has(key)) {
+            continue;
+          }
 
-        const isOwned = await this.ownsNFT(
-          normalizedOwner,
-          candidate.contractAddress,
-          candidate.tokenId,
-          chainId
-        );
-        if (!isOwned) {
-          continue;
-        }
+          const isOwned = await this.ownsNFT(
+            normalizedOwner,
+            candidate.contractAddress,
+            candidate.tokenId,
+            chainId
+          );
+          if (!isOwned) {
+            continue;
+          }
 
-        const details = await this.getNFTDetails(
-          candidate.contractAddress,
-          candidate.tokenId,
-          chainId,
-          candidate.type,
-          candidate.nameHint
-        );
-        if (details) {
-          addNFT(details);
+          const details = await this.getNFTDetails(
+            candidate.contractAddress,
+            candidate.tokenId,
+            chainId,
+            candidate.type,
+            candidate.nameHint
+          );
+          if (details) {
+            addNFT(details);
+          }
         }
       }
 
@@ -383,13 +421,14 @@ class NFTService {
       }
 
       if (supportsEnumerable) {
-        for (let i = 0; i < balanceNum && i < MAX_NFTS_PER_CONTRACT; i++) {
+        const count = Math.min(balanceNum, MAX_NFTS_PER_CONTRACT);
+        const indices = Array.from({ length: count }, (_, i) => i);
+        const fetched = await this.mapWithConcurrency(indices, 4, async (index) => {
           try {
-            const tokenId = await contract.tokenOfOwnerByIndex(ownerAddress, i);
+            const tokenId = await contract.tokenOfOwnerByIndex(ownerAddress, index);
             const tokenIdStr = tokenId.toString();
             const metadata = await this.fetchMetadataFrom721Contract(contract, tokenIdStr);
-
-            nfts.push({
+            return {
               tokenId: tokenIdStr,
               contractAddress,
               name: metadata.name || `#${tokenIdStr}`,
@@ -397,13 +436,14 @@ class NFTService {
               image: this.extractImage(metadata),
               collection: collectionName,
               chainId,
-              type: 'ERC721',
-            });
-          } catch (error) {
-            console.error(`Error fetching token ${i}:`, error);
+              type: 'ERC721' as const,
+            } satisfies NFT;
+          } catch {
+            return null as any;
           }
-        }
-        return nfts;
+        });
+
+        return fetched.filter((item): item is NFT => !!item);
       }
 
       // Non-enumerable fallback: infer owned token IDs from Transfer logs
@@ -414,16 +454,16 @@ class NFTService {
         MAX_NFTS_PER_CONTRACT
       );
 
-      for (const tokenIdStr of inferredTokenIds) {
+      const fetched = await this.mapWithConcurrency(inferredTokenIds, 4, async (tokenIdStr) => {
         try {
           const isOwned = await this.ownsNFT(ownerAddress, contractAddress, tokenIdStr, chainId);
           if (!isOwned) {
-            continue;
+            return null as any;
           }
 
           const metadata = await this.fetchMetadataFrom721Contract(contract, tokenIdStr);
 
-          nfts.push({
+          return {
             tokenId: tokenIdStr,
             contractAddress,
             name: metadata.name || `#${tokenIdStr}`,
@@ -431,12 +471,14 @@ class NFTService {
             image: this.extractImage(metadata),
             collection: collectionName,
             chainId,
-            type: 'ERC721',
-          });
-        } catch (error) {
-          console.error(`Error fetching token ${tokenIdStr}:`, error);
+            type: 'ERC721' as const,
+          } satisfies NFT;
+        } catch {
+          return null as any;
         }
-      }
+      });
+
+      return fetched.filter((item): item is NFT => !!item);
     } catch (error) {
       console.error('Error in getNFTsFromContract:', error);
     }
@@ -634,14 +676,14 @@ class NFTService {
    * Get known NFT contracts for a chain
    */
   private getKnownNFTContracts(chainId: number): string[] {
-    // Popular NFT contracts on BSC
+    // Keep this list tight and correct; wrong addresses can cause very slow scans.
     const contracts: Record<number, string[]> = {
       // BSC Mainnet
       56: [
-        '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', // PancakeSwap NFT
-        '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07', // Pancake Squad
-        '0x3c117d186c5055071eff91d87f2600eaf88d591d', // Eagle Access NFT
-        // Add more popular BSC NFT contracts
+        // Eagle Access NFT (ERC-721)
+        '0x3c117d186c5055071eff91d87f2600eaf88d591d',
+        // Pancake Squad (ERC-721)
+        '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07',
       ],
     };
 
@@ -710,7 +752,7 @@ class NFTService {
       for (let start = fromBlock; start <= currentBlock; start += TRANSFER_SCAN_BLOCK_STEP) {
         const end = Math.min(currentBlock, start + TRANSFER_SCAN_BLOCK_STEP - 1);
 
-        const [in721, out721, inSingle, outSingle, inBatch, outBatch] = await Promise.all([
+        const [in721, out721, in1155, out1155] = await Promise.all([
           this.getLogsSafe(provider, {
             fromBlock: start,
             toBlock: end,
@@ -725,22 +767,12 @@ class NFTService {
           this.getLogsSafe(provider, {
             fromBlock: start,
             toBlock: end,
-            topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, null, ownerTopic],
+            topics: [[TRANSFER_SINGLE_EVENT_TOPIC, TRANSFER_BATCH_EVENT_TOPIC], null, null, ownerTopic],
           }),
           this.getLogsSafe(provider, {
             fromBlock: start,
             toBlock: end,
-            topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, ownerTopic, null],
-          }),
-          this.getLogsSafe(provider, {
-            fromBlock: start,
-            toBlock: end,
-            topics: [TRANSFER_BATCH_EVENT_TOPIC, null, null, ownerTopic],
-          }),
-          this.getLogsSafe(provider, {
-            fromBlock: start,
-            toBlock: end,
-            topics: [TRANSFER_BATCH_EVENT_TOPIC, null, ownerTopic, null],
+            topics: [[TRANSFER_SINGLE_EVENT_TOPIC, TRANSFER_BATCH_EVENT_TOPIC], null, ownerTopic, null],
           }),
         ]);
 
@@ -832,10 +864,8 @@ class NFTService {
           }
         };
 
-        inSingle.forEach((log) => apply1155Delta(log, 1n));
-        outSingle.forEach((log) => apply1155Delta(log, -1n));
-        inBatch.forEach((log) => apply1155Delta(log, 1n));
-        outBatch.forEach((log) => apply1155Delta(log, -1n));
+        in1155.forEach((log) => apply1155Delta(log, 1n));
+        out1155.forEach((log) => apply1155Delta(log, -1n));
       }
 
       const candidates: NFTCandidate[] = [];
@@ -865,13 +895,19 @@ class NFTService {
   ): Promise<boolean> {
     try {
       const ownerTopic = ethers.zeroPadValue(ethers.getAddress(normalizedAddress), 32);
-      const [in721, out721, inSingle, outSingle, inBatch, outBatch] = await Promise.all([
+      const [in721, out721, in1155, out1155] = await Promise.all([
         this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_EVENT_TOPIC, null, ownerTopic, null] }),
         this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_EVENT_TOPIC, ownerTopic, null, null] }),
-        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, null, ownerTopic] }),
-        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, ownerTopic, null] }),
-        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_BATCH_EVENT_TOPIC, null, null, ownerTopic] }),
-        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_BATCH_EVENT_TOPIC, null, ownerTopic, null] }),
+        this.getLogsSafe(provider, {
+          fromBlock,
+          toBlock,
+          topics: [[TRANSFER_SINGLE_EVENT_TOPIC, TRANSFER_BATCH_EVENT_TOPIC], null, null, ownerTopic],
+        }),
+        this.getLogsSafe(provider, {
+          fromBlock,
+          toBlock,
+          topics: [[TRANSFER_SINGLE_EVENT_TOPIC, TRANSFER_BATCH_EVENT_TOPIC], null, ownerTopic, null],
+        }),
       ]);
 
       // Some nodes may still return ERC-20 logs on the 721 topic (rare). Keep a hard guard.
@@ -879,10 +915,8 @@ class NFTService {
       return (
         has721(in721) ||
         has721(out721) ||
-        (Array.isArray(inSingle) && inSingle.length > 0) ||
-        (Array.isArray(outSingle) && outSingle.length > 0) ||
-        (Array.isArray(inBatch) && inBatch.length > 0) ||
-        (Array.isArray(outBatch) && outBatch.length > 0)
+        (Array.isArray(in1155) && in1155.length > 0) ||
+        (Array.isArray(out1155) && out1155.length > 0)
       );
     } catch {
       return false;

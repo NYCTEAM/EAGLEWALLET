@@ -132,7 +132,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         }
 
         if (showSpinner) setNftLoading(true);
-        const live = await NFTService.refreshUserNFTs(owner, chainId);
+        const live = await NFTService.refreshUserNFTs(owner, chainId, { mode: forceRefresh ? 'full' : 'fast' });
         if (seq !== nftLoadSeq.current) return;
         setNfts(sanitizeNftList(live, chainId));
       } catch (error) {

@@ -79,7 +79,7 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
         const shouldRefresh = forceRefresh || safeCached.length === 0;
         if (!shouldRefresh) return;
 
-        const live = await NFTService.refreshUserNFTs(address, network.chainId);
+        const live = await NFTService.refreshUserNFTs(address, network.chainId, { mode: forceRefresh ? 'full' : 'fast' });
         if (seq !== loadSeq.current) return;
         setNfts(sanitizeNftList(live, network.chainId));
       }
