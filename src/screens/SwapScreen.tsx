@@ -3,7 +3,7 @@
  * Quote, approve, simulate, and swap flow.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { ethers } from 'ethers';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../i18n/LanguageContext';
 import PriceService from '../services/PriceService';
 import SwapService, { SwapSimulationResult } from '../services/SwapService';
@@ -24,9 +25,10 @@ import WalletService from '../services/WalletService';
 import TokenLogoService from '../services/TokenLogoService';
 import SwapMiningService from '../services/SwapMiningService';
 import RewardsDappService from '../services/RewardsDappService';
-import TokenService from '../services/TokenService';
 import TokenBalanceCacheService from '../services/TokenBalanceCacheService';
 import AppEventBus, { EVENT_BALANCES_REFRESH } from '../services/AppEventBus';
+
+const ERC20_BALANCE_ABI = ['function balanceOf(address owner) view returns (uint256)'];
 
 export default function SwapScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -75,6 +77,13 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
     if (!fromToken || !toToken) return;
     void refreshTokenBalances();
   }, [fromToken, toToken]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!fromToken || !toToken) return;
+      void refreshTokenBalances();
+    }, [fromToken, toToken])
+  );
 
   useEffect(() => {
     if (!fromToken || !toToken || prewarmQuoteRef.current) return;
@@ -142,8 +151,23 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       logo: 'usdt',
     });
 
-    const bal = await WalletService.getBalance();
-    if (isMounted.current) setFromBalance(bal);
+    const cached = await TokenBalanceCacheService.getCachedBalances(network.chainId, address);
+    const cachedFrom = cached?.native;
+    const cachedTo = cached?.['0x55d398326f99059ff775485246999027b3197955'];
+
+    if (isMounted.current) {
+      setFromBalance(typeof cachedFrom === 'string' ? cachedFrom : '0');
+      setToBalance(typeof cachedTo === 'string' ? cachedTo : '0');
+    }
+
+    try {
+      const bal = await WalletService.getBalance();
+      if (isMounted.current) setFromBalance(bal);
+    } catch {
+      // ignore
+    }
+
+    void refreshTokenBalances();
   };
 
   const fetchPrices = async () => {
@@ -170,26 +194,45 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       if (!address) return;
       const network = WalletService.getCurrentNetwork();
       const provider = await WalletService.getProvider();
+      const cached = await TokenBalanceCacheService.getCachedBalances(network.chainId, address);
 
       const updates: Record<string, string> = {};
       const normalizeKey = (addr: string) => (addr === ethers.ZeroAddress ? 'native' : addr).toLowerCase();
 
+      const getBalanceFast = async (token: any) => {
+        if (!token?.address) return '0';
+        if (token.address === ethers.ZeroAddress || token.address === 'native') {
+          const nativeBalance = await provider.getBalance(address);
+          return ethers.formatEther(nativeBalance);
+        }
+        const contract = new ethers.Contract(token.address, ERC20_BALANCE_ABI, provider);
+        const raw = await contract.balanceOf(address);
+        const decimals = Number.isFinite(token.decimals) ? Number(token.decimals) : 18;
+        return ethers.formatUnits(raw, decimals);
+      };
+
       if (fromToken?.address) {
-        const fromAddr = fromToken.address === ethers.ZeroAddress ? 'native' : fromToken.address;
-        const bal = await TokenService.getTokenBalance(fromAddr, address, provider);
+        const fromKey = normalizeKey(fromToken.address);
+        if (cached && typeof cached[fromKey] === 'string' && isMounted.current) {
+          setFromBalance(String(cached[fromKey]));
+        }
+        const bal = await getBalanceFast(fromToken);
         if (isMounted.current) {
           setFromBalance(String(bal));
         }
-        updates[normalizeKey(fromToken.address)] = String(bal);
+        updates[fromKey] = String(bal);
       }
 
       if (toToken?.address) {
-        const toAddr = toToken.address === ethers.ZeroAddress ? 'native' : toToken.address;
-        const bal = await TokenService.getTokenBalance(toAddr, address, provider);
+        const toKey = normalizeKey(toToken.address);
+        if (cached && typeof cached[toKey] === 'string' && isMounted.current) {
+          setToBalance(String(cached[toKey]));
+        }
+        const bal = await getBalanceFast(toToken);
         if (isMounted.current) {
           setToBalance(String(bal));
         }
-        updates[normalizeKey(toToken.address)] = String(bal);
+        updates[toKey] = String(bal);
       }
 
       if (Object.keys(updates).length > 0) {
