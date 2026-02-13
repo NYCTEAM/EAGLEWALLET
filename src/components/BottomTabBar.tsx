@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface BottomTabBarProps {
@@ -10,6 +11,9 @@ interface BottomTabBarProps {
 
 export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProps) {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 20);
+  const height = 65 + bottomPad;
 
   const tabs = [
     { key: 'wallet', label: t.home.myWallet, icon: 'wallet-outline' },
@@ -20,7 +24,7 @@ export default function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProp
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomPad, height }]}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
         return (
@@ -51,13 +55,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1E1E1E',
     borderTopWidth: 1,
     borderTopColor: '#2C2C2C',
-    paddingBottom: 20, // For iPhone X+ safe area
     paddingTop: 10,
-    height: 85,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   tab: {
     flex: 1,
