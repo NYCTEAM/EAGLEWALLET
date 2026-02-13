@@ -39,13 +39,14 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const [address, setAddress] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [nftLoading, setNftLoading] = useState(false);
   const [walletName, setWalletName] = useState('');
   const [tokens, setTokens] = useState<any[]>([]);
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [activeTab, setActiveTab] = useState<'crypto' | 'nft'>('crypto');
   const [hiddenTokenKeys, setHiddenTokenKeys] = useState<string[]>([]);
   const loadingRef = useRef(false);
+  const hasLoadedRef = useRef(false);
   const loadSeq = useRef(0);
   const withTimeout = useCallback(async <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -65,7 +66,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     const silent = options.silent ?? false;
     if (loadingRef.current) return;
     loadingRef.current = true;
-    const showLoading = !silent || !hasLoaded;
+    const showLoading = !silent || !hasLoadedRef.current;
     if (showLoading) setLoading(true);
     const seq = ++loadSeq.current;
     try {
@@ -124,39 +125,54 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
       if (!addr) {
         setNfts([]);
+        setNftLoading(false);
         setTotalValue('0.00');
         return;
       }
 
-      const [userNFTs, customTokensRaw] = await Promise.all([
-        NFTService.getUserNFTs(addr, currentNet.chainId),
-        CustomTokenService.getCustomTokensByChain(currentNet.chainId),
-      ]);
+      // Load NFTs in background so token prices are not blocked by NFT scan.
+      setNftLoading(true);
+      NFTService.getUserNFTs(addr, currentNet.chainId)
+        .then((userNFTs) => {
+          if (seq !== loadSeq.current) return;
+          const sanitizeNft = (raw: any): NFT | null => {
+            if (!raw || typeof raw !== 'object') return null;
+            const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
+            const tokenId =
+              typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
+                ? String(raw.tokenId)
+                : '';
+            if (!contractAddress || !tokenId) return null;
+            return {
+              tokenId,
+              contractAddress,
+              name: typeof raw.name === 'string' ? raw.name : '',
+              description: typeof raw.description === 'string' ? raw.description : '',
+              image: typeof raw.image === 'string' ? raw.image : '',
+              collection: typeof raw.collection === 'string' ? raw.collection : '',
+              chainId: Number(raw.chainId || currentNet.chainId),
+              type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
+              amount: typeof raw.amount === 'number' ? raw.amount : undefined,
+            };
+          };
+          const safeNFTs = Array.isArray(userNFTs)
+            ? userNFTs.map(sanitizeNft).filter((nft): nft is NFT => !!nft)
+            : [];
+          setNfts(safeNFTs);
+        })
+        .catch((error) => {
+          console.error('Error loading NFTs:', error);
+          if (seq !== loadSeq.current) return;
+          setNfts([]);
+        })
+        .finally(() => {
+          if (seq === loadSeq.current) {
+            setNftLoading(false);
+          }
+        });
+
+      const customTokensRaw = await CustomTokenService.getCustomTokensByChain(currentNet.chainId);
       if (seq !== loadSeq.current) return;
-      const sanitizeNft = (raw: any): NFT | null => {
-        if (!raw || typeof raw !== 'object') return null;
-        const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
-        const tokenId =
-          typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
-            ? String(raw.tokenId)
-            : '';
-        if (!contractAddress || !tokenId) return null;
-        return {
-          tokenId,
-          contractAddress,
-          name: typeof raw.name === 'string' ? raw.name : '',
-          description: typeof raw.description === 'string' ? raw.description : '',
-          image: typeof raw.image === 'string' ? raw.image : '',
-          collection: typeof raw.collection === 'string' ? raw.collection : '',
-          chainId: Number(raw.chainId || currentNet.chainId),
-          type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
-          amount: typeof raw.amount === 'number' ? raw.amount : undefined,
-        };
-      };
-      const safeNFTs = Array.isArray(userNFTs)
-        ? userNFTs.map(sanitizeNft).filter((nft): nft is NFT => !!nft)
-        : [];
-      setNfts(safeNFTs);
       const customTokens = customTokensRaw
         .filter((token) => token.type === 'ERC20')
         .map((token) => ({
@@ -285,11 +301,11 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       const finalResult = applyPriceData(updatedListWithBalances, priceDataForFinal);
       setTokens(finalResult.pricedTokens);
       setTotalValue(finalResult.total.toFixed(2));
-    } catch (error) {
+  } catch (error) {
       console.error('Error loading home data:', error);
     } finally {
       if (seq === loadSeq.current) {
-        setHasLoaded(true);
+        hasLoadedRef.current = true;
         if (showLoading) setLoading(false);
       }
       loadingRef.current = false;
@@ -623,10 +639,17 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F3BA2F" />}
             contentContainerStyle={styles.tokenListContent}
             ListEmptyComponent={(
-              <View style={styles.emptyNftState}>
-                <Icon name="image-outline" size={36} color="#666" />
-                <Text style={styles.emptyNftText}>{t.nft.noNFTs}</Text>
-              </View>
+              nftLoading ? (
+                <View style={styles.emptyNftState}>
+                  <ActivityIndicator color="#F3BA2F" />
+                  <Text style={styles.emptyNftText}>{t.common.loading}</Text>
+                </View>
+              ) : (
+                <View style={styles.emptyNftState}>
+                  <Icon name="image-outline" size={36} color="#666" />
+                  <Text style={styles.emptyNftText}>{t.nft.noNFTs}</Text>
+                </View>
+              )
             )}
           />
         )}
