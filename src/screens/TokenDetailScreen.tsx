@@ -3,7 +3,7 @@
  * Shows token details, actions, and transaction history.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { ethers } from 'ethers';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLanguage } from '../i18n/LanguageContext';
 import WalletService from '../services/WalletService';
 import TransactionService, { Transaction } from '../services/TransactionService';
@@ -42,50 +43,61 @@ export default function TokenDetailScreen({ route, navigation }: any) {
     : `${network.blockExplorerUrl}/token/${token.address}`;
   const emptyActivityText = t.transaction.noTransactions;
 
-  useEffect(() => {
-    let isMounted = true;
+  const loadHistory = useCallback(async () => {
+    let mounted = true;
+    setLoading(true);
 
-    const loadHistory = async () => {
-      if (isMounted) {
-        setLoading(true);
+    try {
+      const address = await WalletService.getAddress();
+      if (!address) {
+        if (mounted) {
+          setTransactions([]);
+        }
+        return;
       }
 
-      try {
-        const address = await WalletService.getAddress();
-        if (!address) {
-          if (isMounted) {
-            setTransactions([]);
-          }
-          return;
-        }
-
-        if (isMounted) {
-          setCurrentAddress(address);
-        }
-
-        const txs = await Promise.race<Transaction[]>([
-          TransactionService.getTransactionHistory(address, network.chainId),
-          new Promise<Transaction[]>((resolve) => {
-            setTimeout(() => resolve([]), HISTORY_TIMEOUT_MS);
-          }),
-        ]);
-
-        if (isMounted) {
-          setTransactions(Array.isArray(txs) ? txs : []);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (mounted) {
+        setCurrentAddress(address);
       }
-    };
 
-    void loadHistory();
+      const cached = await TransactionService.getCachedTransactions(address, network.chainId, 50);
+      if (mounted && cached.length > 0) {
+        setTransactions(cached);
+      }
+
+      const txs = await Promise.race<Transaction[]>([
+        TransactionService.refreshTransactionHistory(address, network.chainId, 50),
+        new Promise<Transaction[]>((resolve) => {
+          setTimeout(() => resolve([]), HISTORY_TIMEOUT_MS);
+        }),
+      ]);
+
+      if (mounted) {
+        setTransactions(Array.isArray(txs) && txs.length > 0 ? txs : cached);
+      }
+    } finally {
+      if (mounted) {
+        setLoading(false);
+      }
+    }
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, [network.chainId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let interval: NodeJS.Timeout | null = null;
+      void loadHistory();
+      interval = setInterval(() => {
+        void loadHistory();
+      }, 20000);
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }, [loadHistory])
+  );
 
   const displayBalanceValue = useMemo(() => {
     const value = token.value ?? '0';
@@ -125,6 +137,15 @@ export default function TokenDetailScreen({ route, navigation }: any) {
 
     return raw;
   };
+
+  const filteredTransactions = useMemo(() => {
+    if (!transactions.length) return [];
+    if (isNative) {
+      return transactions.filter((tx) => !tx.token);
+    }
+    const target = String(token.address || '').toLowerCase();
+    return transactions.filter((tx) => tx.token?.address?.toLowerCase() === target);
+  }, [transactions, isNative, token.address]);
 
   const renderActivityItem = (tx: Transaction, index: number) => {
     const isReceived = tx.to.toLowerCase() === currentAddress.toLowerCase();
@@ -233,8 +254,8 @@ export default function TokenDetailScreen({ route, navigation }: any) {
           <View style={styles.listContainer}>
             {loading ? (
               <ActivityIndicator color="#F3BA2F" style={{ marginTop: 20 }} />
-            ) : transactions.length > 0 ? (
-              transactions.map((tx, i) => renderActivityItem(tx, i))
+            ) : filteredTransactions.length > 0 ? (
+              filteredTransactions.map((tx, i) => renderActivityItem(tx, i))
             ) : (
               <Text style={styles.emptyText}>{emptyActivityText}</Text>
             )}

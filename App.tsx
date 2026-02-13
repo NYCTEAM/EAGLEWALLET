@@ -6,7 +6,7 @@
 import 'react-native-get-random-values';
 
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View, AppState } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Platform, Text, ToastAndroid, View } from 'react-native';
 import { CommonActions, NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import CreateWalletScreen from './src/screens/CreateWalletScreen';
@@ -46,8 +46,10 @@ import ApiBaseService from './src/services/ApiBaseService';
 import RewardsDappService from './src/services/RewardsDappService';
 import RPCService from './src/services/RPCService';
 import PriceService from './src/services/PriceService';
+import TransactionService, { Transaction } from './src/services/TransactionService';
 import { LanguageProvider, useLanguage } from './src/i18n/LanguageContext';
 import BottomTabBar from './src/components/BottomTabBar';
+import { ethers } from 'ethers';
 
 const Stack = createStackNavigator();
 
@@ -62,10 +64,218 @@ function AppLoading() {
   );
 }
 
-export default function App() {
-  const [hasWallet, setHasWallet] = useState<boolean | null>(null);
+function AppShell({ hasWallet }: { hasWallet: boolean }) {
+  const { t } = useLanguage();
   const navigationRef = useNavigationContainerRef();
   const [activeTab, setActiveTab] = useState<'wallet' | 'swap' | 'ai' | 'dapps' | 'settings'>('wallet');
+
+  useEffect(() => {
+    let isActive = true;
+    let interval: NodeJS.Timeout | null = null;
+    let isRunning = false;
+
+    if (!hasWallet) {
+      return;
+    }
+
+    const formatAmountLabel = (tx: Transaction, symbol: string) => {
+      try {
+        if (tx.token?.decimals !== undefined) {
+          return `${tx.value} ${tx.token.symbol}`;
+        }
+        if (tx.value && /^\d+$/.test(tx.value)) {
+          return `${parseFloat(ethers.formatEther(BigInt(tx.value))).toFixed(6)} ${symbol}`;
+        }
+        return `${tx.value} ${symbol}`;
+      } catch {
+        return `${tx.value} ${symbol}`;
+      }
+    };
+
+    const notifyIncoming = (tx: Transaction, symbol: string) => {
+      const message = formatAmountLabel(tx, symbol);
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(`${t.common.receive}: ${message}`, ToastAndroid.LONG);
+      } else {
+        Alert.alert(t.common.receive, message);
+      }
+    };
+
+    const pollTransactions = async () => {
+      if (!isActive || isRunning) return;
+      isRunning = true;
+      try {
+        const address = await WalletService.getAddress();
+        if (!address) return;
+        const network = WalletService.getCurrentNetwork();
+        const txs = await TransactionService.refreshTransactionHistory(address, network.chainId, 20);
+        if (!txs.length) return;
+
+        const seen = await TransactionService.getSeenTransactionHashes(address, network.chainId);
+        if (seen.length === 0) {
+          await TransactionService.setSeenTransactionHashes(
+            address,
+            network.chainId,
+            txs.map((tx) => tx.hash.toLowerCase())
+          );
+          return;
+        }
+
+        const seenSet = new Set(seen.map((hash) => hash.toLowerCase()));
+        const normalizedAddress = address.toLowerCase();
+        const incoming = txs.filter(
+          (tx) => tx.to?.toLowerCase() === normalizedAddress && !seenSet.has(tx.hash.toLowerCase())
+        );
+
+        if (incoming.length > 0) {
+          incoming.slice(0, 3).forEach((tx) => notifyIncoming(tx, network.symbol));
+          const merged = Array.from(new Set([...incoming.map((tx) => tx.hash.toLowerCase()), ...seenSet]));
+          await TransactionService.setSeenTransactionHashes(address, network.chainId, merged);
+        }
+      } catch (error) {
+        console.warn('Transaction poll failed:', error);
+      } finally {
+        isRunning = false;
+      }
+    };
+
+    const start = () => {
+      if (interval) return;
+      pollTransactions();
+      interval = setInterval(pollTransactions, 20000);
+    };
+
+    const stop = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    start();
+    const sub = AppState.addEventListener('change', (state) => {
+      isActive = state === 'active';
+      if (isActive) {
+        start();
+      } else {
+        stop();
+      }
+    });
+
+    return () => {
+      stop();
+      sub.remove();
+    };
+  }, [hasWallet, t]);
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <View style={{ flex: 1 }}>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={() => {
+            const routeName = navigationRef.getCurrentRoute()?.name;
+            if (routeName === 'Swap') setActiveTab('swap');
+            else if (routeName === 'AI') setActiveTab('ai');
+            else if (routeName === 'DAppBrowser') setActiveTab('dapps');
+            else if (routeName === 'Settings') setActiveTab('settings');
+            else setActiveTab('wallet');
+          }}
+          onStateChange={() => {
+            const routeName = navigationRef.getCurrentRoute()?.name;
+            if (!routeName) return;
+            if (routeName === 'Swap') setActiveTab('swap');
+            else if (routeName === 'AI') setActiveTab('ai');
+            else if (routeName === 'DAppBrowser') setActiveTab('dapps');
+            else if (routeName === 'Settings') setActiveTab('settings');
+            else if (routeName === 'Home') setActiveTab('wallet');
+            // For nested flows (Send/Receive/TokenDetail/etc), keep the last tab selected.
+          }}
+        >
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {!hasWallet ? (
+              <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
+            ) : (
+              <>
+                <Stack.Screen name="Home">
+                  {(props) => <HomeScreen {...props} isTabScreen={true} />}
+                </Stack.Screen>
+                <Stack.Screen name="Swap">
+                  {(props) => <SwapScreen {...props} isTabScreen={true} />}
+                </Stack.Screen>
+                <Stack.Screen name="AI" component={AIScreen} />
+                <Stack.Screen name="DAppBrowser">
+                  {(props) => <DAppBrowserScreen {...props} isTabScreen={true} />}
+                </Stack.Screen>
+                <Stack.Screen name="Settings">
+                  {(props) => <SettingsScreen {...props} isTabScreen={true} />}
+                </Stack.Screen>
+
+                <Stack.Screen name="Send" component={SendScreen} />
+                <Stack.Screen name="ScanQRCode" component={ScanQRCodeScreen} />
+                <Stack.Screen name="Receive" component={ReceiveScreen} />
+                <Stack.Screen name="NFT" component={NFTScreen} />
+                <Stack.Screen name="NFTDetail" component={NFTDetailScreen} />
+                <Stack.Screen name="AddDApp" component={AddDAppScreen} />
+                <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+                <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
+                <Stack.Screen name="ExportPrivateKey" component={ExportPrivateKeyScreen} />
+                <Stack.Screen name="RPCNode" component={RPCNodeScreen} />
+                <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
+                <Stack.Screen name="SelectToken" component={SelectTokenScreen} />
+                <Stack.Screen name="EnterAddress" component={EnterAddressScreen} />
+                <Stack.Screen name="EnterAmount" component={EnterAmountScreen} />
+                <Stack.Screen name="SendConfirmation" component={SendConfirmationScreen} />
+                <Stack.Screen name="TransactionResult" component={TransactionResultScreen} />
+                <Stack.Screen name="Wallets" component={WalletsScreen} />
+                <Stack.Screen name="AddWallet" component={AddWalletScreen} />
+                <Stack.Screen name="AddToken" component={AddTokenScreen} />
+                <Stack.Screen name="ManageTokens" component={ManageTokensScreen} />
+                <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
+                <Stack.Screen name="PriceAlert" component={PriceAlertScreen} />
+                <Stack.Screen name="DAppWebView" component={DAppWebViewScreen} />
+                <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
+                <Stack.Screen name="BackupWallet" component={BackupWalletScreen} />
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </View>
+
+      {hasWallet && (
+        <BottomTabBar
+          activeTab={activeTab}
+          onTabPress={(tab) => {
+            setActiveTab(tab as any);
+            if (!navigationRef.isReady()) return;
+
+            const target =
+              tab === 'swap'
+                ? 'Swap'
+                : tab === 'ai'
+                  ? 'AI'
+                  : tab === 'dapps'
+                    ? 'DAppBrowser'
+                    : tab === 'settings'
+                      ? 'Settings'
+                      : 'Home';
+
+            navigationRef.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: target }],
+              }),
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+}
+
+export default function App() {
+  const [hasWallet, setHasWallet] = useState<boolean | null>(null);
 
   useEffect(() => {
     const runCheck = async () => {
@@ -156,108 +366,7 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <View style={{ flex: 1, backgroundColor: '#000000' }}>
-        <View style={{ flex: 1 }}>
-          <NavigationContainer
-            ref={navigationRef}
-            onReady={() => {
-              const routeName = navigationRef.getCurrentRoute()?.name;
-              if (routeName === 'Swap') setActiveTab('swap');
-              else if (routeName === 'AI') setActiveTab('ai');
-              else if (routeName === 'DAppBrowser') setActiveTab('dapps');
-              else if (routeName === 'Settings') setActiveTab('settings');
-              else setActiveTab('wallet');
-            }}
-            onStateChange={() => {
-              const routeName = navigationRef.getCurrentRoute()?.name;
-              if (!routeName) return;
-              if (routeName === 'Swap') setActiveTab('swap');
-              else if (routeName === 'AI') setActiveTab('ai');
-              else if (routeName === 'DAppBrowser') setActiveTab('dapps');
-              else if (routeName === 'Settings') setActiveTab('settings');
-              else if (routeName === 'Home') setActiveTab('wallet');
-              // For nested flows (Send/Receive/TokenDetail/etc), keep the last tab selected.
-            }}
-          >
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              {!hasWallet ? (
-                <Stack.Screen name="CreateWallet" component={CreateWalletScreen} />
-              ) : (
-                <>
-                  <Stack.Screen name="Home">
-                    {(props) => <HomeScreen {...props} isTabScreen={true} />}
-                  </Stack.Screen>
-                  <Stack.Screen name="Swap">
-                    {(props) => <SwapScreen {...props} isTabScreen={true} />}
-                  </Stack.Screen>
-                  <Stack.Screen name="AI" component={AIScreen} />
-                  <Stack.Screen name="DAppBrowser">
-                    {(props) => <DAppBrowserScreen {...props} isTabScreen={true} />}
-                  </Stack.Screen>
-                  <Stack.Screen name="Settings">
-                    {(props) => <SettingsScreen {...props} isTabScreen={true} />}
-                  </Stack.Screen>
-
-                  <Stack.Screen name="Send" component={SendScreen} />
-                  <Stack.Screen name="ScanQRCode" component={ScanQRCodeScreen} />
-                  <Stack.Screen name="Receive" component={ReceiveScreen} />
-                  <Stack.Screen name="NFT" component={NFTScreen} />
-                  <Stack.Screen name="NFTDetail" component={NFTDetailScreen} />
-                  <Stack.Screen name="AddDApp" component={AddDAppScreen} />
-                  <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
-                  <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
-                  <Stack.Screen name="ExportPrivateKey" component={ExportPrivateKeyScreen} />
-                  <Stack.Screen name="RPCNode" component={RPCNodeScreen} />
-                  <Stack.Screen name="TokenDetail" component={TokenDetailScreen} />
-                  <Stack.Screen name="SelectToken" component={SelectTokenScreen} />
-                  <Stack.Screen name="EnterAddress" component={EnterAddressScreen} />
-                  <Stack.Screen name="EnterAmount" component={EnterAmountScreen} />
-                  <Stack.Screen name="SendConfirmation" component={SendConfirmationScreen} />
-                  <Stack.Screen name="TransactionResult" component={TransactionResultScreen} />
-                  <Stack.Screen name="Wallets" component={WalletsScreen} />
-                  <Stack.Screen name="AddWallet" component={AddWalletScreen} />
-                  <Stack.Screen name="AddToken" component={AddTokenScreen} />
-                  <Stack.Screen name="ManageTokens" component={ManageTokensScreen} />
-                  <Stack.Screen name="AdvancedSettings" component={AdvancedSettingsScreen} />
-                  <Stack.Screen name="PriceAlert" component={PriceAlertScreen} />
-                  <Stack.Screen name="DAppWebView" component={DAppWebViewScreen} />
-                  <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
-                  <Stack.Screen name="BackupWallet" component={BackupWalletScreen} />
-                  <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-                </>
-              )}
-            </Stack.Navigator>
-          </NavigationContainer>
-        </View>
-
-        {hasWallet && (
-          <BottomTabBar
-            activeTab={activeTab}
-            onTabPress={(tab) => {
-              setActiveTab(tab as any);
-              if (!navigationRef.isReady()) return;
-
-              const target =
-                tab === 'swap'
-                  ? 'Swap'
-                  : tab === 'ai'
-                    ? 'AI'
-                    : tab === 'dapps'
-                      ? 'DAppBrowser'
-                      : tab === 'settings'
-                        ? 'Settings'
-                        : 'Home';
-
-              navigationRef.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: target }],
-                }),
-              );
-            }}
-          />
-        )}
-      </View>
+      <AppShell hasWallet={!!hasWallet} />
     </LanguageProvider>
   );
 }
