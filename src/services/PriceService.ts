@@ -3,6 +3,8 @@
  * Fetch token prices from GeckoTerminal API (Free)
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const GECKOTERMINAL_API = 'https://api.geckoterminal.com/api/v2';
 
 // Token address mapping for price lookup
@@ -31,16 +33,133 @@ interface PriceData {
   [tokenAddress: string]: string;
 }
 
+interface CachedPriceEntry {
+  price: number;
+  timestamp: number;
+  change24h?: number;
+  imageUrl?: string;
+}
+
+const PRICE_CACHE_STORAGE_KEY = 'EAGLE_PRICE_CACHE_V1';
+
+const STABLE_TOKEN_PRICES_BY_CHAIN: Record<number, Record<string, number>> = {
+  56: {
+    '0x55d398326f99059ff775485246999027b3197955': 1, // USDT
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 1, // USDC
+    '0xe9e7cea3dedca5984780bafc599bd69add087d56': 1, // BUSD
+    '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3': 1, // DAI
+    '0x8d0d000ee44948fc98c9b98a4fa4921476f08b0d': 1, // USD1
+    '0xce24439f2d9c6a2289f741120fe202248b666666': 1, // USDS
+  },
+};
+
 class PriceService {
-  private priceCache: Map<string, { price: number; timestamp: number }> = new Map();
+  private priceCache: Map<string, CachedPriceEntry> = new Map();
   private cacheExpiry: number = 60 * 1000; // 1 minute
+  private cacheLoaded = false;
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private normalizeAddress(address: string): string {
+    return String(address || '').toLowerCase();
+  }
+
+  private cacheKey(chainId: number, tokenAddress: string): string {
+    return `${chainId}-${this.normalizeAddress(tokenAddress)}`;
+  }
+
+  private async ensureCacheLoaded(): Promise<void> {
+    if (this.cacheLoaded) return;
+    this.cacheLoaded = true;
+    try {
+      const raw = await AsyncStorage.getItem(PRICE_CACHE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, CachedPriceEntry>;
+      Object.entries(parsed || {}).forEach(([key, value]) => {
+        if (!value || typeof value.price !== 'number' || typeof value.timestamp !== 'number') return;
+        this.priceCache.set(key, value);
+      });
+    } catch (error) {
+      console.warn('Failed to load cached prices:', error);
+    }
+  }
+
+  private schedulePersistCache(): void {
+    if (this.persistTimer) return;
+    this.persistTimer = setTimeout(async () => {
+      this.persistTimer = null;
+      try {
+        const payload: Record<string, CachedPriceEntry> = {};
+        this.priceCache.forEach((value, key) => {
+          payload[key] = value;
+        });
+        await AsyncStorage.setItem(PRICE_CACHE_STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn('Failed to persist price cache:', error);
+      }
+    }, 250);
+  }
+
+  private setCacheEntry(
+    chainId: number,
+    tokenAddress: string,
+    price: number,
+    change24h?: number,
+    imageUrl?: string
+  ): void {
+    const key = this.cacheKey(chainId, tokenAddress);
+    const existing = this.priceCache.get(key);
+    this.priceCache.set(key, {
+      price,
+      timestamp: Date.now(),
+      change24h: typeof change24h === 'number' ? change24h : existing?.change24h || 0,
+      imageUrl: imageUrl || existing?.imageUrl,
+    });
+    this.schedulePersistCache();
+  }
+
+  async getCachedTokenPricesWithChange(
+    tokenAddresses: string[],
+    chainId: number,
+    maxAgeMs: number = 6 * 60 * 60 * 1000
+  ): Promise<Record<string, { price: number; change24h: number; imageUrl?: string }>> {
+    await this.ensureCacheLoaded();
+
+    const result: Record<string, { price: number; change24h: number; imageUrl?: string }> = {};
+    const now = Date.now();
+    const wrappedNative = chainId === 56 ? '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c' : '';
+    const stablePrices = STABLE_TOKEN_PRICES_BY_CHAIN[chainId] || {};
+
+    tokenAddresses.forEach((rawAddress) => {
+      const address =
+        rawAddress === 'native' && wrappedNative ? wrappedNative : this.normalizeAddress(rawAddress);
+      if (!address) return;
+
+      const entry = this.priceCache.get(this.cacheKey(chainId, address));
+      if (entry && now - entry.timestamp <= maxAgeMs) {
+        result[address] = {
+          price: entry.price,
+          change24h: entry.change24h || 0,
+          imageUrl: entry.imageUrl,
+        };
+      } else if (stablePrices[address] !== undefined) {
+        result[address] = { price: stablePrices[address], change24h: 0 };
+      }
+
+      if (rawAddress === 'native' && result[address]) {
+        result.native = result[address];
+      }
+    });
+
+    return result;
+  }
 
   /**
    * Get token price in USD from GeckoTerminal
    */
   async getTokenPrice(tokenAddress: string, chainId: number): Promise<number> {
     try {
-      const cacheKey = `${chainId}-${tokenAddress.toLowerCase()}`;
+      await this.ensureCacheLoaded();
+      const cacheKey = this.cacheKey(chainId, tokenAddress);
       const cached = this.priceCache.get(cacheKey);
       
       // Return cached price if not expired
@@ -71,12 +190,7 @@ class PriceService {
       }
 
       const price = parseFloat(priceStr);
-      
-      // Cache the price
-      this.priceCache.set(cacheKey, {
-        price,
-        timestamp: Date.now(),
-      });
+      this.setCacheEntry(chainId, tokenAddress, price, cached?.change24h, cached?.imageUrl);
 
       return price;
     } catch (error) {
@@ -93,6 +207,7 @@ class PriceService {
     chainId: number
   ): Promise<Record<string, number>> {
     try {
+      await this.ensureCacheLoaded();
       const network = NETWORK_NAMES[chainId];
       if (!network) {
         return {};
@@ -124,19 +239,15 @@ class PriceService {
       // Parse prices
       for (const [address, priceStr] of Object.entries(priceData)) {
         const price = parseFloat(priceStr);
-        prices[address.toLowerCase()] = price;
+        const normalizedAddress = this.normalizeAddress(address);
+        prices[normalizedAddress] = price;
         
         // If this address corresponds to a wrapped token, also cache it for 'native'
-        if (chainId === 56 && address.toLowerCase() === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
+        if (chainId === 56 && normalizedAddress === '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c') {
           prices['native'] = price;
         }
 
-        // Cache individual prices
-        const cacheKey = `${chainId}-${address.toLowerCase()}`;
-        this.priceCache.set(cacheKey, {
-          price,
-          timestamp: Date.now(),
-        });
+        this.setCacheEntry(chainId, normalizedAddress, price);
       }
 
       return prices;
@@ -154,6 +265,7 @@ class PriceService {
     chainId: number
   ): Promise<Record<string, { price: number; change24h: number; imageUrl?: string }>> {
     try {
+      await this.ensureCacheLoaded();
       const network = NETWORK_NAMES[chainId];
       if (!network) {
         return {};
@@ -184,7 +296,7 @@ class PriceService {
 
       for (const tokenData of tokensData) {
         const attrs = tokenData.attributes;
-        const address = attrs.address.toLowerCase();
+        const address = this.normalizeAddress(attrs.address);
         const price = parseFloat(attrs.price_usd || '0');
         const change24h = parseFloat(attrs.price_change_percentage_24h || '0');
         const imageUrl = attrs.image_url;
@@ -196,12 +308,7 @@ class PriceService {
           results['native'] = { price, change24h, imageUrl };
         }
 
-        // Update cache (only price for now to keep compatibility)
-        const cacheKey = `${chainId}-${address}`;
-        this.priceCache.set(cacheKey, {
-          price,
-          timestamp: Date.now(),
-        });
+        this.setCacheEntry(chainId, address, price, change24h, imageUrl);
       }
 
       return results;
@@ -269,6 +376,7 @@ class PriceService {
    */
   clearCache() {
     this.priceCache.clear();
+    AsyncStorage.removeItem(PRICE_CACHE_STORAGE_KEY).catch(() => undefined);
   }
 }
 

@@ -208,13 +208,51 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
 
       // Update list once custom tokens are ready
       setTokens(initialTokenList);
+      if (showLoading) {
+        // Do not block UI while price/balance tasks run in background.
+        setLoading(false);
+      }
+
+      const applyPriceData = (
+        tokenList: any[],
+        priceData: Record<string, { price: number; change24h: number; imageUrl?: string }>
+      ) => {
+        let total = 0;
+        const pricedTokens = tokenList.map((token) => {
+          const key = String(token.address || '').toLowerCase();
+          const data = priceData[key] || { price: 0, change24h: 0 };
+          const value = parseFloat(token.balance || '0') * (data.price || 0);
+          total += value;
+          return {
+            ...token,
+            price: data.price || 0,
+            change: data.change24h || 0,
+            value: value.toFixed(2),
+            logo: data.imageUrl || token.logo,
+          };
+        });
+        return { pricedTokens, total };
+      };
 
       const updatedListWithBalances = [...initialTokenList];
+      const tokenAddresses = updatedListWithBalances.map(t => t.address);
+      const cachedPriceData = await PriceService.getCachedTokenPricesWithChange(
+        tokenAddresses,
+        currentNet.chainId
+      );
+      if (seq !== loadSeq.current) return;
+
+      if (Object.keys(cachedPriceData).length > 0) {
+        const quick = applyPriceData(initialTokenList, cachedPriceData);
+        setTokens(quick.pricedTokens);
+        setTotalValue(quick.total.toFixed(2));
+      }
+
       const balancePromises = mergedTokens.map(async (token, index) => {
         try {
           const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
           const contract = new ethers.Contract(token.address, erc20Abi, provider);
-          const tokenBalance = await withTimeout(contract.balanceOf(addr), 5000, 0n as any);
+          const tokenBalance = await withTimeout(contract.balanceOf(addr), 2500, 0n as any);
           const balance = ethers.formatUnits(tokenBalance, token.decimals);
           updatedListWithBalances[index + 1] = {
             ...updatedListWithBalances[index + 1],
@@ -225,43 +263,28 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         }
       });
 
-      const tokenAddresses = updatedListWithBalances.map(t => t.address);
-      const pricePromise = withTimeout(
+      const livePricePromise = withTimeout(
         PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId).catch(() => ({} as any)),
-        6000,
+        2500,
         {} as any
       );
 
+      const livePriceData = await livePricePromise;
+      if (seq !== loadSeq.current) return;
+      const hasLivePrice = Object.keys(livePriceData || {}).length > 0;
+      if (hasLivePrice) {
+        const quick = applyPriceData(initialTokenList, livePriceData);
+        setTokens(quick.pricedTokens);
+        setTotalValue(quick.total.toFixed(2));
+      }
+
       await Promise.all(balancePromises);
-      const priceData = await pricePromise;
       if (seq !== loadSeq.current) return;
 
-      let totalPortfolioValue = 0;
-      const tokensWithPrices = updatedListWithBalances.map(token => {
-        const data = priceData[token.address.toLowerCase()] || { price: 0, change24h: 0 };
-        const value = parseFloat(token.balance) * data.price;
-        
-        totalPortfolioValue += value;
-
-        // Use API logo if available, otherwise keep existing
-        let logo = token.logo;
-        // @ts-ignore
-        if (data.imageUrl) {
-            // @ts-ignore
-            logo = data.imageUrl;
-        }
-
-        return {
-          ...token,
-          price: data.price,
-          change: data.change24h,
-          value: value.toFixed(2),
-          logo: logo
-        };
-      });
-      
-      setTokens(tokensWithPrices);
-      setTotalValue(totalPortfolioValue.toFixed(2));
+      const priceDataForFinal = hasLivePrice ? livePriceData : cachedPriceData;
+      const finalResult = applyPriceData(updatedListWithBalances, priceDataForFinal);
+      setTokens(finalResult.pricedTokens);
+      setTotalValue(finalResult.total.toFixed(2));
     } catch (error) {
       console.error('Error loading home data:', error);
     } finally {
