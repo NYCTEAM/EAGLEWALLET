@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import { NETWORKS } from '../config/networks';
 import RPCService from './RPCService';
 import { toIpfsGatewayCandidates, normalizeNftUrl } from '../utils/nftMedia';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface NFT {
   tokenId: string;
@@ -43,6 +44,11 @@ const MAX_NFTS_PER_CONTRACT = 100;
 const MAX_DISCOVERY_CANDIDATES = 120;
 const TRANSFER_SCAN_BLOCK_STEP = 20000;
 const METADATA_FETCH_TIMEOUT_MS = 6000;
+const NFT_CACHE_PREFIX = 'EAGLE_NFT_CACHE_V1:';
+const NFT_TRANSFER_CURSOR_PREFIX = 'EAGLE_NFT_TRANSFER_CURSOR_V1:';
+const TRANSFER_WATCH_POLL_MS = 15000;
+const TRANSFER_WATCH_LOOKBACK_BLOCKS = 2000;
+const TRANSFER_WATCH_SCAN_CHUNK = 2000;
 
 const ERC1155_TRANSFER_INTERFACE = new ethers.Interface([
   'event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)',
@@ -71,6 +77,176 @@ class NFTService {
   private providers: Map<number, { url: string; provider: ethers.JsonRpcProvider }> = new Map();
   private metadataCache = new Map<string, { value: any; timestamp: number }>();
   private metadataCacheTTL = 10 * 60 * 1000;
+  private refreshInFlight = new Map<string, Promise<NFT[]>>();
+  private transferWatchers = new Map<
+    string,
+    {
+      timer: ReturnType<typeof setInterval>;
+      callbacks: Set<(event: { chainId: number; address: string; fromBlock: number; toBlock: number }) => void>;
+      running: boolean;
+      lastBlock: number;
+    }
+  >();
+
+  private cacheKey(chainId: number, address: string): string {
+    return `${NFT_CACHE_PREFIX}${chainId}:${String(address || '').toLowerCase()}`;
+  }
+
+  private transferCursorKey(chainId: number, address: string): string {
+    return `${NFT_TRANSFER_CURSOR_PREFIX}${chainId}:${String(address || '').toLowerCase()}`;
+  }
+
+  async getCachedUserNFTs(address: string, chainId: number): Promise<NFT[]> {
+    try {
+      const raw = await AsyncStorage.getItem(this.cacheKey(chainId, address));
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as { updatedAt: number; nfts: NFT[] };
+      if (!parsed?.nfts || !Array.isArray(parsed.nfts)) return [];
+      return parsed.nfts;
+    } catch {
+      return [];
+    }
+  }
+
+  private async setCachedUserNFTs(address: string, chainId: number, nfts: NFT[]): Promise<void> {
+    try {
+      const payload = { updatedAt: Date.now(), nfts };
+      await AsyncStorage.setItem(this.cacheKey(chainId, address), JSON.stringify(payload));
+    } catch {
+      // ignore cache write failures
+    }
+  }
+
+  async refreshUserNFTs(address: string, chainId: number): Promise<NFT[]> {
+    const key = `${chainId}:${String(address || '').toLowerCase()}`;
+    const inFlight = this.refreshInFlight.get(key);
+    if (inFlight) return inFlight;
+
+    const task = this.getUserNFTs(address, chainId)
+      .catch(() => [] as NFT[])
+      .finally(() => {
+        this.refreshInFlight.delete(key);
+      });
+    this.refreshInFlight.set(key, task);
+    return task;
+  }
+
+  watchNFTTransfers(
+    address: string,
+    chainId: number,
+    onTransfer: (event: { chainId: number; address: string; fromBlock: number; toBlock: number }) => void,
+    options?: { pollMs?: number; lookbackBlocks?: number }
+  ): () => void {
+    const normalized = String(address || '').toLowerCase();
+    const key = `${chainId}:${normalized}`;
+    const pollMs = options?.pollMs ?? TRANSFER_WATCH_POLL_MS;
+    const lookbackBlocks = options?.lookbackBlocks ?? TRANSFER_WATCH_LOOKBACK_BLOCKS;
+
+    const existing = this.transferWatchers.get(key);
+    if (existing) {
+      existing.callbacks.add(onTransfer);
+      return () => {
+        this.unwatchNFTTransfers(chainId, normalized, onTransfer);
+      };
+    }
+
+    const state = {
+      timer: null as any,
+      callbacks: new Set([onTransfer]),
+      running: false,
+      lastBlock: 0,
+    };
+
+    state.timer = setInterval(() => {
+      this.pollTransferWatcher(chainId, normalized, lookbackBlocks).catch(() => undefined);
+    }, pollMs);
+
+    this.transferWatchers.set(key, state);
+
+    // Kick once immediately
+    this.pollTransferWatcher(chainId, normalized, lookbackBlocks).catch(() => undefined);
+
+    return () => {
+      this.unwatchNFTTransfers(chainId, normalized, onTransfer);
+    };
+  }
+
+  private unwatchNFTTransfers(
+    chainId: number,
+    normalizedAddress: string,
+    callback: (event: { chainId: number; address: string; fromBlock: number; toBlock: number }) => void
+  ): void {
+    const key = `${chainId}:${normalizedAddress}`;
+    const existing = this.transferWatchers.get(key);
+    if (!existing) return;
+    existing.callbacks.delete(callback);
+    if (existing.callbacks.size > 0) return;
+    clearInterval(existing.timer);
+    this.transferWatchers.delete(key);
+  }
+
+  private async pollTransferWatcher(chainId: number, normalizedAddress: string, lookbackBlocks: number): Promise<void> {
+    const key = `${chainId}:${normalizedAddress}`;
+    const watcher = this.transferWatchers.get(key);
+    if (!watcher || watcher.running) return;
+    watcher.running = true;
+
+    try {
+      const provider = await this.getProvider(chainId);
+      const currentBlock = await provider.getBlockNumber();
+
+      if (!watcher.lastBlock) {
+        const stored = await AsyncStorage.getItem(this.transferCursorKey(chainId, normalizedAddress));
+        const parsed = stored ? Number(stored) : 0;
+        watcher.lastBlock = Number.isFinite(parsed) && parsed > 0 ? parsed : Math.max(0, currentBlock - lookbackBlocks);
+      }
+
+      const fromBlock = watcher.lastBlock + 1;
+      if (fromBlock > currentBlock) {
+        watcher.lastBlock = currentBlock;
+        return;
+      }
+
+      let scanStart = fromBlock;
+      let detected = false;
+      let detectedFrom = fromBlock;
+      let detectedTo = fromBlock;
+
+      while (scanStart <= currentBlock) {
+        const scanEnd = Math.min(currentBlock, scanStart + TRANSFER_WATCH_SCAN_CHUNK - 1);
+        const hasTransfers = await this.hasNftTransfersInRange(
+          provider,
+          normalizedAddress,
+          scanStart,
+          scanEnd
+        );
+
+        watcher.lastBlock = scanEnd;
+        await AsyncStorage.setItem(this.transferCursorKey(chainId, normalizedAddress), String(watcher.lastBlock));
+
+        if (hasTransfers) {
+          detected = true;
+          detectedFrom = scanStart;
+          detectedTo = scanEnd;
+          break;
+        }
+
+        scanStart = scanEnd + 1;
+      }
+
+      if (detected) {
+        watcher.callbacks.forEach((cb) => {
+          try {
+            cb({ chainId, address: normalizedAddress, fromBlock: detectedFrom, toBlock: detectedTo });
+          } catch {
+            // ignore callback errors
+          }
+        });
+      }
+    } finally {
+      watcher.running = false;
+    }
+  }
 
   /**
    * Get provider for specific chain
@@ -160,7 +336,10 @@ class NFTService {
         }
       }
 
-      return Array.from(nftMap.values());
+      const result = Array.from(nftMap.values());
+      // Persist a lightweight cache so the UI can render instantly (stale-while-revalidate).
+      void this.setCachedUserNFTs(normalizedOwner, chainId, result);
+      return result;
     } catch (error) {
       console.error('Error fetching user NFTs:', error);
       return [];
@@ -535,12 +714,13 @@ class NFTService {
           this.getLogsSafe(provider, {
             fromBlock: start,
             toBlock: end,
-            topics: [TRANSFER_EVENT_TOPIC, null, ownerTopic],
+            // ERC-721 Transfer has 4 topics (tokenId is indexed). This excludes ERC-20 transfers (3 topics).
+            topics: [TRANSFER_EVENT_TOPIC, null, ownerTopic, null],
           }),
           this.getLogsSafe(provider, {
             fromBlock: start,
             toBlock: end,
-            topics: [TRANSFER_EVENT_TOPIC, ownerTopic, null],
+            topics: [TRANSFER_EVENT_TOPIC, ownerTopic, null, null],
           }),
           this.getLogsSafe(provider, {
             fromBlock: start,
@@ -674,6 +854,38 @@ class NFTService {
     } catch (error) {
       console.error('Error scanning NFT transfer logs:', error);
       return [];
+    }
+  }
+
+  private async hasNftTransfersInRange(
+    provider: ethers.JsonRpcProvider,
+    normalizedAddress: string,
+    fromBlock: number,
+    toBlock: number
+  ): Promise<boolean> {
+    try {
+      const ownerTopic = ethers.zeroPadValue(ethers.getAddress(normalizedAddress), 32);
+      const [in721, out721, inSingle, outSingle, inBatch, outBatch] = await Promise.all([
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_EVENT_TOPIC, null, ownerTopic, null] }),
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_EVENT_TOPIC, ownerTopic, null, null] }),
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, null, ownerTopic] }),
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_SINGLE_EVENT_TOPIC, null, ownerTopic, null] }),
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_BATCH_EVENT_TOPIC, null, null, ownerTopic] }),
+        this.getLogsSafe(provider, { fromBlock, toBlock, topics: [TRANSFER_BATCH_EVENT_TOPIC, null, ownerTopic, null] }),
+      ]);
+
+      // Some nodes may still return ERC-20 logs on the 721 topic (rare). Keep a hard guard.
+      const has721 = (logs: any[]) => Array.isArray(logs) && logs.some((l) => Array.isArray(l?.topics) && l.topics.length >= 4);
+      return (
+        has721(in721) ||
+        has721(out721) ||
+        (Array.isArray(inSingle) && inSingle.length > 0) ||
+        (Array.isArray(outSingle) && outSingle.length > 0) ||
+        (Array.isArray(inBatch) && inBatch.length > 0) ||
+        (Array.isArray(outBatch) && outBatch.length > 0)
+      );
+    } catch {
+      return false;
     }
   }
 

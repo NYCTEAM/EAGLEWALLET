@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -21,56 +21,100 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [nfts, setNfts] = useState<NFT[]>([]);
+  const loadSeq = useRef(0);
 
-  const loadNfts = useCallback(async () => {
-    setLoading(true);
+  const sanitizeNft = useCallback((raw: any, fallbackChainId: number): NFT | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
+    const tokenId =
+      typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
+        ? String(raw.tokenId)
+        : '';
+    if (!contractAddress || !tokenId) return null;
+    return {
+      tokenId,
+      contractAddress,
+      name: typeof raw.name === 'string' ? raw.name : '',
+      description: typeof raw.description === 'string' ? raw.description : '',
+      image: typeof raw.image === 'string' ? raw.image : '',
+      collection: typeof raw.collection === 'string' ? raw.collection : '',
+      chainId: Number(raw.chainId || fallbackChainId),
+      type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
+      amount: typeof raw.amount === 'number' ? raw.amount : undefined,
+    };
+  }, []);
+
+  const sanitizeNftList = useCallback(
+    (rawList: any, fallbackChainId: number): NFT[] => {
+      return Array.isArray(rawList)
+        ? rawList.map((nft) => sanitizeNft(nft, fallbackChainId)).filter((nft): nft is NFT => !!nft)
+        : [];
+    },
+    [sanitizeNft]
+  );
+
+  const loadNfts = useCallback(async (options: { forceRefresh?: boolean; showSpinner?: boolean } = {}) => {
+    const seq = ++loadSeq.current;
+    const forceRefresh = options.forceRefresh === true;
+    const showSpinner = options.showSpinner !== false;
+
+    if (showSpinner) setLoading(true);
     try {
       const address = await WalletService.getAddress();
       const network = WalletService.getCurrentNetwork();
+      if (seq !== loadSeq.current) return;
 
       if (!address) {
         setNfts([]);
       } else {
-        const data = await NFTService.getUserNFTs(address, network.chainId);
-        const sanitizeNft = (raw: any): NFT | null => {
-          if (!raw || typeof raw !== 'object') return null;
-          const contractAddress = typeof raw.contractAddress === 'string' ? raw.contractAddress.trim() : '';
-          const tokenId =
-            typeof raw.tokenId === 'string' || typeof raw.tokenId === 'number' || typeof raw.tokenId === 'bigint'
-              ? String(raw.tokenId)
-              : '';
-          if (!contractAddress || !tokenId) return null;
-          return {
-            tokenId,
-            contractAddress,
-            name: typeof raw.name === 'string' ? raw.name : '',
-            description: typeof raw.description === 'string' ? raw.description : '',
-            image: typeof raw.image === 'string' ? raw.image : '',
-            collection: typeof raw.collection === 'string' ? raw.collection : '',
-            chainId: Number(raw.chainId || network.chainId),
-            type: raw.type === 'ERC1155' ? 'ERC1155' : 'ERC721',
-            amount: typeof raw.amount === 'number' ? raw.amount : undefined,
-          };
-        };
-        const safe = Array.isArray(data)
-          ? data.map(sanitizeNft).filter((nft): nft is NFT => !!nft)
-          : [];
-        setNfts(safe);
+        const cached = await NFTService.getCachedUserNFTs(address, network.chainId);
+        if (seq !== loadSeq.current) return;
+        const safeCached = sanitizeNftList(cached, network.chainId);
+        if (safeCached.length > 0) {
+          setNfts(safeCached);
+          // Render cached results immediately; refresh runs in background.
+          if (showSpinner) setLoading(false);
+        }
+
+        const shouldRefresh = forceRefresh || safeCached.length === 0;
+        if (!shouldRefresh) return;
+
+        const live = await NFTService.refreshUserNFTs(address, network.chainId);
+        if (seq !== loadSeq.current) return;
+        setNfts(sanitizeNftList(live, network.chainId));
       }
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current && showSpinner) setLoading(false);
     }
-  }, []);
+  }, [sanitizeNftList]);
 
   useFocusEffect(
     useCallback(() => {
-      loadNfts();
+      let stopWatch: (() => void) | null = null;
+      let cancelled = false;
+
+      loadNfts({ forceRefresh: false, showSpinner: true }).catch(() => undefined);
+
+      (async () => {
+        const address = await WalletService.getAddress();
+        const network = WalletService.getCurrentNetwork();
+        if (cancelled || !address) return;
+
+        stopWatch = NFTService.watchNFTTransfers(address, network.chainId, () => {
+          loadNfts({ forceRefresh: true, showSpinner: false }).catch(() => undefined);
+        });
+      })();
+
+      return () => {
+        cancelled = true;
+        if (stopWatch) stopWatch();
+      };
     }, [loadNfts])
   );
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadNfts();
+    await loadNfts({ forceRefresh: true, showSpinner: false });
     setRefreshing(false);
   };
 
@@ -111,7 +155,7 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
           <View style={{ width: 48 }} />
         )}
         <Text style={styles.title}>{t.nft.myNFTs}</Text>
-        <TouchableOpacity onPress={loadNfts}>
+        <TouchableOpacity onPress={() => loadNfts({ forceRefresh: true, showSpinner: true }).catch(() => undefined)}>
           <Text style={styles.refresh}>{t.common.refresh}</Text>
         </TouchableOpacity>
       </View>

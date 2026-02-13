@@ -87,7 +87,7 @@ export default function RPCNodeScreen({ navigation }: any) {
     let currentPinned = pinnedNode;
     if (!currentPinned) {
       const pinnedKey = `${PINNED_RPC_KEY_PREFIX}${network.chainId}`;
-      currentPinned = await AsyncStorage.getItem(pinnedKey);
+      currentPinned = (await AsyncStorage.getItem(pinnedKey)) || '';
       if (currentPinned) {
         setPinnedNode(currentPinned);
         setSelectedNode(currentPinned);
