@@ -24,6 +24,9 @@ import WalletService from '../services/WalletService';
 import TokenLogoService from '../services/TokenLogoService';
 import SwapMiningService from '../services/SwapMiningService';
 import RewardsDappService from '../services/RewardsDappService';
+import TokenService from '../services/TokenService';
+import TokenBalanceCacheService from '../services/TokenBalanceCacheService';
+import AppEventBus, { EVENT_BALANCES_REFRESH } from '../services/AppEventBus';
 
 export default function SwapScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -66,6 +69,11 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
 
   useEffect(() => {
     void fetchPrices();
+  }, [fromToken, toToken]);
+
+  useEffect(() => {
+    if (!fromToken || !toToken) return;
+    void refreshTokenBalances();
   }, [fromToken, toToken]);
 
   useEffect(() => {
@@ -153,6 +161,45 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       });
     } catch (error) {
       console.error('fetchPrices', error);
+    }
+  };
+
+  const refreshTokenBalances = async () => {
+    try {
+      const address = await WalletService.getAddress();
+      if (!address) return;
+      const network = WalletService.getCurrentNetwork();
+      const provider = await WalletService.getProvider();
+
+      const updates: Record<string, string> = {};
+      const normalizeKey = (addr: string) => (addr === ethers.ZeroAddress ? 'native' : addr).toLowerCase();
+
+      if (fromToken?.address) {
+        const fromAddr = fromToken.address === ethers.ZeroAddress ? 'native' : fromToken.address;
+        const bal = await TokenService.getTokenBalance(fromAddr, address, provider);
+        if (isMounted.current) {
+          setFromBalance(String(bal));
+        }
+        updates[normalizeKey(fromToken.address)] = String(bal);
+      }
+
+      if (toToken?.address) {
+        const toAddr = toToken.address === ethers.ZeroAddress ? 'native' : toToken.address;
+        const bal = await TokenService.getTokenBalance(toAddr, address, provider);
+        if (isMounted.current) {
+          setToBalance(String(bal));
+        }
+        updates[normalizeKey(toToken.address)] = String(bal);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const cached = await TokenBalanceCacheService.getCachedBalances(network.chainId, address);
+        const merged = { ...(cached || {}), ...updates };
+        await TokenBalanceCacheService.setCachedBalances(network.chainId, address, merged);
+        AppEventBus.emit(EVENT_BALANCES_REFRESH);
+      }
+    } catch (error) {
+      console.warn('refreshTokenBalances', error);
     }
   };
 
@@ -295,6 +342,12 @@ export default function SwapScreen({ navigation, isTabScreen }: any) {
       const wallet = await WalletService.getWallet();
       const network = WalletService.getCurrentNetwork();
       const txHash = await SwapService.executeSwap(swapQuote, wallet, network.chainId);
+
+      // Refresh balances quickly after swap submission.
+      void refreshTokenBalances();
+      setTimeout(() => {
+        void refreshTokenBalances();
+      }, 5000);
 
       const openRewards = async () => {
         const url = await RewardsDappService.getRewardsUrl();

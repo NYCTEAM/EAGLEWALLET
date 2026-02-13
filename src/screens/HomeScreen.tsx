@@ -31,6 +31,7 @@ import TokenBalanceCacheService from '../services/TokenBalanceCacheService';
 import { ethers } from 'ethers';
 import NFTMedia from '../components/NFTMedia';
 import { normalizeNftUrl } from '../utils/nftMedia';
+import AppEventBus, { EVENT_BALANCES_REFRESH } from '../services/AppEventBus';
 
 const { width } = Dimensions.get('window');
 const POPULAR_SYMBOLS = ['BNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'BTC', 'ETH', 'EAGLE'];
@@ -56,6 +57,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const addressRef = useRef('');
   const balanceRef = useRef(balance);
   const tokensRef = useRef<any[]>([]);
+  const loadDataRef = useRef<(options?: { silent?: boolean }) => Promise<void>>(async () => {});
   const currentChainId = WalletService.getCurrentNetwork().chainId;
   const lastChainIdRef = useRef<number>(currentChainId);
 
@@ -502,6 +504,10 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     }
   };
 
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  }, [loadData]);
+
   useFocusEffect(
     useCallback(() => {
       loadData({ silent: false });
@@ -514,6 +520,15 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       return () => clearInterval(interval);
     }, [])
   );
+
+  useEffect(() => {
+    const sub = AppEventBus.addListener(EVENT_BALANCES_REFRESH, () => {
+      void loadDataRef.current({ silent: true });
+    });
+    return () => {
+      sub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     // Warm up cached NFTs in the background (stale-while-revalidate).
