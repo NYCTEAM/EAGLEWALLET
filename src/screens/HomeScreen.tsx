@@ -27,6 +27,7 @@ import { getChainTokens } from '../config/tokenConfig';
 import NFTService, { NFT } from '../services/NFTService';
 import CustomTokenService from '../services/CustomTokenService';
 import TokenVisibilityService from '../services/TokenVisibilityService';
+import TokenBalanceCacheService from '../services/TokenBalanceCacheService';
 import { ethers } from 'ethers';
 import NFTMedia from '../components/NFTMedia';
 import { normalizeNftUrl } from '../utils/nftMedia';
@@ -52,11 +53,23 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   const loadSeq = useRef(0);
   const nftLoadSeq = useRef(0);
   const activeTabRef = useRef(activeTab);
+  const addressRef = useRef('');
+  const balanceRef = useRef(balance);
+  const tokensRef = useRef<any[]>([]);
   const currentChainId = WalletService.getCurrentNetwork().chainId;
+  const lastChainIdRef = useRef<number>(currentChainId);
 
   useEffect(() => {
     activeTabRef.current = activeTab;
   }, [activeTab]);
+
+  useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
+
+  useEffect(() => {
+    tokensRef.current = tokens;
+  }, [tokens]);
 
   const sanitizeNft = useCallback((raw: any, fallbackChainId: number): NFT | null => {
     if (!raw || typeof raw !== 'object') return null;
@@ -150,127 +163,20 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     const silent = options.silent ?? false;
     if (loadingRef.current) return;
     loadingRef.current = true;
-    const showLoading = !silent || !hasLoadedRef.current;
-    if (showLoading) setLoading(true);
     const seq = ++loadSeq.current;
+    const hadTokens = tokensRef.current.length > 0;
+    const showLoading = !silent && !hadTokens;
+    if (showLoading) setLoading(true);
     try {
-      const [addr, wallets, bal] = await Promise.all([
-        WalletService.getAddress(),
-        MultiWalletService.getAllWallets(),
-        WalletService.getBalance(),
-      ]);
-      if (seq !== loadSeq.current) return;
-
-      if (addr) {
-        setAddress(addr);
-        const currentWallet = wallets.find(w => w.address.toLowerCase() === addr.toLowerCase());
-        if (currentWallet) {
-          setWalletName(currentWallet.name);
-        }
-      } else {
-        setAddress('');
-        setWalletName('');
-      }
-
-      const parsedBal = Number(bal);
-      const formattedBal = Number.isFinite(parsedBal) ? parsedBal.toFixed(4) : '0.0000';
-      setBalance(formattedBal);
-
       const currentNet = WalletService.getCurrentNetwork();
+      const chainChanged = lastChainIdRef.current !== currentNet.chainId;
+      if (chainChanged) lastChainIdRef.current = currentNet.chainId;
       const chainTokens = getChainTokens(currentNet.chainId);
-      const hidden = await TokenVisibilityService.getHiddenTokens(currentNet.chainId);
-      if (seq !== loadSeq.current) return;
-      setHiddenTokenKeys(hidden);
 
-      // Show predefined tokens immediately (even before balances/custom tokens load)
-      const baseTokenList: any[] = [
-        {
-          symbol: currentNet.symbol,
-          name: currentNet.name,
-          balance: formattedBal,
-          price: 0,
-          change: 0,
-          address: 'native',
-          logo: currentNet.symbol.toLowerCase(),
-        },
-        ...chainTokens.map((token) => ({
-          symbol: token.symbol,
-          name: token.name,
-          balance: '0.0000',
-          price: 0,
-          change: 0,
-          address: token.address,
-          logo: token.logo || token.symbol.toLowerCase(),
-          color: token.color,
-          decimals: token.decimals,
-        })),
-      ];
-      setTokens(baseTokenList);
-
-      if (!addr) {
-        setNfts([]);
-        setNftLoading(false);
-        setTotalValue('0.00');
-        return;
-      }
-
-      const customTokensRaw = await CustomTokenService.getCustomTokensByChain(currentNet.chainId);
-      if (seq !== loadSeq.current) return;
-      const customTokens = customTokensRaw
-        .filter((token) => token.type === 'ERC20')
-        .map((token) => ({
-          symbol: token.symbol,
-          name: token.name,
-          address: token.address,
-          decimals: token.decimals,
-          logo: token.logo || token.symbol.toLowerCase(),
-          color: '#4C6FFF',
-          isCustom: true,
-        }));
-
-      // Deduplicate by contract address to avoid duplicate list entries
-      const mergedTokensMap = new Map<string, any>();
-      [...chainTokens, ...customTokens].forEach((token) => {
-        const key = token.address.toLowerCase();
-        if (!mergedTokensMap.has(key)) {
-          mergedTokensMap.set(key, token);
-        }
-      });
-      const mergedTokens = Array.from(mergedTokensMap.values());
-      
-      // Get provider for balance queries
-      const provider = await WalletService.getProvider();
-      
-      // Build token list with native token first (including custom tokens)
-      const initialTokenList: any[] = [
-        {
-          symbol: currentNet.symbol,
-          name: currentNet.name,
-          balance: formattedBal,
-          price: 0,
-          change: 0,
-          address: 'native',
-          logo: currentNet.symbol.toLowerCase(),
-        },
-        ...mergedTokens.map((token) => ({
-          symbol: token.symbol,
-          name: token.name,
-          balance: '0.0000',
-          price: 0,
-          change: 0,
-          address: token.address,
-          logo: token.logo || token.symbol.toLowerCase(),
-          color: token.color,
-          decimals: token.decimals,
-        })),
-      ];
-
-      // Update list once custom tokens are ready
-      setTokens(initialTokenList);
-      if (showLoading) {
-        // Do not block UI while price/balance tasks run in background.
-        setLoading(false);
-      }
+      const toFixed4 = (value: string) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num.toFixed(4) : '0.0000';
+      };
 
       const applyPriceData = (
         tokenList: any[],
@@ -293,26 +199,240 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         return { pricedTokens, total };
       };
 
-      const updatedListWithBalances = [...initialTokenList];
-      const tokenAddresses = updatedListWithBalances.map(t => t.address);
-      const cachedPriceData = await PriceService.getCachedTokenPricesWithChange(
-        tokenAddresses,
-        currentNet.chainId
-      );
-      if (seq !== loadSeq.current) return;
+      const mergeTokenLists = (prevList: any[], nextList: any[]) => {
+        const prevMap = new Map<string, any>();
+        prevList.forEach((token) => {
+          const key = String(token.address || '').toLowerCase();
+          if (!key) return;
+          prevMap.set(key, token);
+        });
 
-      if (Object.keys(cachedPriceData).length > 0) {
-        const quick = applyPriceData(initialTokenList, cachedPriceData);
+        return nextList.map((token) => {
+          const key = String(token.address || '').toLowerCase();
+          const prev = key ? prevMap.get(key) : undefined;
+          if (!prev) return token;
+          return {
+            ...token,
+            balance: typeof prev.balance === 'string' ? prev.balance : token.balance,
+            price: typeof prev.price === 'number' ? prev.price : token.price,
+            change: typeof prev.change === 'number' ? prev.change : token.change,
+            value: typeof prev.value === 'string' ? prev.value : token.value,
+            logo: prev.logo || token.logo,
+          };
+        });
+      };
+
+      const recalcValues = (tokenList: any[]) => {
+        let total = 0;
+        const next = tokenList.map((token) => {
+          const price = Number(token.price || 0);
+          const balanceNum = parseFloat(token.balance || '0');
+          const value = Number.isFinite(price) && Number.isFinite(balanceNum) ? balanceNum * price : 0;
+          total += value;
+          return { ...token, value: value.toFixed(2) };
+        });
+        return { pricedTokens: next, total };
+      };
+
+      // Render predefined tokens immediately (no async storage / no RPC).
+      const tentativeNativeBalance =
+        addressRef.current && !chainChanged ? toFixed4(balanceRef.current) : '0.0000';
+      const baseTokenList: any[] = [
+        {
+          symbol: currentNet.symbol,
+          name: currentNet.name,
+          balance: tentativeNativeBalance,
+          price: 0,
+          change: 0,
+          address: 'native',
+          logo: currentNet.symbol.toLowerCase(),
+        },
+        ...chainTokens.map((token) => ({
+          symbol: token.symbol,
+          name: token.name,
+          balance: '0.0000',
+          price: 0,
+          change: 0,
+          address: token.address,
+          logo: token.logo || token.symbol.toLowerCase(),
+          color: token.color,
+          decimals: token.decimals,
+        })),
+      ];
+
+      const shouldPrimeTokenList = !hadTokens || chainChanged;
+      if (shouldPrimeTokenList) {
+        setTokens(baseTokenList);
+      }
+      if (showLoading) setLoading(false);
+
+      const baseTokenAddresses = baseTokenList.map((t) => t.address);
+      const cachedBasePricesPromise = PriceService.getCachedTokenPricesWithChange(
+        baseTokenAddresses,
+        currentNet.chainId
+      ).catch(() => ({} as any));
+
+      // Address read: prefer in-memory ref when available (fast), fall back to storage otherwise.
+      const addrPromise = addressRef.current ? Promise.resolve(addressRef.current) : WalletService.getAddress();
+
+      // Wallet list is only needed for UI label; skip on silent refresh to reduce work.
+      const walletsPromise = silent ? Promise.resolve([] as any[]) : MultiWalletService.getAllWallets();
+
+      // Local preferences (hidden tokens + custom tokens) should not block initial render.
+      const hiddenPromise = silent ? Promise.resolve([] as string[]) : TokenVisibilityService.getHiddenTokens(currentNet.chainId);
+      const customTokensPromise = silent ? Promise.resolve([] as any[]) : CustomTokenService.getCustomTokensByChain(currentNet.chainId);
+
+      // Apply cached prices ASAP (do not wait for address).
+      const cachedBasePriceData = await cachedBasePricesPromise;
+      if (seq !== loadSeq.current) return;
+      if (cachedBasePriceData && Object.keys(cachedBasePriceData).length > 0) {
+        const quick = applyPriceData(tokensRef.current.length > 0 ? tokensRef.current : baseTokenList, cachedBasePriceData);
         setTokens(quick.pricedTokens);
         setTotalValue(quick.total.toFixed(2));
       }
 
-      const balancePromises = mergedTokens.map(async (token, index) => {
+      // Hidden token keys (affects filtering only).
+      const hidden = await hiddenPromise;
+      if (seq !== loadSeq.current) return;
+      if (!silent) setHiddenTokenKeys(hidden);
+
+      // Build final token list (predefined + custom) and preserve any cached prices already applied.
+      let currentTokenList: any[] = baseTokenList;
+      const customTokensRaw = await customTokensPromise;
+      if (seq !== loadSeq.current) return;
+      if (!silent) {
+        const customTokens = (customTokensRaw || [])
+          .filter((token: any) => token?.type === 'ERC20')
+          .map((token: any) => ({
+            symbol: token.symbol,
+            name: token.name,
+            address: token.address,
+            decimals: token.decimals,
+            logo: token.logo || String(token.symbol || '').toLowerCase(),
+            color: '#4C6FFF',
+            isCustom: true,
+          }));
+
+        const mergedTokensMap = new Map<string, any>();
+        [...chainTokens, ...customTokens].forEach((token) => {
+          const key = String(token.address || '').toLowerCase();
+          if (!key) return;
+          if (!mergedTokensMap.has(key)) mergedTokensMap.set(key, token);
+        });
+        const mergedTokens = Array.from(mergedTokensMap.values());
+
+        const nextTokenList: any[] = [
+          { ...baseTokenList[0] },
+          ...mergedTokens.map((token) => ({
+            symbol: token.symbol,
+            name: token.name,
+            balance: '0.0000',
+            price: 0,
+            change: 0,
+            address: token.address,
+            logo: token.logo || String(token.symbol || '').toLowerCase(),
+            color: token.color,
+            decimals: token.decimals,
+          })),
+        ];
+
+        currentTokenList = mergeTokenLists(tokensRef.current.length > 0 ? tokensRef.current : baseTokenList, nextTokenList);
+        setTokens(currentTokenList);
+
+        const cachedFullPriceData = await PriceService.getCachedTokenPricesWithChange(
+          currentTokenList.map((t) => t.address),
+          currentNet.chainId
+        ).catch(() => ({} as any));
+        if (seq !== loadSeq.current) return;
+        if (cachedFullPriceData && Object.keys(cachedFullPriceData).length > 0) {
+          const quick = applyPriceData(currentTokenList, cachedFullPriceData);
+          currentTokenList = quick.pricedTokens;
+          setTokens(currentTokenList);
+          setTotalValue(quick.total.toFixed(2));
+        }
+      } else if (tokensRef.current.length > 0 && !chainChanged) {
+        // Silent refresh should not reset UI; keep the current list.
+        currentTokenList = tokensRef.current;
+      }
+
+      const [addr, wallets] = await Promise.all([addrPromise, walletsPromise]);
+      if (seq !== loadSeq.current) return;
+
+      const prevAddr = String(addressRef.current || '').toLowerCase();
+      const nextAddr = String(addr || '').toLowerCase();
+      const isSameWallet = !!prevAddr && !!nextAddr && prevAddr === nextAddr;
+
+      if (addr) {
+        if (!silent || !addressRef.current) setAddress(addr);
+        if (!silent) {
+          const currentWallet = wallets.find((w) => w.address.toLowerCase() === addr.toLowerCase());
+          if (currentWallet) setWalletName(currentWallet.name);
+        }
+      } else {
+        if (!silent || addressRef.current) setAddress('');
+        if (!silent) setWalletName('');
+      }
+      addressRef.current = addr || '';
+
+      // If wallet changed, clear stale totals/balance and reset native display immediately.
+      if (!isSameWallet) {
+        balanceRef.current = '0.0000';
+        setBalance('0.0000');
+        setTotalValue('0.00');
+        currentTokenList = [
+          { ...currentTokenList[0], balance: '0.0000', value: '0.00' },
+          ...currentTokenList.slice(1).map((t) => ({ ...t, balance: '0.0000', value: '0.00' })),
+        ];
+        setTokens(currentTokenList);
+      }
+
+      if (!addr) {
+        setNfts([]);
+        setNftLoading(false);
+        setTotalValue('0.00');
+        return;
+      }
+
+      // Apply cached balances ASAP (stale-while-revalidate).
+      const cachedBalances = await TokenBalanceCacheService.getCachedBalances(currentNet.chainId, addr);
+      if (seq !== loadSeq.current) return;
+      if (cachedBalances) {
+        const next = currentTokenList.map((token) => {
+          const key = String(token.address || '').toLowerCase();
+          const cached = cachedBalances[key];
+          if (typeof cached === 'string' && cached.length > 0) {
+            return { ...token, balance: cached };
+          }
+          return token;
+        });
+
+        const cachedNative = cachedBalances['native'];
+        if (typeof cachedNative === 'string' && cachedNative.length > 0) {
+          balanceRef.current = cachedNative;
+          setBalance(cachedNative);
+        }
+
+        const recalced = recalcValues(next);
+        currentTokenList = recalced.pricedTokens;
+        setTokens(currentTokenList);
+        setTotalValue(recalced.total.toFixed(2));
+      }
+
+      const updatedListWithBalances = [...currentTokenList];
+      const tokenAddresses = updatedListWithBalances.map((t) => t.address);
+
+      // Start provider init in parallel (may be slow on first run). Do not block initial render.
+      const providerPromise = WalletService.getProvider().catch(() => null as any);
+
+      const balancePromises = updatedListWithBalances.slice(1).map(async (token, index) => {
         try {
+          if (!token?.address || token.address === 'native') return;
           const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
+          const provider = await providerPromise;
+          if (!provider) return;
           const contract = new ethers.Contract(token.address, erc20Abi, provider);
           const tokenBalance = await withTimeout(contract.balanceOf(addr), 2500, 0n as any);
-          const balance = ethers.formatUnits(tokenBalance, token.decimals);
+          const balance = ethers.formatUnits(tokenBalance, token.decimals ?? 18);
           updatedListWithBalances[index + 1] = {
             ...updatedListWithBalances[index + 1],
             balance: parseFloat(balance).toFixed(4),
@@ -321,6 +441,21 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
           // ignore single token failures
         }
       });
+
+      const nativeBalancePromise = (async () => {
+        try {
+          const provider = await providerPromise;
+          if (!provider) return;
+          const bn = await withTimeout(provider.getBalance(addr), 2500, 0n as any);
+          const native = ethers.formatEther(bn);
+          const fixed = Number.isFinite(Number(native)) ? parseFloat(native).toFixed(4) : '0.0000';
+          balanceRef.current = fixed;
+          setBalance(fixed);
+          updatedListWithBalances[0] = { ...updatedListWithBalances[0], balance: fixed };
+        } catch {
+          // ignore native balance errors
+        }
+      })();
 
       const livePricePromise = withTimeout(
         PriceService.getTokenPricesWithChange(tokenAddresses, currentNet.chainId).catch(() => ({} as any)),
@@ -332,18 +467,30 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
       if (seq !== loadSeq.current) return;
       const hasLivePrice = Object.keys(livePriceData || {}).length > 0;
       if (hasLivePrice) {
-        const quick = applyPriceData(initialTokenList, livePriceData);
+        const quick = applyPriceData(updatedListWithBalances, livePriceData);
         setTokens(quick.pricedTokens);
         setTotalValue(quick.total.toFixed(2));
       }
 
-      await Promise.all(balancePromises);
+      await Promise.all([nativeBalancePromise, ...balancePromises]);
       if (seq !== loadSeq.current) return;
 
-      const priceDataForFinal = hasLivePrice ? livePriceData : cachedPriceData;
-      const finalResult = applyPriceData(updatedListWithBalances, priceDataForFinal);
+      const priceDataForFinal = hasLivePrice ? livePriceData : ({} as any);
+      const finalResult =
+        hasLivePrice && Object.keys(livePriceData || {}).length > 0
+          ? applyPriceData(updatedListWithBalances, livePriceData)
+          : recalcValues(updatedListWithBalances);
       setTokens(finalResult.pricedTokens);
       setTotalValue(finalResult.total.toFixed(2));
+
+      // Persist balances for next launch (cache-first UX).
+      const balancesToCache: Record<string, string> = {};
+      updatedListWithBalances.forEach((token) => {
+        const key = String(token.address || '').toLowerCase();
+        if (!key) return;
+        balancesToCache[key] = String(token.balance || '0.0000');
+      });
+      await TokenBalanceCacheService.setCachedBalances(currentNet.chainId, addr, balancesToCache);
   } catch (error) {
       console.error('Error loading home data:', error);
     } finally {

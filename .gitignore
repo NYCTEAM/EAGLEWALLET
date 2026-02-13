@@ -40,6 +40,9 @@ ios/Pods/
 .env
 .env.local
 
+# Runtime artifacts
+backend/usage_data.json
+
 # IDE
 .vscode/
 .idea/
