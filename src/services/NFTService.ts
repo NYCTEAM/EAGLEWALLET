@@ -6,6 +6,7 @@
 import { ethers } from 'ethers';
 import { NETWORKS } from '../config/networks';
 import RPCService from './RPCService';
+import { toIpfsGatewayCandidates, normalizeNftUrl } from '../utils/nftMedia';
 
 export interface NFT {
   tokenId: string;
@@ -41,6 +42,7 @@ const TRANSFER_BATCH_EVENT_TOPIC = ethers.id('TransferBatch(address,address,addr
 const MAX_NFTS_PER_CONTRACT = 100;
 const MAX_DISCOVERY_CANDIDATES = 120;
 const TRANSFER_SCAN_BLOCK_STEP = 20000;
+const METADATA_FETCH_TIMEOUT_MS = 6000;
 
 const ERC1155_TRANSFER_INTERFACE = new ethers.Interface([
   'event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)',
@@ -55,8 +57,20 @@ type NFTCandidate = {
   blockNumber?: number;
 };
 
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const BASE64_LOOKUP = (() => {
+  const table = new Uint8Array(256);
+  table.fill(255);
+  for (let i = 0; i < BASE64_ALPHABET.length; i += 1) {
+    table[BASE64_ALPHABET.charCodeAt(i)] = i;
+  }
+  return table;
+})();
+
 class NFTService {
   private providers: Map<number, { url: string; provider: ethers.JsonRpcProvider }> = new Map();
+  private metadataCache = new Map<string, { value: any; timestamp: number }>();
+  private metadataCacheTTL = 10 * 60 * 1000;
 
   /**
    * Get provider for specific chain
@@ -258,47 +272,49 @@ class NFTService {
     if (!uri) return {};
 
     try {
+      const cacheKey = uri.trim();
+      const cached = this.metadataCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < this.metadataCacheTTL) {
+        return cached.value;
+      }
+
       // Handle data URIs
       if (uri.startsWith('data:')) {
-        return this.parseDataUriMetadata(uri);
+        const parsed = this.parseDataUriMetadata(uri);
+        this.metadataCache.set(cacheKey, { value: parsed, timestamp: Date.now() });
+        return parsed;
       }
 
-      // Normalize IPFS URLs
-      const normalizedURI = this.normalizeIPFS(uri);
-
-      // Fetch from HTTP
-      const response = await fetch(normalizedURI);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (uri.trim().startsWith('{') || uri.trim().startsWith('[')) {
+        const parsed = JSON.parse(uri.trim());
+        this.metadataCache.set(cacheKey, { value: parsed, timestamp: Date.now() });
+        return parsed;
       }
 
-      return await response.json();
+      const candidates = this.buildMetadataUriCandidates(uri);
+      for (const candidate of candidates) {
+        try {
+          const parsed = await this.fetchJsonWithTimeout(candidate);
+          if (parsed && typeof parsed === 'object') {
+            this.metadataCache.set(cacheKey, { value: parsed, timestamp: Date.now() });
+            return parsed;
+          }
+        } catch {
+          // try next gateway candidate
+        }
+      }
     } catch (error) {
       console.error('Error fetching metadata:', error);
-      return {};
     }
+
+    return {};
   }
 
   /**
    * Convert IPFS URLs to HTTP gateway URLs
    */
   private normalizeIPFS(url: string): string {
-    if (!url) return '';
-
-    if (url.startsWith('ipfs://ipfs/')) {
-      return url.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
-    }
-
-    if (url.startsWith('ipfs://')) {
-      return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-
-    if (url.startsWith('ipfs/')) {
-      return `https://ipfs.io/ipfs/${url.slice(5)}`;
-    }
-
-    return url;
+    return normalizeNftUrl(url);
   }
 
   private parseDataUriMetadata(uri: string): any {
@@ -312,8 +328,14 @@ class NFTService {
       const payload = uri.slice(commaIndex + 1);
 
       if (header.includes(';base64')) {
-        // Hermes on Android may not provide global atob; use ethers base64 helpers.
-        const bytes = ethers.decodeBase64(payload);
+        let bytes: Uint8Array;
+        try {
+          // ethers.decodeBase64 may rely on Buffer/atob; fallback to a pure-JS decoder for Hermes.
+          bytes = ethers.decodeBase64(payload);
+        } catch {
+          bytes = this.decodeBase64Fallback(payload);
+        }
+
         const jsonString = ethers.toUtf8String(bytes);
         return JSON.parse(jsonString);
       }
@@ -322,6 +344,41 @@ class NFTService {
     } catch {
       return {};
     }
+  }
+
+  private decodeBase64Fallback(payload: string): Uint8Array {
+    const sanitized = String(payload || '')
+      .trim()
+      .replace(/[\r\n\s]/g, '')
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    if (!sanitized) return new Uint8Array();
+
+    const pad = sanitized.endsWith('==') ? 2 : sanitized.endsWith('=') ? 1 : 0;
+    const len = sanitized.length;
+    const outLen = Math.max(0, Math.floor((len * 3) / 4) - pad);
+    const out = new Uint8Array(outLen);
+
+    let outIndex = 0;
+    for (let i = 0; i < len; i += 4) {
+      const c1 = BASE64_LOOKUP[sanitized.charCodeAt(i)];
+      const c2 = BASE64_LOOKUP[sanitized.charCodeAt(i + 1)];
+      const c3 = BASE64_LOOKUP[sanitized.charCodeAt(i + 2)];
+      const c4 = BASE64_LOOKUP[sanitized.charCodeAt(i + 3)];
+
+      if (c1 === 255 || c2 === 255) break;
+      const b3 = c3 === 255 ? 0 : c3;
+      const b4 = c4 === 255 ? 0 : c4;
+
+      const triple = (c1 << 18) | (c2 << 12) | ((b3 & 63) << 6) | (b4 & 63);
+
+      if (outIndex < outLen) out[outIndex++] = (triple >> 16) & 255;
+      if (outIndex < outLen) out[outIndex++] = (triple >> 8) & 255;
+      if (outIndex < outLen) out[outIndex++] = triple & 255;
+    }
+
+    return out;
   }
 
   private resolveTokenURI(templateUri: string, tokenId: string): string {
@@ -338,8 +395,50 @@ class NFTService {
   }
 
   private extractImage(metadata: any): string {
-    const image = metadata?.image || metadata?.image_url || metadata?.imageUrl || '';
+    const image =
+      metadata?.image ||
+      metadata?.image_url ||
+      metadata?.imageUrl ||
+      metadata?.image_data ||
+      metadata?.imageData ||
+      '';
+
+    if (typeof image === 'string' && image.trim().startsWith('<svg')) {
+      return `data:image/svg+xml;utf8,${encodeURIComponent(image.trim())}`;
+    }
+
     return this.normalizeIPFS(image);
+  }
+
+  private buildMetadataUriCandidates(uri: string): string[] {
+    const trimmed = String(uri || '').trim();
+    if (!trimmed) return [];
+
+    const ipfsCandidates = toIpfsGatewayCandidates(trimmed);
+    if (ipfsCandidates.length > 0) {
+      return ipfsCandidates;
+    }
+
+    const normalized = this.normalizeIPFS(trimmed);
+    return normalized ? [normalized] : [];
+  }
+
+  private async fetchJsonWithTimeout(url: string): Promise<any> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), METADATA_FETCH_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const raw = await response.text();
+      if (!raw) return {};
+      return JSON.parse(raw);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private async fetchMetadataFrom721Contract(contract: ethers.Contract, tokenId: string): Promise<any> {

@@ -28,6 +28,8 @@ import NFTService, { NFT } from '../services/NFTService';
 import CustomTokenService from '../services/CustomTokenService';
 import TokenVisibilityService from '../services/TokenVisibilityService';
 import { ethers } from 'ethers';
+import NFTMedia from '../components/NFTMedia';
+import { normalizeNftUrl } from '../utils/nftMedia';
 
 const { width } = Dimensions.get('window');
 const POPULAR_SYMBOLS = ['BNB', 'USDT', 'USDC', 'BUSD', 'BTCB', 'BTC', 'ETH', 'EAGLE'];
@@ -416,24 +418,8 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
     );
   }, [navigation]);
 
-  const normalizeNftImage = (raw: any) => {
-    if (!raw || typeof raw !== 'string') return '';
-    const trimmed = raw.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('ipfs://ipfs/')) {
-      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('ipfs://')) {
-      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      return trimmed;
-    }
-    return '';
-  };
-
   const renderNftItem = useCallback(({ item }: { item: NFT }) => {
-    const imageUri = normalizeNftImage((item as any)?.image);
+    const imageUri = normalizeNftUrl((item as any)?.image);
     const safeName =
       typeof item?.name === 'string' && item.name.trim()
         ? item.name
@@ -447,13 +433,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         style={styles.nftCard}
         onPress={() => navigation.navigate('NFTDetail', { nft: item })}
       >
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.nftImage} resizeMode="cover" />
-        ) : (
-          <View style={styles.nftImageFallback}>
-            <Icon name="image-outline" size={28} color="#666" />
-          </View>
-        )}
+        <NFTMedia uri={imageUri} imageStyle={styles.nftImage} fallbackStyle={styles.nftImageFallback} />
         <View style={styles.nftInfo}>
           <Text style={styles.nftName} numberOfLines={1}>{safeName}</Text>
           <Text style={styles.nftId}>#{safeTokenId}</Text>
@@ -471,7 +451,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
         typeof nft.name === 'string' && nft.name.trim()
           ? nft.name
           : (typeof nft.collection === 'string' && nft.collection.trim() ? nft.collection : t.nft.unknownCollection);
-      const image = normalizeNftImage((nft as any)?.image);
+      const image = normalizeNftUrl((nft as any)?.image);
       const existing = grouped.get(key);
       if (existing) {
         existing.count += 1;
@@ -492,19 +472,18 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
   }, [nfts, t.nft.unknownCollection]);
 
   const renderNftCollectionItem = useCallback(({ item }: { item: { key: string; name: string; count: number; image: string; first: NFT } }) => {
-    const logoSource = item.image ? { uri: item.image } : null;
     return (
       <TouchableOpacity
         style={styles.nftCollectionItem}
         onPress={() => navigation.navigate('NFTDetail', { nft: item.first })}
       >
-        {logoSource ? (
-          <Image source={logoSource} style={styles.nftCollectionImage} />
-        ) : (
-          <View style={styles.nftCollectionFallback}>
-            <Icon name="image-outline" size={20} color="#777" />
-          </View>
-        )}
+        <NFTMedia
+          uri={item.image}
+          imageStyle={styles.nftCollectionImage}
+          fallbackStyle={styles.nftCollectionFallback}
+          fallbackIconSize={20}
+          fallbackIconColor="#777"
+        />
         <Text style={styles.nftCollectionName} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.nftCollectionCount}>{item.count}</Text>
       </TouchableOpacity>
@@ -543,7 +522,7 @@ export default function HomeScreen({ navigation, isTabScreen }: any) {
             <View style={styles.topContent}>
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>{t.home.totalBalance}</Text>
-          <Text style={styles.balanceValue}>{`≈ $${totalValue}`}</Text>
+          <Text style={styles.balanceValue}>{`~ $${totalValue}`}</Text>
           <TouchableOpacity
             style={styles.addressContainer}
             onPress={() => navigation.navigate('Receive')}

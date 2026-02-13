@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   ScrollView,
   Linking,
@@ -19,6 +18,8 @@ import {
 import Clipboard from '@react-native-clipboard/clipboard';
 import { useLanguage } from '../i18n/LanguageContext';
 import WalletService from '../services/WalletService';
+import NFTMedia from '../components/NFTMedia';
+import { normalizeNftUrl } from '../utils/nftMedia';
 
 const { width } = Dimensions.get('window');
 
@@ -41,21 +42,6 @@ export default function NFTDetailScreen({ route, navigation }: any) {
   };
   const { t } = useLanguage();
   const network = WalletService.getCurrentNetwork();
-  const normalizeNftImage = (raw: any) => {
-    if (!raw || typeof raw !== 'string') return '';
-    const trimmed = raw.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('ipfs://ipfs/')) {
-      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('ipfs://')) {
-      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      return trimmed;
-    }
-    return '';
-  };
 
   const handleCopy = (text: string) => {
     Clipboard.setString(text);
@@ -98,17 +84,13 @@ export default function NFTDetailScreen({ route, navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Large NFT Image */}
         <View style={styles.imageContainer}>
-            {normalizeNftImage(nft?.image) ? (
-                <Image 
-                    source={{ uri: normalizeNftImage(nft?.image) }} 
-                    style={styles.nftImage} 
-                    resizeMode="cover" 
-                />
-            ) : (
-                <View style={styles.nftImageFallback}>
-                    <Text style={styles.nftImageFallbackText}>NFT</Text>
-                </View>
-            )}
+            <NFTMedia
+                uri={normalizeNftUrl(nft?.image)}
+                imageStyle={styles.nftImage}
+                fallbackStyle={styles.nftImageFallback}
+                fallbackIconSize={36}
+                fallbackIconColor="#9FA7BE"
+            />
             {/* Network Badge */}
             <View style={styles.networkBadge}>
                 <Text style={styles.networkBadgeText}>{network.name}</Text>

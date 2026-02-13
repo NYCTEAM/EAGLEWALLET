@@ -2,7 +2,6 @@
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -14,6 +13,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import WalletService from '../services/WalletService';
 import NFTService, { NFT } from '../services/NFTService';
 import { useLanguage } from '../i18n/LanguageContext';
+import NFTMedia from '../components/NFTMedia';
+import { normalizeNftUrl } from '../utils/nftMedia';
 
 export default function NFTScreen({ navigation, isTabScreen }: any) {
   const { t } = useLanguage();
@@ -73,24 +74,8 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
     setRefreshing(false);
   };
 
-  const normalizeNftImage = (raw: any) => {
-    if (!raw || typeof raw !== 'string') return '';
-    const trimmed = raw.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('ipfs://ipfs/')) {
-      return trimmed.replace('ipfs://ipfs/', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('ipfs://')) {
-      return trimmed.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      return trimmed;
-    }
-    return '';
-  };
-
   const renderItem = ({ item }: { item: NFT }) => {
-    const imageUri = normalizeNftImage((item as any)?.image);
+    const imageUri = normalizeNftUrl((item as any)?.image);
     const safeName =
       typeof item?.name === 'string' && item.name.trim()
         ? item.name
@@ -105,13 +90,7 @@ export default function NFTScreen({ navigation, isTabScreen }: any) {
         : '-';
     return (
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('NFTDetail', { nft: item })}>
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} />
-        ) : (
-          <View style={styles.imageFallback}>
-            <Text style={styles.imageFallbackText}>NFT</Text>
-          </View>
-        )}
+        <NFTMedia uri={imageUri} imageStyle={styles.image} fallbackStyle={styles.imageFallback} />
         <View style={styles.cardBody}>
           <Text style={styles.name} numberOfLines={1}>{safeName}</Text>
           <Text style={styles.sub} numberOfLines={1}>{safeCollection}</Text>
